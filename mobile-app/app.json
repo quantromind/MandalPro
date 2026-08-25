@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "MandalPro",
+    "slug": "mandalpro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/logo.jpg",
+    "splash": {
+      "image": "./assets/logo.jpg",
+      "resizeMode": "contain",
+      "backgroundColor": "#F8F8F6"
+    },
+    "android": {
+      "package": "com.mandalpro.app"
+    },
+    "ios": {
+      "bundleIdentifier": "com.mandalpro.app"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "47f1988d-9fd0-4c06-961b-8f7a89c9698e"
+      }
+    }
+  }
+}
