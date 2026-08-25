@@ -31,25 +31,24 @@ const sendOtp = asyncHandler(async (req, res) => {
 
   console.log(`\n========================================\n[OTP Generated] For: ${normalizedEmail} | Code: ${code}\n========================================\n`);
 
-  try {
-    await sendEmail({
-      to: normalizedEmail,
-      subject: 'Your MandalPro Verification Code',
-      text: `Your verification code is ${code}. It will expire in 10 minutes.`,
-      html: `
-        <div style="font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 8px;">
-          <h2 style="color: #FF6B00;">MandalPro Verification</h2>
-          <p style="font-size: 16px; color: #333;">Your verification code is:</p>
-          <div style="background: #FFF3E0; padding: 15px; border-radius: 6px; text-align: center; margin: 20px 0;">
-            <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #FF6B00;">${code}</span>
-          </div>
-          <p style="font-size: 14px; color: #666;">This code will expire in 10 minutes. If you did not request this code, please ignore this email.</p>
+  // Dispatch email asynchronously so client response is instant
+  sendEmail({
+    to: normalizedEmail,
+    subject: 'Your MandalPro Verification Code',
+    text: `Your verification code is ${code}. It will expire in 10 minutes.`,
+    html: `
+      <div style="font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 8px;">
+        <h2 style="color: #FF6B00;">MandalPro Verification</h2>
+        <p style="font-size: 16px; color: #333;">Your verification code is:</p>
+        <div style="background: #FFF3E0; padding: 15px; border-radius: 6px; text-align: center; margin: 20px 0;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #FF6B00;">${code}</span>
         </div>
-      `
-    });
-  } catch (emailErr) {
-    console.error(`[OTP Error] Email send failed: ${emailErr.message}`);
-  }
+        <p style="font-size: 14px; color: #666;">This code will expire in 10 minutes. If you did not request this code, please ignore this email.</p>
+      </div>
+    `
+  }).catch((emailErr) => {
+    console.error(`[OTP Error] Email send failed to ${normalizedEmail}: ${emailErr.message}`);
+  });
 
   res.json({ message: 'OTP sent successfully to email' });
 });

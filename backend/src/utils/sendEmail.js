@@ -1,10 +1,13 @@
 const nodemailer = require('nodemailer');
 
-// Use Ethereal if credentials are not provided (great for testing)
+let cachedTransporter = null;
+
 const getTransporter = async () => {
+  if (cachedTransporter) return cachedTransporter;
+
   if (process.env.SMTP_USER === 'dummy_user@ethereal.email' || !process.env.SMTP_USER) {
     const testAccount = await nodemailer.createTestAccount();
-    return nodemailer.createTransport({
+    cachedTransporter = nodemailer.createTransport({
       host: 'smtp.ethereal.email',
       port: 587,
       secure: false,
@@ -13,24 +16,31 @@ const getTransporter = async () => {
         pass: testAccount.pass,
       },
     });
+    return cachedTransporter;
   }
 
-  // If using Gmail, 'service: gmail' is the most reliable option on cloud hosts like Render
+  // If using Gmail, use the pre-configured gmail service with pooling
   const isGmail = 
     process.env.SMTP_HOST === 'smtp.gmail.com' || 
     (process.env.SMTP_USER && process.env.SMTP_USER.endsWith('@gmail.com'));
 
   if (isGmail) {
-    return nodemailer.createTransport({
+    cachedTransporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      pool: true,
+      maxConnections: 3,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
+    return cachedTransporter;
   }
 
-  return nodemailer.createTransport({
+  cachedTransporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT) || 587,
     secure: Number(process.env.SMTP_PORT) === 465,
@@ -38,7 +48,11 @@ const getTransporter = async () => {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
+  return cachedTransporter;
 };
 
 const sendEmail = async ({ to, subject, text, html }) => {
