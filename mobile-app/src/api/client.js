@@ -5,8 +5,8 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 // Local development IP for Expo Go testing
 const LOCAL_API_URL = 'http://10.30.168.210:5000/api';
 
-// Production backend on Render for standalone APK builds
-const PROD_API_URL = 'https://mandalpro.onrender.com/api';
+// Production backend URL on Hostinger VPS
+const PROD_API_URL = 'https://mandalpro.quantromind.tech/api';
 
 // Detect if running in Expo Go (Development) or Standalone APK (Production)
 const isExpoGo =
