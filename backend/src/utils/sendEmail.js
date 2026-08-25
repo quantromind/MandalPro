@@ -15,10 +15,25 @@ const getTransporter = async () => {
     });
   }
 
+  // If using Gmail, 'service: gmail' is the most reliable option on cloud hosts like Render
+  const isGmail = 
+    process.env.SMTP_HOST === 'smtp.gmail.com' || 
+    (process.env.SMTP_USER && process.env.SMTP_USER.endsWith('@gmail.com'));
+
+  if (isGmail) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+  }
+
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: Number(process.env.SMTP_PORT) === 465,
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
