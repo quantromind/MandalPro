@@ -29,8 +29,61 @@ export default function ProfileScreen() {
   const [memberMobile, setMemberMobile] = useState('');
   const [memberRole, setMemberRole] = useState('volunteer');
 
+  // Account Deletion State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteStep, setDeleteStep] = useState('warning'); // 'warning' | 'otp'
+  const [deleteOtp, setDeleteOtp] = useState('');
+  const [sendingDeleteOtp, setSendingDeleteOtp] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
   const isPresident = user?.role === 'president' || user?.role === 'superadmin';
   const isSuperAdmin = user?.role === 'superadmin';
+
+  const handleOpenDeleteModal = () => {
+    setDeleteStep('warning');
+    setDeleteOtp('');
+    setShowDeleteModal(true);
+  };
+
+  const handleRequestDeleteOtp = async () => {
+    try {
+      setSendingDeleteOtp(true);
+      const { data } = await client.post('/auth/delete-account/send-otp');
+      Alert.alert('Verification Code Sent', data.message || `A 6-digit code has been sent to ${user?.email}`);
+      setDeleteStep('otp');
+    } catch (err) {
+      Alert.alert('Request Failed', err.response?.data?.message || 'Failed to send verification code.');
+    } finally {
+      setSendingDeleteOtp(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteOtp.trim() || deleteOtp.trim().length !== 6) {
+      Alert.alert('Invalid Code', 'Please enter the complete 6-digit verification code.');
+      return;
+    }
+
+    try {
+      setDeletingAccount(true);
+      await client.post('/auth/delete-account', { code: deleteOtp.trim() });
+      setShowDeleteModal(false);
+      Alert.alert(
+        'Account Deleted',
+        'Your account and all associated data have been permanently deleted.',
+        [
+          {
+            text: 'OK',
+            onPress: () => logout()
+          }
+        ]
+      );
+    } catch (err) {
+      Alert.alert('Deletion Failed', err.response?.data?.message || 'Failed to delete account. Please check the OTP.');
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
 
   const loadMembers = async () => {
     if (!isPresident) return;
@@ -328,6 +381,18 @@ export default function ProfileScreen() {
         <Text style={styles.logoutText}>Log Out</Text>
       </TouchableOpacity>
 
+      {!isSuperAdmin && (
+        <View style={styles.dangerCard}>
+          <Text style={styles.dangerTitle}>Danger Zone</Text>
+          <Text style={styles.dangerText}>
+            Permanently delete your account and associated records from the database. This action requires OTP verification and cannot be undone.
+          </Text>
+          <TouchableOpacity style={styles.deleteAccountBtn} onPress={handleOpenDeleteModal}>
+            <Text style={styles.deleteAccountBtnText}>Delete Account Permanently</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* ── Add Member Modal ── */}
       <Modal visible={showMemberModal} animationType="slide" transparent={true} onRequestClose={() => setShowMemberModal(false)}>
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -399,6 +464,85 @@ export default function ProfileScreen() {
             <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowMemberModal(false)}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Account Deletion Modal ── */}
+      <Modal visible={showDeleteModal} animationType="slide" transparent={true} onRequestClose={() => setShowDeleteModal(false)}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.modalSheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={[styles.modalHeading, { color: '#DC2626' }]}>Delete Account Permanently</Text>
+            
+            {deleteStep === 'warning' ? (
+              <View>
+                <Text style={styles.modalSubheading}>
+                  {isPresident
+                    ? `Warning: Deleting your account will permanently wipe "${mandal?.name || 'your Mandal'}" and ALL related donations, receipts, expenses, chats, and members from the database.`
+                    : 'Warning: Deleting your account will permanently remove your profile and access from the database.'}
+                </Text>
+                
+                <View style={styles.warningBox}>
+                  <Text style={styles.warningBoxText}>
+                    An OTP will be sent to your registered email ({user?.email}) to confirm your identity.
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.dangerSubmitBtn, sendingDeleteOtp && { opacity: 0.7 }]}
+                  onPress={handleRequestDeleteOtp}
+                  disabled={sendingDeleteOtp}
+                >
+                  {sendingDeleteOtp ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.submitBtnText}>Send Verification Code →</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowDeleteModal(false)}>
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View>
+                <Text style={styles.modalSubheading}>
+                  Enter the 6-digit code sent to <Text style={{ fontWeight: '700', color: '#111827' }}>{user?.email}</Text>:
+                </Text>
+
+                <TextInput
+                  style={[styles.input, styles.otpInput]}
+                  placeholder="• • • • • •"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  value={deleteOtp}
+                  onChangeText={setDeleteOtp}
+                  autoFocus={true}
+                />
+
+                <TouchableOpacity style={styles.resendLink} onPress={handleRequestDeleteOtp} disabled={sendingDeleteOtp}>
+                  <Text style={styles.resendLinkText}>Didn't receive code? Resend OTP</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.dangerSubmitBtn, (deletingAccount || deleteOtp.length < 6) && { opacity: 0.7 }]}
+                  onPress={handleConfirmDelete}
+                  disabled={deletingAccount || deleteOtp.length < 6}
+                >
+                  {deletingAccount ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.submitBtnText}>Confirm Permanent Deletion</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowDeleteModal(false)} disabled={deletingAccount}>
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -652,17 +796,87 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   logoutBtn: {
-    backgroundColor: '#EF4444',
+    backgroundColor: '#374151',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 8,
-    marginBottom: 40,
+    marginBottom: 16,
   },
   logoutText: {
     color: '#fff',
     fontWeight: '700',
     fontSize: 15,
+  },
+  dangerCard: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 40,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  dangerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#DC2626',
+    marginBottom: 4,
+  },
+  dangerText: {
+    fontSize: 13,
+    color: '#991B1B',
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+  deleteAccountBtn: {
+    borderWidth: 1.5,
+    borderColor: '#DC2626',
+    borderRadius: 10,
+    paddingVertical: 11,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  deleteAccountBtnText: {
+    color: '#DC2626',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  warningBox: {
+    backgroundColor: '#FEE2E2',
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#DC2626',
+    marginVertical: 14,
+  },
+  warningBoxText: {
+    fontSize: 12.5,
+    color: '#7F1D1D',
+    lineHeight: 17,
+  },
+  dangerSubmitBtn: {
+    backgroundColor: '#DC2626',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  otpInput: {
+    textAlign: 'center',
+    fontSize: 24,
+    letterSpacing: 8,
+    fontWeight: '800',
+    color: '#DC2626',
+    paddingVertical: 14,
+  },
+  resendLink: {
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  resendLinkText: {
+    color: '#FF6B00',
+    fontSize: 13,
+    fontWeight: '600',
   },
 
   /* Modal */
