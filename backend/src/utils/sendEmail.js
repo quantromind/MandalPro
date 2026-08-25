@@ -85,7 +85,81 @@ const createGmailTransporter = (port) => {
   });
 };
 
+// ── 1. Resend HTTPS API (Recommended for Render — 100% works over HTTPS port 443) ──
+const sendViaResend = async ({ to, subject, text, html }) => {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+
+  console.log('[Email] Sending via Resend HTTPS API...');
+  const fromAddress = process.env.RESEND_FROM || 'MandalPro <onboarding@resend.dev>';
+  
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey.trim()}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: fromAddress,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      text,
+      html,
+    }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(`Resend API error (${response.status}): ${data.message || JSON.stringify(data)}`);
+  }
+
+  console.log(`[Email Sent] Delivered via Resend ID: ${data.id}`);
+  return { messageId: data.id, provider: 'resend' };
+};
+
+// ── 2. Brevo HTTPS API (Alternative free provider over HTTPS) ──
+const sendViaBrevo = async ({ to, subject, text, html }) => {
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) return null;
+
+  console.log('[Email] Sending via Brevo HTTPS API...');
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': apiKey.trim(),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: {
+        name: process.env.SMTP_FROM_NAME || 'MandalPro',
+        email: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@mandalpro.com'
+      },
+      to: [{ email: to }],
+      subject,
+      textContent: text,
+      htmlContent: html,
+    }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(`Brevo API error (${response.status}): ${data.message || JSON.stringify(data)}`);
+  }
+
+  console.log(`[Email Sent] Delivered via Brevo ID: ${data.messageId}`);
+  return { messageId: data.messageId, provider: 'brevo' };
+};
+
 const sendEmail = async ({ to, subject, text, html }) => {
+  // Try HTTPS REST APIs first (immune to Render SMTP port blocking)
+  if (process.env.RESEND_API_KEY) {
+    return await sendViaResend({ to, subject, text, html });
+  }
+
+  if (process.env.BREVO_API_KEY) {
+    return await sendViaBrevo({ to, subject, text, html });
+  }
+
   const isGmail = 
     process.env.SMTP_HOST === 'smtp.gmail.com' || 
     (process.env.SMTP_USER && process.env.SMTP_USER.endsWith('@gmail.com'));
