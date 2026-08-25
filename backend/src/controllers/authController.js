@@ -1,8 +1,20 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 const Mandal = require('../models/Mandal');
+const Donation = require('../models/Donation');
+const Expense = require('../models/Expense');
+const Event = require('../models/Event');
+const ChatMessage = require('../models/ChatMessage');
+const Task = require('../models/Task');
+const InventoryItem = require('../models/InventoryItem');
+const Budget = require('../models/Budget');
+const Sponsor = require('../models/Sponsor');
+const AuditLog = require('../models/AuditLog');
+const Counter = require('../models/Counter');
+const Otp = require('../models/Otp');
+const sendEmail = require('../utils/sendEmail');
 const { generateToken } = require('../utils/jwt');
-const { otpStore } = require('./otpController');
+const { validateAndConsumeOtp, memoryOtpStore } = require('./otpController');
 
 // @desc Register: creates a Mandal + first President user together (onboarding step 1-2)
 // @route POST /api/auth/register
@@ -223,24 +235,15 @@ const loginWithOtp = asyncHandler(async (req, res) => {
     throw new Error('email and code are required');
   }
 
-  const normalizedEmail = email.toLowerCase();
+  const normalizedEmail = email.toLowerCase().trim();
 
   // Verify OTP
-  const entry = otpStore.get(normalizedEmail);
-  if (!entry) {
+  try {
+    await validateAndConsumeOtp(normalizedEmail, code);
+  } catch (err) {
     res.status(400);
-    throw new Error('No OTP sent for this email. Please request again.');
+    throw new Error(err.message);
   }
-  if (Date.now() > entry.expiresAt) {
-    otpStore.delete(normalizedEmail);
-    res.status(400);
-    throw new Error('OTP has expired. Please request again.');
-  }
-  if (entry.code !== String(code)) {
-    res.status(400);
-    throw new Error('Invalid OTP. Please try again.');
-  }
-  otpStore.delete(normalizedEmail);
 
   // Handle superadmin
   if (normalizedEmail === 'quantromind@gmail.com') {
@@ -341,4 +344,131 @@ const loginWithOtp = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { register, login, loginWithOtp, getMe, updateProfile, inviteMember };
+// @desc    Send OTP to authenticated user's email for permanent account deletion
+// @route   POST /api/auth/delete-account/send-otp
+// @access  Private (protect)
+const sendDeleteAccountOtp = asyncHandler(async (req, res) => {
+  const user = req.user;
+  if (!user) {
+    res.status(401);
+    throw new Error('Not authorized');
+  }
+
+  const normalizedEmail = user.email.toLowerCase().trim();
+
+  // Prevent superadmin deletion
+  if (user.role === 'superadmin' || normalizedEmail === 'quantromind@gmail.com') {
+    res.status(400);
+    throw new Error('Superadmin account cannot be deleted');
+  }
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+  // Persist to MongoDB (or memory fallback)
+  try {
+    await Otp.deleteMany({ email: normalizedEmail });
+    await Otp.create({ email: normalizedEmail, code });
+  } catch (dbErr) {
+    console.warn(`[OTP DB Warning] Could not persist deletion OTP to DB: ${dbErr.message}`);
+    memoryOtpStore.set(normalizedEmail, { code, expiresAt: Date.now() + OTP_TTL_MS });
+  }
+
+  console.log(`\n========================================\n[Account Deletion OTP] For: ${normalizedEmail} | Code: ${code}\n========================================\n`);
+
+  // Dispatch warning email
+  sendEmail({
+    to: normalizedEmail,
+    subject: '⚠️ MandalPro - Account Deletion Verification Code',
+    text: `Your verification code to permanently delete your MandalPro account is ${code}. It will expire in 10 minutes. If you did not request this, please secure your account immediately.`,
+    html: `
+      <div style="font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; border: 1px solid #fee2e2; border-radius: 8px;">
+        <h2 style="color: #dc2626; margin-top: 0;">⚠️ Confirm Account Deletion</h2>
+        <p style="font-size: 15px; color: #333;">You have requested to permanently delete your MandalPro account (<strong>${normalizedEmail}</strong>).</p>
+        <p style="font-size: 14px; color: #666;">Use the verification code below to confirm deletion:</p>
+        <div style="background: #fef2f2; border: 1px dashed #ef4444; padding: 15px; border-radius: 6px; text-align: center; margin: 20px 0;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #dc2626;">${code}</span>
+        </div>
+        <p style="font-size: 13px; color: #991b1b; font-weight: bold;">Warning: This action is permanent and cannot be undone. All your data, receipts, and records will be deleted from the database.</p>
+        <p style="font-size: 12px; color: #888;">If you did not make this request, please change your password immediately.</p>
+      </div>
+    `
+  }).catch((emailErr) => {
+    console.error(`[Delete Account OTP Error] Email send failed to ${normalizedEmail}: ${emailErr.message}`);
+  });
+
+  res.json({ message: 'Account deletion verification code sent to your email.' });
+});
+
+// @desc    Permanently delete account from database after OTP verification
+// @route   POST /api/auth/delete-account or DELETE /api/auth/delete-account
+// @access  Private (protect)
+const deleteAccountWithOtp = asyncHandler(async (req, res) => {
+  const user = req.user;
+  if (!user) {
+    res.status(401);
+    throw new Error('Not authorized');
+  }
+
+  const { code } = req.body;
+  if (!code) {
+    res.status(400);
+    throw new Error('Verification code is required');
+  }
+
+  const normalizedEmail = user.email.toLowerCase().trim();
+
+  // Prevent superadmin deletion
+  if (user.role === 'superadmin' || normalizedEmail === 'quantromind@gmail.com') {
+    res.status(400);
+    throw new Error('Superadmin account cannot be deleted');
+  }
+
+  // Validate and consume OTP
+  try {
+    await validateAndConsumeOtp(normalizedEmail, code);
+  } catch (err) {
+    res.status(400);
+    throw new Error(err.message);
+  }
+
+  const userId = user._id;
+  const mandalId = user.mandalId;
+
+  // If user is a president and has a mandal: purge mandal and all child records
+  if (user.role === 'president' && mandalId) {
+    await Promise.all([
+      Donation.deleteMany({ mandalId }).catch(() => {}),
+      Expense.deleteMany({ mandalId }).catch(() => {}),
+      Event.deleteMany({ mandalId }).catch(() => {}),
+      ChatMessage.deleteMany({ mandalId }).catch(() => {}),
+      Task.deleteMany({ mandalId }).catch(() => {}),
+      InventoryItem.deleteMany({ mandalId }).catch(() => {}),
+      Budget.deleteMany({ mandalId }).catch(() => {}),
+      Sponsor.deleteMany({ mandalId }).catch(() => {}),
+      AuditLog.deleteMany({ mandalId }).catch(() => {}),
+      Counter.deleteMany({ key: new RegExp(`^${mandalId}`) }).catch(() => {}),
+      User.deleteMany({ mandalId }).catch(() => {}),
+      Mandal.findByIdAndDelete(mandalId).catch(() => {})
+    ]);
+  }
+
+  // In all cases, ensure the user document itself is deleted
+  await User.findByIdAndDelete(userId).catch(() => {});
+
+  res.json({
+    success: true,
+    message: 'Your account and all associated data have been permanently deleted from the database.'
+  });
+});
+
+module.exports = {
+  register,
+  login,
+  loginWithOtp,
+  getMe,
+  updateProfile,
+  inviteMember,
+  sendDeleteAccountOtp,
+  deleteAccountWithOtp
+};

@@ -1,7 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { sendOtp, verifyOtp, testEmail, otpStore } = require('../controllers/otpController');
-const { register, login, loginWithOtp, getMe, updateProfile, inviteMember } = require('../controllers/authController');
+const { sendOtp, verifyOtp, testEmail } = require('../controllers/otpController');
+const {
+  register,
+  login,
+  loginWithOtp,
+  getMe,
+  updateProfile,
+  inviteMember,
+  sendDeleteAccountOtp,
+  deleteAccountWithOtp
+} = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const { allowRoles } = require('../middleware/rbac');
 
@@ -14,5 +23,10 @@ router.post('/login-otp', loginWithOtp);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
 router.post('/invite', protect, allowRoles('president', 'secretary'), inviteMember);
+
+// Account deletion with OTP verification
+router.post('/delete-account/send-otp', protect, sendDeleteAccountOtp);
+router.post('/delete-account', protect, deleteAccountWithOtp);
+router.delete('/delete-account', protect, deleteAccountWithOtp);
 
 module.exports = router;

@@ -53,15 +53,8 @@ const sendOtp = asyncHandler(async (req, res) => {
   res.json({ message: 'OTP sent successfully to email' });
 });
 
-// @desc  Verify OTP
-// @route POST /api/auth/verify-otp
-const verifyOtp = asyncHandler(async (req, res) => {
-  const { email, code } = req.body;
-  if (!email || !code) {
-    res.status(400);
-    throw new Error('email and code are required');
-  }
-
+// Helper to validate and consume OTP (used in both verifyOtp and loginWithOtp)
+const validateAndConsumeOtp = async (email, code) => {
   const normalizedEmail = email.toLowerCase().trim();
   const inputCode = String(code).trim();
 
@@ -75,32 +68,46 @@ const verifyOtp = asyncHandler(async (req, res) => {
 
   if (otpRecord) {
     if (otpRecord.code !== inputCode) {
-      res.status(400);
       throw new Error('Invalid OTP');
     }
     // Delete OTP once used
     await Otp.deleteMany({ email: normalizedEmail }).catch(() => {});
-    return res.json({ verified: true });
+    return true;
   }
 
   // Fallback to memory store if not in DB
   const memoryEntry = memoryOtpStore.get(normalizedEmail);
   if (!memoryEntry) {
-    res.status(400);
-    throw new Error('No OTP sent for this email. Please request again.');
+    throw new Error('No OTP sent for this email or it has expired. Please request again.');
   }
   if (Date.now() > memoryEntry.expiresAt) {
     memoryOtpStore.delete(normalizedEmail);
-    res.status(400);
     throw new Error('OTP has expired. Please request again.');
   }
   if (memoryEntry.code !== inputCode) {
-    res.status(400);
     throw new Error('Invalid OTP');
   }
 
   memoryOtpStore.delete(normalizedEmail);
-  res.json({ verified: true });
+  return true;
+};
+
+// @desc  Verify OTP
+// @route POST /api/auth/verify-otp
+const verifyOtp = asyncHandler(async (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) {
+    res.status(400);
+    throw new Error('email and code are required');
+  }
+
+  try {
+    await validateAndConsumeOtp(email, code);
+    return res.json({ verified: true });
+  } catch (err) {
+    res.status(400);
+    throw new Error(err.message);
+  }
 });
 
 // @desc  Diagnostic endpoint to test live email delivery with detailed error response
@@ -133,5 +140,12 @@ const testEmail = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { sendOtp, verifyOtp, testEmail };
+module.exports = {
+  sendOtp,
+  verifyOtp,
+  testEmail,
+  validateAndConsumeOtp,
+  memoryOtpStore,
+  otpStore: memoryOtpStore
+};
 

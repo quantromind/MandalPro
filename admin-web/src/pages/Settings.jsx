@@ -1,10 +1,20 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import Layout from '../components/Layout';
+import { useAuth } from '../context/AuthContext';
 
 const Settings = () => {
+  const { user, logout } = useAuth();
   const [mandal, setMandal] = useState(null);
   const [saved, setSaved] = useState(false);
+
+  // Deletion Modal State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteStep, setDeleteStep] = useState('warning'); // 'warning' | 'otp'
+  const [deleteOtp, setDeleteOtp] = useState('');
+  const [sendingDeleteOtp, setSendingDeleteOtp] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => { api.get('/mandal').then((res) => setMandal(res.data)); }, []);
 
@@ -17,6 +27,45 @@ const Settings = () => {
     setMandal(data);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleOpenDeleteModal = () => {
+    setDeleteStep('warning');
+    setDeleteOtp('');
+    setDeleteError('');
+    setShowDeleteModal(true);
+  };
+
+  const handleSendDeleteOtp = async () => {
+    setSendingDeleteOtp(true);
+    setDeleteError('');
+    try {
+      await api.post('/auth/delete-account/send-otp');
+      setDeleteStep('otp');
+    } catch (err) {
+      setDeleteError(err.response?.data?.message || 'Failed to send OTP. Please try again.');
+    } finally {
+      setSendingDeleteOtp(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteOtp || deleteOtp.trim().length !== 6) {
+      setDeleteError('Please enter the 6-digit verification code.');
+      return;
+    }
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await api.post('/auth/delete-account', { code: deleteOtp.trim() });
+      setShowDeleteModal(false);
+      alert('Your account and workspace data have been permanently deleted.');
+      logout();
+    } catch (err) {
+      setDeleteError(err.response?.data?.message || 'Deletion failed. Please verify your OTP code.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (!mandal) return <Layout><div className="flex-center" style={{ height: '50vh' }}><p>Loading…</p></div></Layout>;
@@ -84,11 +133,95 @@ const Settings = () => {
 
           <div className="card border-danger">
             <h2 className="text-h2" style={{ fontSize: 18, marginBottom: 16, color: 'var(--danger)' }}>Danger Zone</h2>
-            <p className="text-sub mb-3">Irreversible and destructive actions.</p>
-            <button className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>Delete Workspace</button>
+            <p className="text-sub mb-3">Irreversible and destructive actions. Permanently purge your Mandal workspace, donations, expenses, and records.</p>
+            <button
+              className="btn btn-outline"
+              style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
+              onClick={handleOpenDeleteModal}
+            >
+              Delete Workspace Permanently
+            </button>
           </div>
         </div>
       </div>
+
+      {/* ── Delete Workspace / Account Modal ── */}
+      {showDeleteModal && (
+        <div className="modal-backdrop" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+            <div className="flex-between mb-3">
+              <h2 className="text-h2" style={{ color: 'var(--danger)', fontSize: 20 }}>⚠️ Delete Workspace Permanently</h2>
+              <button className="btn-icon" onClick={() => setShowDeleteModal(false)}>✕</button>
+            </div>
+
+            {deleteError && (
+              <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
+                {deleteError}
+              </div>
+            )}
+
+            {deleteStep === 'warning' ? (
+              <div>
+                <p className="text-sub mb-3" style={{ lineHeight: 1.5 }}>
+                  This will permanently delete <strong>{mandal.name}</strong> and all associated donations, events, expenses, receipts, and user accounts from the database.
+                </p>
+                <div style={{ padding: 12, background: '#FEF2F2', borderLeft: '4px solid #DC2626', borderRadius: 6, marginBottom: 20 }}>
+                  <p style={{ margin: 0, fontSize: 13, color: '#991B1B' }}>
+                    To confirm this action, we will send a 6-digit OTP verification code to your email: <strong>{user?.email}</strong>
+                  </p>
+                </div>
+
+                <div className="flex-end gap-2">
+                  <button className="btn btn-outline" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+                  <button className="btn btn-primary" style={{ background: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={handleSendDeleteOtp} disabled={sendingDeleteOtp}>
+                    {sendingDeleteOtp ? 'Sending OTP…' : 'Send Verification OTP →'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sub mb-3">
+                  Enter the 6-digit code sent to <strong>{user?.email}</strong>:
+                </p>
+                <div className="field mb-3">
+                  <input
+                    type="text"
+                    maxLength={6}
+                    placeholder="••••••"
+                    value={deleteOtp}
+                    onChange={(e) => setDeleteOtp(e.target.value)}
+                    style={{ textAlign: 'center', fontSize: 22, letterSpacing: 8, fontWeight: 700, color: 'var(--danger)' }}
+                    autoFocus
+                  />
+                </div>
+
+                <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                  <button
+                    type="button"
+                    style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}
+                    onClick={handleSendDeleteOtp}
+                    disabled={sendingDeleteOtp}
+                  >
+                    Didn't receive code? Resend OTP
+                  </button>
+                </div>
+
+                <div className="flex-end gap-2">
+                  <button className="btn btn-outline" onClick={() => setShowDeleteModal(false)} disabled={deleting}>Cancel</button>
+                  <button
+                    className="btn btn-primary"
+                    style={{ background: 'var(--danger)', borderColor: 'var(--danger)' }}
+                    onClick={handleConfirmDelete}
+                    disabled={deleting || deleteOtp.length < 6}
+                  >
+                    {deleting ? 'Deleting Data…' : 'Confirm Permanent Deletion'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };
