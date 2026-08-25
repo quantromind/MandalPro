@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { sendOtp, verifyOtp, otpStore } = require('../controllers/otpController');
+const { sendOtp, verifyOtp, testEmail, otpStore } = require('../controllers/otpController');
 const { register, login, loginWithOtp, getMe, updateProfile, inviteMember } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const { allowRoles } = require('../middleware/rbac');
 
+router.all('/test-email', testEmail);
 router.post('/send-otp', sendOtp);
 router.post('/verify-otp', verifyOtp);
 router.post('/register', register);

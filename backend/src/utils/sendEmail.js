@@ -19,20 +19,23 @@ const getTransporter = async () => {
     return cachedTransporter;
   }
 
-  // If using Gmail, use the pre-configured gmail service with pooling
+  // If using Gmail, configure host directly with port 465 and SSL
   const isGmail = 
     process.env.SMTP_HOST === 'smtp.gmail.com' || 
     (process.env.SMTP_USER && process.env.SMTP_USER.endsWith('@gmail.com'));
 
   if (isGmail) {
     cachedTransporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true, // true for port 465
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
-      pool: true,
-      maxConnections: 3,
+      tls: {
+        rejectUnauthorized: false
+      },
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 15000,
@@ -47,6 +50,9 @@ const getTransporter = async () => {
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false
     },
     connectionTimeout: 10000,
     greetingTimeout: 10000,

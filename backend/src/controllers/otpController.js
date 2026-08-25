@@ -103,5 +103,35 @@ const verifyOtp = asyncHandler(async (req, res) => {
   res.json({ verified: true });
 });
 
-module.exports = { sendOtp, verifyOtp };
+// @desc  Diagnostic endpoint to test live email delivery with detailed error response
+// @route ALL /api/auth/test-email
+const testEmail = asyncHandler(async (req, res) => {
+  const targetEmail = req.query.email || req.body?.email || process.env.SMTP_USER;
+  if (!targetEmail) {
+    return res.status(400).json({ success: false, message: 'Provide an email param: ?email=your_email@gmail.com' });
+  }
+
+  try {
+    const result = await sendEmail({
+      to: targetEmail,
+      subject: 'MandalPro Live Email Test',
+      text: 'This is a test email to verify live delivery from MandalPro on Render.',
+      html: '<h3>MandalPro Live Email Test</h3><p>If you see this email, SMTP delivery from Render is working perfectly!</p>'
+    });
+    return res.json({ success: true, message: 'Test email sent successfully!', info: result });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: err.message,
+      code: err.code,
+      command: err.command,
+      stack: err.stack,
+      smtpHost: process.env.SMTP_HOST || 'Not set',
+      smtpUser: process.env.SMTP_USER || 'Not set',
+      hasPass: Boolean(process.env.SMTP_PASS)
+    });
+  }
+});
+
+module.exports = { sendOtp, verifyOtp, testEmail };
 
