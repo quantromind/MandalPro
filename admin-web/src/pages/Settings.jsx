@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
@@ -162,6 +163,37 @@ const Settings = () => {
               >
                 ⭐ Upgrade Plan
               </button>
+            </div>
+          </div>
+
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h2 className="text-h2" style={{ fontSize: 18, marginBottom: 12 }}>Legal &amp; Compliance</h2>
+            <p className="text-sub mb-3" style={{ fontSize: 13 }}>
+              MandalPro platform policies, terms of service, and regulatory disclosures.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Link 
+                to="/privacy-policy" 
+                target="_blank" 
+                rel="noreferrer"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg)', borderRadius: 8, color: 'var(--text-main)', fontSize: 14, fontWeight: 500 }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>🛡️</span> Privacy Policy
+                </span>
+                <span style={{ color: 'var(--primary)', fontSize: 13, fontWeight: 600 }}>View ↗</span>
+              </Link>
+              <Link 
+                to="/terms-and-conditions" 
+                target="_blank" 
+                rel="noreferrer"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg)', borderRadius: 8, color: 'var(--text-main)', fontSize: 14, fontWeight: 500 }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>📜</span> Terms &amp; Conditions
+                </span>
+                <span style={{ color: 'var(--primary)', fontSize: 13, fontWeight: 600 }}>View ↗</span>
+              </Link>
             </div>
           </div>
 

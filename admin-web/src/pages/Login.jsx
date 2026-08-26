@@ -96,7 +96,7 @@ const Login = () => {
         </p>
 
         <div className="auth-footer">
-          By continuing, you agree to our <a href="#">Terms</a> & <a href="#">Privacy Policy</a>
+          By continuing, you agree to our <Link to="/terms-and-conditions">Terms &amp; Conditions</Link> &amp; <Link to="/privacy-policy">Privacy Policy</Link>
         </div>
       </div>
       
