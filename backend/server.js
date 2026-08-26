@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(morgan('dev'));
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'mandalpro-backend' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'apla-mandal-backend' }));
 
 app.use('/api/auth', require('./src/routes/auth'));
 app.use('/api/onboarding', require('./src/routes/onboarding'));
@@ -33,4 +33,4 @@ app.use((req, res) => res.status(404).json({ message: 'Route not found' }));
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`MandalPro API running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Apla Mandal API running on port ${PORT}`));

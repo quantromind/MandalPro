@@ -174,7 +174,7 @@ const sendEmail = async ({ to, subject, text, html }) => {
         console.log(`[Email] Attempting Gmail SMTP on port ${port}...`);
         const transporter = createGmailTransporter(port);
         const info = await transporter.sendMail({
-          from: `"${process.env.SMTP_FROM_NAME || 'MandalPro'}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+          from: `"${process.env.SMTP_FROM_NAME || 'Apla Mandal'}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
           to,
           subject,
           text,
@@ -194,7 +194,7 @@ const sendEmail = async ({ to, subject, text, html }) => {
   try {
     const transporter = await getTransporter();
     const info = await transporter.sendMail({
-      from: `"${process.env.SMTP_FROM_NAME || 'MandalPro'}" <${process.env.SMTP_FROM || 'noreply@mandalpro.com'}>`,
+      from: `"${process.env.SMTP_FROM_NAME || 'Apla Mandal'}" <${process.env.SMTP_FROM || 'noreply@aplamandal.com'}>`,
       to,
       subject,
       text,

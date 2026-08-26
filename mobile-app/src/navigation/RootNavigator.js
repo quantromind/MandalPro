@@ -33,17 +33,53 @@ export default function RootNavigator() {
   const isSuperAdmin = user?.role === 'superadmin';
   const isPresident = user?.role === 'president';
 
-  // Check if new President needs to fill in their Profile & Mandal information first
-  const needsOnboarding = user && isPresident && (!mandal?.checklist?.profileComplete || !user?.mobile);
+  // If user is a president with a mandalId, wait until mandal object is loaded
+  // to prevent any frame glitch or screen flicker
+  if (user && isPresident && user.mandalId && mandal === null) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F8F6' }}>
+        <ActivityIndicator size="large" color="#FF6B00" />
+      </View>
+    );
+  }
 
-  // Only the Mandal President manages the subscription plan for the Mandal.
-  // Members / volunteers under the Mandal use the app completely FREE with zero payment barrier.
-  const hasPlan = mandal?.checklist?.planSelected === true && mandal?.planStatus !== 'Expired';
-  const needsSubscription = user && isPresident && !needsOnboarding && !hasPlan;
+  // An existing registered user should NEVER be trapped in mandal setup.
+  // Mandal Setup (OnboardingScreen) is ONLY rendered for a brand-new auto-created OTP president
+  // who has not yet completed their Mandal Profile details.
+  // Setup is considered COMPLETED if any of the following is true:
+  // 1. mandal.checklist.profileComplete is true
+  // 2. mandal.onboardingComplete is true
+  // 3. mandal.name is customized and does not contain placeholder "'s Mandal"
+  // 4. The user is a member/collector/treasurer/secretary/superadmin (not president)
+  const isSetupCompleted = !isPresident || (
+    mandal?.checklist?.profileComplete === true ||
+    mandal?.onboardingComplete === true ||
+    (mandal?.name && !mandal.name.includes("'s Mandal"))
+  );
+
+  const needsOnboarding = Boolean(user && isPresident && !isSetupCompleted);
+
+  // New users see the Subscription Screen after selecting events to pick their plan.
+  // Existing users with an active plan (planSelected: true or active subscription) proceed to Dashboard.
+  const isPlanExpired = mandal?.planStatus === 'Expired';
+  const hasPlanSelected = mandal?.checklist?.planSelected === true;
+  const needsSubscription = Boolean(
+    user &&
+    isPresident &&
+    !needsOnboarding &&
+    (!hasPlanSelected || isPlanExpired)
+  );
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: '#FF6B00' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: '700' } }}>
+      <Stack.Navigator
+        screenOptions={{
+          animation: 'fade',
+          headerStyle: { backgroundColor: '#172554' },
+          headerTintColor: '#FFFFFF',
+          headerTitleStyle: { fontWeight: '800', fontSize: 18 }
+        }}
+      >
         {!user ? (
           // ── Auth Stack ──────────────────────────────────
           <>
@@ -72,6 +108,7 @@ export default function RootNavigator() {
           // ── Main App Stack ──────────────────────────────
           <>
             <Stack.Screen name="MainTabs" component={MainTabNavigator} options={{ headerShown: false }} />
+            <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: 'Subscription Plans' }} />
             <Stack.Screen name="Collection" component={CollectionScreen} options={{ title: 'New Collection' }} />
             <Stack.Screen name="Receipts" component={ReceiptsScreen} options={{ title: 'Donation Receipts' }} />
             <Stack.Screen name="Expenses" component={ExpensesScreen} options={{ title: 'Expenses' }} />

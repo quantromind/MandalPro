@@ -205,6 +205,7 @@ export default function Onboarding() {
   /* ── Step 2 Submit ── */
   const handleEventTypesSubmit = async () => {
     if (eventTypes.length === 0) { setError('Please select at least one event type'); return; }
+    if (eventTypes.length > 3) { setError('You can select a maximum of 3 event types for your Mandal plan'); return; }
     setLoading(true); setError('');
     try {
       await api.patch('/mandal', { eventTypes });
@@ -418,7 +419,7 @@ export default function Onboarding() {
       {/* ── Left Sidebar (Desktop) ── */}
       <aside style={css.sidebar}>
         <div style={css.sidebarBrand}>
-          <span>🪔</span> MandalPro
+          <span>🪔</span> Apla Mandal
         </div>
 
         {STEPS.map((s, i) => {
@@ -603,8 +604,13 @@ export default function Onboarding() {
             <div>
               <div style={css.stepHeader}>
                 <div style={css.stepBadge}>Step 2 of 6 · Event Types</div>
-                <h2 style={css.h2}>What does your Mandal organize?</h2>
-                <p style={css.sub}>Select all types. We'll auto-load starter templates, receipts, and roles for each.</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <h2 style={css.h2}>What does your Mandal organize?</h2>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: eventTypes.length === 3 ? '#FF6B00' : '#6B7280' }}>
+                    {eventTypes.length}/3 selected
+                  </span>
+                </div>
+                <p style={css.sub}>Select up to 3 event types included in your Mandal plan. We'll auto-load starter templates, receipts, and roles for each.</p>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 24 }}>
@@ -613,7 +619,19 @@ export default function Onboarding() {
                   return (
                     <div
                       key={t.id}
-                      onClick={() => setEventTypes(prev => selected ? prev.filter(x => x !== t.id) : [...prev, t.id])}
+                      onClick={() => {
+                        if (selected) {
+                          setEventTypes(prev => prev.filter(x => x !== t.id));
+                          setError('');
+                        } else {
+                          if (eventTypes.length >= 3) {
+                            setError('You can select a maximum of 3 event types for your Mandal plan.');
+                            return;
+                          }
+                          setError('');
+                          setEventTypes(prev => [...prev, t.id]);
+                        }
+                      }}
                       style={{
                         padding: '18px 16px', borderRadius: 14,
                         border: `2px solid ${selected ? t.color : '#E5E7EB'}`,
@@ -682,7 +700,7 @@ export default function Onboarding() {
               <div style={css.stepHeader}>
                 <div style={css.stepBadge}>Step 3 of 6 · Choose Plan</div>
                 <h2 style={css.h2}>Choose your subscription</h2>
-                <p style={css.sub}>Unlock the full power of MandalPro for your community.</p>
+                <p style={css.sub}>Unlock the full power of Apla Mandal for your community.</p>
               </div>
 
               {/* Recommendation Banner */}
@@ -910,7 +928,7 @@ export default function Onboarding() {
               <div style={{ textAlign: 'center', marginBottom: 32 }}>
                 <div style={{ fontSize: 56, marginBottom: 12 }}>🎊</div>
                 <div style={{ ...css.stepBadge, justifyContent: 'center', display: 'flex' }}>Setup Complete</div>
-                <h2 style={{ ...css.h2, textAlign: 'center' }}>Your MandalPro is ready!</h2>
+                <h2 style={{ ...css.h2, textAlign: 'center' }}>Your Apla Mandal is ready!</h2>
                 <p style={{ ...css.sub, textAlign: 'center' }}>Complete these quick steps to get the most out of your workspace.</p>
               </div>
 

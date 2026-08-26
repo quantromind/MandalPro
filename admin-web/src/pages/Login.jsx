@@ -36,8 +36,8 @@ const Login = () => {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-logo" style={{ display: 'flex', alignItems: 'center' }}>
-          <img src="/logo.png" alt="MandalPro Logo" style={{ width: 40, height: 40, marginRight: 12, borderRadius: 10 }} />
-          Mandal<span>Pro</span>
+          <img src="/logo.png" alt="Apla Mandal Logo" style={{ width: 40, height: 40, marginRight: 12, borderRadius: 10 }} />
+          Apla<span>Mandal</span>
         </div>
         
         <h1 className="text-h1" style={{ marginBottom: 12 }}>Manage your Mandal.<br/>Smarter. Together.</h1>

@@ -3,12 +3,23 @@ const Event = require('../models/Event');
 const Task = require('../models/Task');
 const Donation = require('../models/Donation');
 const Expense = require('../models/Expense');
+const Mandal = require('../models/Mandal');
 
 // @desc Create an event (auto-scoped to mandal)
 // @route POST /api/events
 const createEvent = asyncHandler(async (req, res) => {
   const { name, type, startDate, endDate } = req.body;
   if (!name || !type || !startDate) { res.status(400); throw new Error('name, type and startDate are required'); }
+  
+  // Verify that the event type is within the mandal's allowed event types (up to 3)
+  const mandal = await Mandal.findById(req.mandalId);
+  if (mandal && mandal.eventTypes && mandal.eventTypes.length > 0) {
+    if (!mandal.eventTypes.includes(type)) {
+      res.status(400);
+      throw new Error(`Your plan only allows events for your selected types: ${mandal.eventTypes.join(', ')}`);
+    }
+  }
+
   const event = await Event.create({
     mandalId: req.mandalId, name, type, startDate, endDate, createdBy: req.user._id
   });

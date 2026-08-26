@@ -13,18 +13,54 @@ const Register = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { register } = useAuth();
-  const navigate = useNavigate();
+  const [isExistingUser, setIsExistingUser] = useState(false);
+
+  const checkEmailExists = async (emailToCheck) => {
+    const trimmed = (emailToCheck || '').trim();
+    if (!trimmed || !trimmed.includes('@') || trimmed.length < 5) return false;
+    try {
+      const res = await api.post('/auth/check-email', { email: trimmed });
+      if (res.data?.exists) {
+        setIsExistingUser(true);
+        setError('This email is already registered with Apla Mandal. Please log in instead.');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      if (e.response?.status === 409 || e.response?.data?.message?.toLowerCase().includes('already registered')) {
+        setIsExistingUser(true);
+        setError('This email is already registered with Apla Mandal. Please log in instead.');
+        return true;
+      }
+      return false;
+    }
+  };
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
     if (!account.email) { setError('Enter a valid email address'); return; }
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setIsExistingUser(false);
+
+    // ① Check if user already exists BEFORE sending OTP
+    const alreadyExists = await checkEmailExists(account.email);
+    if (alreadyExists) {
+      setLoading(false);
+      return; // Error message already set by checkEmailExists
+    }
+
+    // ② Email is free — send OTP
     try {
-      await api.post('/auth/send-otp', { email: account.email });
+      await api.post('/auth/send-otp', { email: account.email.trim(), purpose: 'register' });
       setOtpSent(true);
-    } catch (e) { setError(e.response?.data?.message || 'Failed to send OTP'); }
-    finally { setLoading(false); }
+    } catch (e) {
+      const msg = e.response?.data?.message || 'Failed to send OTP';
+      if (e.response?.status === 409 || msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists')) {
+        setIsExistingUser(true);
+        setError('This email is already registered with Apla Mandal. Please sign in instead.');
+      } else {
+        setError(msg);
+      }
+    } finally { setLoading(false); }
   };
 
   const handleVerifyOtp = async (e) => {
@@ -43,11 +79,17 @@ const Register = () => {
     if (!otpVerified) { setError('Please verify your email address first'); return; }
     if (account.password !== account.confirmPassword) { setError('Passwords do not match'); return; }
     if (account.password.length < 8) { setError('Password must be at least 8 characters'); return; }
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setIsExistingUser(false);
     try {
       await register({ name: account.name, email: account.email, password: account.password, mobile: account.mobile, mandalName, eventTypes: [] });
       navigate('/onboarding');
-    } catch (e) { setError(e.response?.data?.message || 'Registration failed'); }
+    } catch (e) {
+      const msg = e.response?.data?.message || 'Registration failed';
+      setError(msg);
+      if (e.response?.status === 409 || msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists')) {
+        setIsExistingUser(true);
+      }
+    }
     finally { setLoading(false); }
   };
 
@@ -55,14 +97,25 @@ const Register = () => {
     <div className="auth-page">
       <div className="auth-card" style={{ maxWidth: 500 }}>
         <div className="auth-logo" style={{ display: 'flex', alignItems: 'center' }}>
-          <img src="/logo.png" alt="MandalPro Logo" style={{ width: 40, height: 40, marginRight: 12, borderRadius: 10 }} />
-          Mandal<span>Pro</span>
+          <img src="/logo.png" alt="Apla Mandal Logo" style={{ width: 40, height: 40, marginRight: 12, borderRadius: 10 }} />
+          Apla<span>Mandal</span>
         </div>
         
         <h1 className="text-h1" style={{ marginBottom: 12 }}>Create your account</h1>
-        <p className="text-sub" style={{ marginBottom: 32 }}>Set up your MandalPro workspace</p>
+        <p className="text-sub" style={{ marginBottom: 32 }}>Set up your Apla Mandal workspace</p>
 
-        {error && <div className="error-text" style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: 8, marginBottom: 20 }}>{error}</div>}
+        {error && (
+          <div style={{ padding: '14px 16px', background: isExistingUser ? '#FEF2F2' : 'rgba(239, 68, 68, 0.1)', border: isExistingUser ? '1px solid #FCA5A5' : 'none', borderRadius: 8, marginBottom: 20 }}>
+            <div style={{ color: 'var(--danger)', fontWeight: 600, fontSize: 14 }}>{error}</div>
+            {isExistingUser && (
+              <div style={{ marginTop: 8 }}>
+                <Link to="/login" className="btn btn-primary btn-sm" style={{ display: 'inline-block', textDecoration: 'none', padding: '6px 14px', fontSize: 13 }}>
+                  Go to Login →
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
         
         <form onSubmit={handleAccountSubmit}>
           <div className="grid-2">
@@ -83,7 +136,14 @@ const Register = () => {
                 type="email"
                 placeholder="president@mandal.com"
                 value={account.email}
-                onChange={e => setAccount({ ...account, email: e.target.value })}
+                onBlur={() => checkEmailExists(account.email)}
+                onChange={e => {
+                  setAccount({ ...account, email: e.target.value });
+                  if (isExistingUser) {
+                    setIsExistingUser(false);
+                    setError('');
+                  }
+                }}
                 disabled={otpVerified}
                 required
                 style={{ flex: 1 }}

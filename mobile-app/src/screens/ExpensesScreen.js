@@ -134,7 +134,7 @@ export default function ExpensesScreen() {
           <Text style={styles.topTitle}>{isPresident ? 'Expenses & Approvals' : 'Expense Requests'}</Text>
           <Text style={styles.topSub}>{isPresident ? 'Record expenses or approve requests' : 'Bills & Reimbursements'}</Text>
         </View>
-        <TouchableOpacity style={styles.requestBtn} onPress={() => setShowModal(true)} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.requestBtn} onPress={() => setShowModal(true)} activeOpacity={0.88}>
           <Text style={styles.requestBtnText}>{isPresident ? '+ Add Expense' : '+ Request Expense'}</Text>
         </TouchableOpacity>
       </View>
@@ -142,16 +142,22 @@ export default function ExpensesScreen() {
       <FlatList
         data={expenses}
         keyExtractor={(item) => item._id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        contentContainerStyle={{ padding: 16 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F97316']} tintColor="#F97316" />}
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => {
           const badge = getStatusBadge(item.status);
           return (
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <View style={{ flex: 1, paddingRight: 10 }}>
-                  <Text style={styles.cardCategory}>{item.category}</Text>
-                  <Text style={styles.cardVendor}>Vendor: {item.vendor || 'General'}</Text>
+                <View style={styles.iconCategoryRow}>
+                  <View style={styles.categoryIconCircle}>
+                    <Text style={{ fontSize: 16 }}>💸</Text>
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={styles.cardCategory}>{item.category}</Text>
+                    {item.vendor && <Text style={styles.cardVendor}>Payee: {item.vendor}</Text>}
+                  </View>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={styles.cardAmount}>{inr(item.amount)}</Text>
@@ -162,19 +168,23 @@ export default function ExpensesScreen() {
               </View>
 
               {item.description ? (
-                <Text style={styles.cardDesc}>"{item.description}"</Text>
+                <View style={styles.descBox}>
+                  <Text style={styles.cardDesc}>"{item.description}"</Text>
+                </View>
               ) : null}
 
               <View style={styles.cardFooter}>
                 <Text style={styles.cardDate}>
-                  {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recent'}
+                  {new Date(item.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </Text>
-                {item.status === 'Submitted' && canApprove && (
+                
+                {canApprove && item.status === 'Submitted' && (
                   <TouchableOpacity
                     style={styles.approveActionBtn}
                     onPress={() => handleApprove(item._id, item.category, item.amount)}
+                    activeOpacity={0.8}
                   >
-                    <Text style={styles.approveActionText}>✓ Approve</Text>
+                    <Text style={styles.approveActionText}>Approve Request ✓</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -183,20 +193,21 @@ export default function ExpensesScreen() {
         }}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>💸</Text>
+            <View style={styles.emptyIconCircle}>
+              <Text style={styles.emptyIcon}>💸</Text>
+            </View>
             <Text style={styles.emptyTitle}>No expenses recorded yet</Text>
-            <Text style={styles.emptySubtitle}>
-              {isPresident
-                ? 'Tap "+ Add Expense" to record Mandal expenses.'
-                : 'Tap "+ Request Expense" to submit bills or reimbursement requests.'}
-            </Text>
+            <Text style={styles.emptySubtitle}>All recorded expenses and member bill requests will appear here.</Text>
           </View>
         }
       />
 
-      {/* ── Add / Request Expense Modal ── */}
-      <Modal visible={showModal} animationType="slide" transparent={true} onRequestClose={() => setShowModal(false)}>
-        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* Record / Request Modal */}
+      <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <View style={styles.modalSheet}>
             <View style={styles.sheetHandle} />
             <Text style={styles.modalHeading}>
@@ -217,6 +228,7 @@ export default function ExpensesScreen() {
                     key={cat}
                     style={[styles.catChip, category === cat && styles.catChipActive]}
                     onPress={() => setCategory(cat)}
+                    activeOpacity={0.75}
                   >
                     <Text style={[styles.catChipText, category === cat && styles.catChipTextActive]}>{cat}</Text>
                   </TouchableOpacity>
@@ -224,11 +236,11 @@ export default function ExpensesScreen() {
               </View>
 
               {/* Amount */}
-              <Text style={styles.inputLabel}>Amount (₹) *</Text>
+              <Text style={styles.inputLabel}>Expense Amount (₹) *</Text>
               <TextInput
                 style={[styles.input, styles.amountInput]}
                 placeholder="₹ 0"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#CBD5E1"
                 keyboardType="number-pad"
                 value={amount}
                 onChangeText={(t) => setAmount(t.replace(/[^0-9]/g, ''))}
@@ -239,7 +251,7 @@ export default function ExpensesScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="e.g. Ramesh Flowers, City Sound"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#94A3B8"
                 value={vendor}
                 onChangeText={setVendor}
               />
@@ -247,9 +259,9 @@ export default function ExpensesScreen() {
               {/* Description */}
               <Text style={styles.inputLabel}>Purpose / Note (Optional)</Text>
               <TextInput
-                style={[styles.input, { height: 60 }]}
+                style={[styles.input, { height: 70, textAlignVertical: 'top' }]}
                 placeholder="e.g. Visarjan garland and flowers advance payment"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#94A3B8"
                 multiline
                 value={description}
                 onChangeText={setDescription}
@@ -261,6 +273,7 @@ export default function ExpensesScreen() {
               style={[styles.submitBtn, submitting && { opacity: 0.7 }]}
               onPress={handleCreateRequest}
               disabled={submitting}
+              activeOpacity={0.88}
             >
               {submitting ? (
                 <ActivityIndicator color="#fff" />
@@ -271,7 +284,7 @@ export default function ExpensesScreen() {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowModal(false)}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowModal(false)} activeOpacity={0.7}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -282,79 +295,184 @@ export default function ExpensesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F8F6' },
+  container: { flex: 1, backgroundColor: '#F8F7F4' },
   topBar: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff',
-    borderBottomWidth: 1, borderBottomColor: '#E5E7EB'
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(23, 37, 84, 0.06)',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1
   },
-  topTitle: { fontSize: 18, fontWeight: '800', color: '#17233C' },
-  topSub: { fontSize: 12, color: '#6B7280', marginTop: 1 },
+  topTitle: { fontSize: 18, fontWeight: '800', color: '#172554', letterSpacing: -0.2 },
+  topSub: { fontSize: 12, color: '#64748B', marginTop: 1, fontWeight: '500' },
   requestBtn: {
-    backgroundColor: '#FF6B00', paddingVertical: 8, paddingHorizontal: 14,
-    borderRadius: 10, shadowColor: '#FF6B00', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2, shadowRadius: 4, elevation: 2
+    backgroundColor: '#F97316',
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3
   },
-  requestBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  requestBtnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 12.5 },
   card: {
-    backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 12,
-    borderWidth: 1, borderColor: '#E5E7EB', shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.06)',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2
   },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardCategory: { fontSize: 16, fontWeight: '700', color: '#17233C' },
-  cardVendor: { fontSize: 12.5, color: '#6B7280', marginTop: 3 },
-  cardAmount: { fontSize: 17, fontWeight: '800', color: '#FF6B00', marginBottom: 4 },
-  statusPill: { paddingHorizontal: 8, paddingVertical: 2.5, borderRadius: 8 },
-  statusPillText: { fontSize: 11, fontWeight: '700' },
-  cardDesc: { fontSize: 13, color: '#4B5563', marginTop: 8, fontStyle: 'italic' },
+  iconCategoryRow: { flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 8 },
+  categoryIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  cardCategory: { fontSize: 15.5, fontWeight: '800', color: '#172554' },
+  cardVendor: { fontSize: 12, color: '#64748B', marginTop: 2, fontWeight: '500' },
+  cardAmount: { fontSize: 18, fontWeight: '800', color: '#EF4444', marginBottom: 4 },
+  statusPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  statusPillText: { fontSize: 10.5, fontWeight: '800' },
+  descBox: {
+    backgroundColor: '#F8F7F4',
+    padding: 10,
+    borderRadius: 10,
+    marginTop: 10
+  },
+  cardDesc: { fontSize: 12.5, color: '#475569', fontStyle: 'italic', lineHeight: 17 },
   cardFooter: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F3F4F6'
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(23, 37, 84, 0.04)'
   },
-  cardDate: { fontSize: 12, color: '#9CA3AF', fontWeight: '500' },
+  cardDate: { fontSize: 11.5, color: '#94A3B8', fontWeight: '600' },
   approveActionBtn: {
-    backgroundColor: '#10B981', paddingVertical: 5, paddingHorizontal: 12, borderRadius: 8
+    backgroundColor: '#10B981',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2
   },
-  approveActionText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  approveActionText: { color: '#FFFFFF', fontWeight: '800', fontSize: 11.5 },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 60, padding: 20 },
-  emptyIcon: { fontSize: 44, marginBottom: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#17233C', marginBottom: 4 },
-  emptySubtitle: { fontSize: 13.5, color: '#6B7280', textAlign: 'center', lineHeight: 18 },
+  emptyIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2
+  },
+  emptyIcon: { fontSize: 32 },
+  emptyTitle: { fontSize: 18, fontWeight: '800', color: '#172554', marginBottom: 4 },
+  emptySubtitle: { fontSize: 13.5, color: '#64748B', textAlign: 'center', lineHeight: 20 },
 
   /* Modal */
   modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end'
+    flex: 1,
+    backgroundColor: 'rgba(23, 37, 84, 0.45)',
+    justifyContent: 'flex-end'
   },
   modalSheet: {
-    backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    padding: 20, paddingBottom: 30
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 22,
+    paddingBottom: 34,
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 10
   },
   sheetHandle: {
-    width: 40, height: 4, backgroundColor: '#D1D5DB', borderRadius: 2,
-    alignSelf: 'center', marginBottom: 14
+    width: 44,
+    height: 5,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginBottom: 16
   },
-  modalHeading: { fontSize: 20, fontWeight: '800', color: '#17233C', marginBottom: 4 },
-  modalSubheading: { fontSize: 13, color: '#6B7280', marginBottom: 16 },
-  inputLabel: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6, marginTop: 12 },
+  modalHeading: { fontSize: 20, fontWeight: '800', color: '#172554', marginBottom: 4 },
+  modalSubheading: { fontSize: 13, color: '#64748B', marginBottom: 16, lineHeight: 18 },
+  inputLabel: { fontSize: 12.5, fontWeight: '700', color: '#172554', marginBottom: 6, marginTop: 12 },
   categoryChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 4 },
   catChip: {
-    backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB',
-    paddingVertical: 6, paddingHorizontal: 10, borderRadius: 16
+    backgroundColor: '#F8F7F4',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 16
   },
-  catChipActive: { backgroundColor: '#FF6B00', borderColor: '#FF6B00' },
-  catChipText: { fontSize: 12, color: '#4B5563', fontWeight: '600' },
-  catChipTextActive: { color: '#fff', fontWeight: '700' },
+  catChipActive: { backgroundColor: '#F97316', borderColor: '#F97316' },
+  catChipText: { fontSize: 12, color: '#475569', fontWeight: '700' },
+  catChipTextActive: { color: '#FFFFFF', fontWeight: '800' },
   input: {
-    backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: '#E5E7EB',
-    borderRadius: 12, padding: 12, fontSize: 14.5, color: '#17233C'
+    backgroundColor: '#F8F7F4',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    padding: 13,
+    fontSize: 14.5,
+    color: '#172554'
   },
-  amountInput: { fontSize: 18, fontWeight: '700', color: '#FF6B00' },
+  amountInput: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#F97316',
+    backgroundColor: 'rgba(249, 115, 22, 0.03)',
+    borderColor: 'rgba(249, 115, 22, 0.25)'
+  },
   submitBtn: {
-    backgroundColor: '#FF6B00', paddingVertical: 14, borderRadius: 12,
-    alignItems: 'center', marginTop: 18
+    backgroundColor: '#F97316',
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 20,
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 4
   },
-  submitBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  cancelBtn: { paddingVertical: 10, alignItems: 'center', marginTop: 6 },
-  cancelBtnText: { color: '#6B7280', fontSize: 14, fontWeight: '600' }
+  submitBtnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15.5 },
+  cancelBtn: { paddingVertical: 10, alignItems: 'center', marginTop: 8 },
+  cancelBtnText: { color: '#64748B', fontSize: 14, fontWeight: '700' }
 });

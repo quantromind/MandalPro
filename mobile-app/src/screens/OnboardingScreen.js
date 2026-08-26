@@ -42,6 +42,10 @@ export default function OnboardingScreen() {
       }
       setSelectedTypes(selectedTypes.filter(t => t !== id));
     } else {
+      if (selectedTypes.length >= 3) {
+        Alert.alert('Limit Reached', 'You can select up to 3 event types for your Mandal in this plan.');
+        return;
+      }
       setSelectedTypes([...selectedTypes, id]);
     }
   };
@@ -193,7 +197,15 @@ export default function OnboardingScreen() {
             </View>
 
             {/* Festival / Event Types */}
-            <Text style={styles.label}>Festivals & Events Managed</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 4 }}>
+              <Text style={styles.label}>Festivals & Events Managed</Text>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: selectedTypes.length === 3 ? '#FF6B00' : '#6B7280' }}>
+                {selectedTypes.length}/3 selected
+              </Text>
+            </View>
+            <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 10 }}>
+              Select up to 3 event types allowed for this Mandal plan.
+            </Text>
             <View style={styles.chipsRow}>
               {EVENT_TYPES.map(e => {
                 const active = selectedTypes.includes(e.id);
@@ -255,47 +267,47 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8F8F6' },
+  safe: { flex: 1, backgroundColor: '#F8F7F4' },
   container: { padding: 20, paddingBottom: 40 },
   header: { marginBottom: 20, alignItems: 'center' },
   badge: {
     backgroundColor: '#FEF3C7',
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 14,
+    paddingVertical: 4.5,
+    borderRadius: 20,
     marginBottom: 8
   },
-  badgeText: { color: '#B45309', fontWeight: '800', fontSize: 11 },
-  title: { fontSize: 24, fontWeight: '800', color: '#17233C', textAlign: 'center', marginBottom: 6 },
-  subtitle: { fontSize: 13.5, color: '#6B7280', textAlign: 'center', lineHeight: 19 },
+  badgeText: { color: '#B45309', fontWeight: '800', fontSize: 11, letterSpacing: 0.5 },
+  title: { fontSize: 24, fontWeight: '800', color: '#172554', textAlign: 'center', marginBottom: 6, letterSpacing: -0.3 },
+  subtitle: { fontSize: 13.5, color: '#64748B', textAlign: 'center', lineHeight: 19 },
 
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 18,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    borderColor: 'rgba(23, 37, 84, 0.06)',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 2
   },
-  cardHeading: { fontSize: 17, fontWeight: '800', color: '#17233C', marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6, marginTop: 10 },
+  cardHeading: { fontSize: 17, fontWeight: '800', color: '#172554', marginBottom: 14 },
+  label: { fontSize: 12.5, fontWeight: '700', color: '#172554', marginBottom: 6, marginTop: 10 },
   input: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F8F7F4',
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    padding: 12,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    padding: 13,
     fontSize: 14.5,
-    color: '#17233C'
+    color: '#172554'
   },
   inputDisabled: {
-    backgroundColor: '#F3F4F6',
-    color: '#9CA3AF'
+    backgroundColor: 'rgba(23, 37, 84, 0.04)',
+    color: '#94A3B8'
   },
 
   logoRow: {
@@ -304,29 +316,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF7ED',
     borderWidth: 1,
     borderColor: '#FED7AA',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 12,
     marginTop: 4
   },
-  logoPreview: { width: 56, height: 56, borderRadius: 10, backgroundColor: '#fff' },
+  logoPreview: { width: 56, height: 56, borderRadius: 10, backgroundColor: '#FFFFFF' },
   logoPlaceholder: {
     width: 56,
     height: 56,
     borderRadius: 10,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#FED7AA',
     alignItems: 'center',
     justifyContent: 'center'
   },
   uploadBtn: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F97316',
     paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignItems: 'center'
+    paddingHorizontal: 13,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2
   },
-  uploadBtnText: { color: '#fff', fontWeight: '700', fontSize: 12.5 },
+  uploadBtnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 12 },
   logoNote: { fontSize: 11, color: '#9A3412', marginTop: 4 },
 
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
@@ -335,30 +352,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8F7F4',
     gap: 6
   },
-  chipActive: { borderColor: '#FF6B00', backgroundColor: '#FFF7ED' },
+  chipActive: { borderColor: '#F97316', backgroundColor: 'rgba(249, 115, 22, 0.08)' },
   chipIcon: { fontSize: 15 },
-  chipText: { fontSize: 12.5, color: '#4B5563', fontWeight: '600' },
-  chipTextActive: { color: '#FF6B00', fontWeight: '800' },
+  chipText: { fontSize: 12.5, color: '#475569', fontWeight: '700' },
+  chipTextActive: { color: '#F97316', fontWeight: '800' },
 
   submitButton: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F97316',
     paddingVertical: 16,
-    borderRadius: 14,
+    borderRadius: 16,
     alignItems: 'center',
     marginTop: 8,
-    shadowColor: '#FF6B00',
+    shadowColor: '#F97316',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 3
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 4
   },
-  submitButtonText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  submitButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
   logoutLink: { alignItems: 'center', marginTop: 14 },
-  logoutText: { color: '#EF4444', fontSize: 13.5, fontWeight: '600' }
+  logoutText: { color: '#EF4444', fontSize: 13.5, fontWeight: '700' }
 });

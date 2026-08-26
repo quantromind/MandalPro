@@ -14,11 +14,21 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const loadFromStorage = async () => {
-    const rawUser = await AsyncStorage.getItem('mandalpro_user');
-    const rawMandal = await AsyncStorage.getItem('mandalpro_mandal');
-    if (rawUser) setUser(JSON.parse(rawUser));
-    if (rawMandal) setMandal(JSON.parse(rawMandal));
-    setLoading(false);
+    try {
+      const rawUser = await AsyncStorage.getItem('mandalpro_user');
+      const rawMandal = await AsyncStorage.getItem('mandalpro_mandal');
+      const rawToken = await AsyncStorage.getItem('mandalpro_token');
+      if (rawUser) setUser(JSON.parse(rawUser));
+      if (rawMandal) setMandal(JSON.parse(rawMandal));
+      if (rawToken) {
+        // Silently sync latest user and mandal data from server
+        refreshProfile();
+      }
+    } catch (e) {
+      console.log('Error reading storage', e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const persistMandal = async (m) => {
@@ -31,8 +41,11 @@ export const AuthProvider = ({ children }) => {
     const { data } = await client.post('/auth/login', { email, password });
     await AsyncStorage.setItem('mandalpro_token', data.token);
     await AsyncStorage.setItem('mandalpro_user', JSON.stringify(data.user));
+    if (data.mandal) {
+      await AsyncStorage.setItem('mandalpro_mandal', JSON.stringify(data.mandal));
+      setMandal(data.mandal);
+    }
     setUser(data.user);
-    if (data.mandal) await persistMandal(data.mandal);
     return data;
   };
 
@@ -40,8 +53,24 @@ export const AuthProvider = ({ children }) => {
     const { data } = await client.post('/auth/login-otp', { email, code });
     await AsyncStorage.setItem('mandalpro_token', data.token);
     await AsyncStorage.setItem('mandalpro_user', JSON.stringify(data.user));
+    
+    let mandalData = data.mandal || null;
+    if (!mandalData && data.user?.mandalId) {
+      try {
+        const mandalRes = await client.get('/mandal');
+        if (mandalRes.data) mandalData = mandalRes.data;
+      } catch (e) {
+        console.log('[AuthContext] Could not fetch mandal after OTP login', e);
+      }
+    }
+
+    if (mandalData) {
+      await AsyncStorage.setItem('mandalpro_mandal', JSON.stringify(mandalData));
+      setMandal(mandalData);
+    }
+    
+    // Set user after mandal is prepared so RootNavigator renders the correct screen immediately
     setUser(data.user);
-    if (data.mandal) await persistMandal(data.mandal);
     return data;
   };
 
@@ -49,23 +78,39 @@ export const AuthProvider = ({ children }) => {
     const { data } = await client.post('/auth/register', payload);
     await AsyncStorage.setItem('mandalpro_token', data.token);
     await AsyncStorage.setItem('mandalpro_user', JSON.stringify(data.user));
+    if (data.mandal) {
+      await AsyncStorage.setItem('mandalpro_mandal', JSON.stringify(data.mandal));
+      setMandal(data.mandal);
+    }
     setUser(data.user);
-    if (data.mandal) await persistMandal(data.mandal);
     return data;
   };
 
   const refreshProfile = async () => {
     try {
-      const [userRes, mandalRes] = await Promise.all([
-        client.get('/auth/me'),
-        mandal ? client.get('/mandal') : Promise.resolve({ data: null })
-      ]);
+      const userRes = await client.get('/auth/me');
       if (userRes.data) {
-        await AsyncStorage.setItem('mandalpro_user', JSON.stringify(userRes.data));
-        setUser(userRes.data);
-      }
-      if (mandalRes.data) {
-        await persistMandal(mandalRes.data);
+        const userData = {
+          id: userRes.data.id || userRes.data._id,
+          name: userRes.data.name,
+          email: userRes.data.email,
+          mobile: userRes.data.mobile,
+          role: userRes.data.role,
+          mandalId: userRes.data.mandalId
+        };
+        await AsyncStorage.setItem('mandalpro_user', JSON.stringify(userData));
+        setUser(userData);
+
+        if (userRes.data.mandal) {
+          await persistMandal(userRes.data.mandal);
+        } else if (userData.mandalId) {
+          try {
+            const mandalRes = await client.get('/mandal');
+            if (mandalRes.data) await persistMandal(mandalRes.data);
+          } catch (mErr) {
+            console.log('Failed to fetch mandal in refreshProfile', mErr);
+          }
+        }
       }
     } catch (err) {
       console.log('Failed to refresh profile', err);

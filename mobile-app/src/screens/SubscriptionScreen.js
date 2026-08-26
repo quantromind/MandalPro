@@ -45,7 +45,7 @@ function getRecommendedPlan(mandal) {
 }
 
 export default function SubscriptionScreen({ navigation }) {
-  const { user, mandal, updateMandal } = useAuth();
+  const { user, mandal, updateMandal, logout } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState(getRecommendedPlan(mandal));
   const [annual, setAnnual] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -67,7 +67,7 @@ export default function SubscriptionScreen({ navigation }) {
       return;
     }
 
-    // All plans require payment
+    // All plans require payment / activation
     Alert.alert(
       `${selectedPlan} Plan`,
       `Select your payment method for ${effectivePrice(PLANS.find(p => p.id === selectedPlan))}${annual ? '/month (annual)' : '/month'}:`,
@@ -79,8 +79,27 @@ export default function SubscriptionScreen({ navigation }) {
             setLoading(true);
             try {
               await client.patch('/onboarding/plan', { plan: selectedPlan });
-              await updateMandal({ checklist: { ...mandal?.checklist, planSelected: true }, plan: selectedPlan, planStatus: 'Active' });
-              Alert.alert('Success!', `${selectedPlan} plan activated!`);
+              await updateMandal({
+                ...mandal,
+                checklist: { ...mandal?.checklist, planSelected: true, profileComplete: true },
+                onboardingComplete: true,
+                plan: selectedPlan,
+                planStatus: 'Active'
+              });
+              Alert.alert(
+                'Plan Activated 🎉',
+                `Your ${selectedPlan} plan is now active! Welcome to Apla Mandal.`,
+                [
+                  {
+                    text: 'Continue to Dashboard →',
+                    onPress: () => {
+                      if (navigation?.canGoBack && navigation.canGoBack()) {
+                        navigation.goBack();
+                      }
+                    }
+                  }
+                ]
+              );
             } catch (e) {
               Alert.alert('Error', e.response?.data?.message || 'Activation failed');
             } finally {
@@ -144,10 +163,29 @@ export default function SubscriptionScreen({ navigation }) {
                       razorpay_signature: res.razorpay_signature,
                       plan: checkoutConfig.selectedPlan
                     });
-                    await updateMandal({ checklist: { ...mandal?.checklist, planSelected: true }, plan: checkoutConfig.selectedPlan, planStatus: 'Active' });
-                    Alert.alert('Success!', `${checkoutConfig.selectedPlan} plan activated!`);
+                    await updateMandal({
+                      ...mandal,
+                      checklist: { ...mandal?.checklist, planSelected: true, profileComplete: true },
+                      onboardingComplete: true,
+                      plan: checkoutConfig.selectedPlan,
+                      planStatus: 'Active'
+                    });
+                    Alert.alert(
+                      'Payment Successful 🎉',
+                      `Your ${checkoutConfig.selectedPlan} plan is now active! Welcome to Apla Mandal.`,
+                      [
+                        {
+                          text: 'Continue to Dashboard →',
+                          onPress: () => {
+                            if (navigation?.canGoBack && navigation.canGoBack()) {
+                              navigation.goBack();
+                            }
+                          }
+                        }
+                      ]
+                    );
                   } else if (data.type === 'cancel' || data.type === 'modal_dismissed') {
-                    // Modal dismissed or closed; user can retry with the button on screen or cancel
+                    // Modal dismissed or closed
                   } else if (data.type === 'error') {
                     Alert.alert('Payment Failed', data.error?.description || 'Payment was unsuccessful.');
                   }
@@ -167,11 +205,18 @@ export default function SubscriptionScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
 
+        {/* Back Button if navigated from Settings/Profile */}
+        {navigation.canGoBack() && (
+          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+            <Text style={s.backBtnText}>← Back to Profile</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Header */}
         <View style={s.header}>
-          <Text style={s.brand}>🪔 MandalPro</Text>
+          <Text style={s.brand}>🪔 Apla Mandal</Text>
           <Text style={s.title}>Choose your Plan</Text>
-          <Text style={s.sub}>Unlock the full power of MandalPro for your community.</Text>
+          <Text style={s.sub}>Unlock the full power of Apla Mandal for your community.</Text>
         </View>
 
         {/* Recommendation Banner */}
@@ -265,40 +310,59 @@ export default function SubscriptionScreen({ navigation }) {
         </TouchableOpacity>
 
         <Text style={s.footer}>🔒 Secure payments via Razorpay · Cancel anytime</Text>
+
+        <TouchableOpacity style={s.logoutLink} onPress={logout}>
+          <Text style={s.logoutText}>Cancel & Sign Out</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8F8F6', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+  safe: { flex: 1, backgroundColor: '#F8F7F4', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
   container: { padding: 20, paddingBottom: 40 },
+  backBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.06)'
+  },
+  backBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#172554',
+  },
   header: { alignItems: 'center', marginBottom: 24 },
-  brand: { color: '#FF6B00', fontSize: 16, fontWeight: '800', marginBottom: 8 },
-  title: { fontSize: 24, fontWeight: '800', color: '#17233C', textAlign: 'center', marginBottom: 6 },
-  sub: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 20 },
+  brand: { color: '#F97316', fontSize: 16, fontWeight: '800', marginBottom: 6 },
+  title: { fontSize: 24, fontWeight: '800', color: '#172554', textAlign: 'center', marginBottom: 6, letterSpacing: -0.3 },
+  sub: { fontSize: 13.5, color: '#64748B', textAlign: 'center', lineHeight: 20 },
 
   recBanner: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    backgroundColor: 'rgba(255,107,0,0.08)', borderRadius: 12,
-    padding: 14, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(255,107,0,0.2)'
+    backgroundColor: 'rgba(249, 115, 22, 0.08)', borderRadius: 16,
+    padding: 14, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(249, 115, 22, 0.25)'
   },
   recIcon: { fontSize: 20 },
-  recTitle: { fontSize: 13, fontWeight: '700', color: '#FF6B00', marginBottom: 2 },
-  recSub: { fontSize: 12, color: '#374151', lineHeight: 18 },
+  recTitle: { fontSize: 13, fontWeight: '800', color: '#F97316', marginBottom: 2 },
+  recSub: { fontSize: 12, color: '#172554', lineHeight: 18, fontWeight: '500' },
 
   billingRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 10, marginBottom: 20
   },
-  billingLabel: { fontSize: 14, color: '#9CA3AF', fontWeight: '600' },
-  billingActive: { color: '#17233C' },
-  saveBadge: { fontSize: 11, color: '#10B981', fontWeight: '700' },
+  billingLabel: { fontSize: 13.5, color: '#94A3B8', fontWeight: '700' },
+  billingActive: { color: '#172554' },
+  saveBadge: { fontSize: 11, color: '#10B981', fontWeight: '800' },
 
   planCard: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 18, marginBottom: 12,
-    borderWidth: 1.5, borderColor: '#E5E7EB',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    backgroundColor: '#FFFFFF', borderRadius: 18, padding: 18, marginBottom: 12,
+    borderWidth: 1.5, borderColor: 'rgba(23, 37, 84, 0.08)',
+    shadowColor: '#172554', shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
     position: 'relative', overflow: 'hidden'
   },
@@ -307,23 +371,25 @@ const s = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 4,
     borderBottomLeftRadius: 10
   },
-  badgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  badgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
   planTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 4 },
-  planName: { fontSize: 16, fontWeight: '800', marginBottom: 2 },
-  planTagline: { fontSize: 12, color: '#9CA3AF' },
-  planPrice: { fontSize: 20, fontWeight: '800', color: '#17233C' },
-  planPeriod: { fontSize: 11, color: '#9CA3AF' },
-  features: { marginTop: 14, borderTopWidth: 1, borderTopColor: '#F0F0EE', paddingTop: 12, gap: 8 },
+  planName: { fontSize: 16.5, fontWeight: '800', marginBottom: 2 },
+  planTagline: { fontSize: 12, color: '#64748B' },
+  planPrice: { fontSize: 20, fontWeight: '800', color: '#172554' },
+  planPeriod: { fontSize: 11, color: '#94A3B8', fontWeight: '600' },
+  features: { marginTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(23, 37, 84, 0.05)', paddingTop: 12, gap: 8 },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  featureDot: { fontSize: 13, fontWeight: '700' },
-  featureText: { fontSize: 13, color: '#374151', flex: 1 },
+  featureDot: { fontSize: 13, fontWeight: '800' },
+  featureText: { fontSize: 13, color: '#334155', flex: 1, fontWeight: '500' },
 
   ctaBtn: {
-    backgroundColor: '#FF6B00', borderRadius: 14, padding: 16,
-    alignItems: 'center', marginTop: 8, marginBottom: 12,
-    shadowColor: '#FF6B00', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25, shadowRadius: 10, elevation: 5
+    backgroundColor: '#F97316', borderRadius: 16, padding: 16,
+    alignItems: 'center', marginTop: 10, marginBottom: 12,
+    shadowColor: '#F97316', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28, shadowRadius: 10, elevation: 4
   },
-  ctaText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  footer: { textAlign: 'center', fontSize: 12, color: '#9CA3AF' }
+  ctaText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+  footer: { textAlign: 'center', fontSize: 12, color: '#94A3B8', fontWeight: '500' },
+  logoutLink: { alignItems: 'center', marginTop: 14, paddingVertical: 8 },
+  logoutText: { color: '#EF4444', fontSize: 13.5, fontWeight: '700' }
 });

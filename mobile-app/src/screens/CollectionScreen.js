@@ -105,99 +105,114 @@ export default function CollectionScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#F8F7F4' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         
-        {/* Donor Name */}
-        <Text style={styles.label}>Donor Name *</Text>
-        <TextInput
-          style={[styles.input, errors.donorName && styles.inputError]}
-          placeholder="e.g. Ramesh Patil"
-          placeholderTextColor="#9ca3af"
-          value={donorName}
-          onChangeText={(t) => {
-            setDonorName(t);
-            if (errors.donorName) setErrors(prev => ({ ...prev, donorName: null }));
-          }}
-        />
-        {errors.donorName ? <Text style={styles.errorText}>{errors.donorName}</Text> : null}
+        {/* Form Card Container */}
+        <View style={styles.formCard}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardHeaderTitle}>✨ Record New Donation</Text>
+            <Text style={styles.cardHeaderSub}>Issue an official digital WhatsApp receipt</Text>
+          </View>
 
-        {/* Donor Mobile */}
-        <View style={styles.labelRow}>
-          <Text style={styles.label}>Donor Mobile (Optional)</Text>
-          <Text style={styles.charCount}>{donorMobile.length}/10</Text>
+          {/* Donor Name */}
+          <Text style={styles.label}>Donor Full Name *</Text>
+          <TextInput
+            style={[styles.input, errors.donorName && styles.inputError]}
+            placeholder="e.g. Ramesh Patil"
+            placeholderTextColor="#94A3B8"
+            value={donorName}
+            onChangeText={(t) => {
+              setDonorName(t);
+              if (errors.donorName) setErrors(prev => ({ ...prev, donorName: null }));
+            }}
+          />
+          {errors.donorName ? <Text style={styles.errorText}>{errors.donorName}</Text> : null}
+
+          {/* Donor Mobile */}
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>WhatsApp / Mobile (Optional)</Text>
+            <Text style={styles.charCount}>{donorMobile.length}/10</Text>
+          </View>
+          <TextInput
+            style={[styles.input, errors.donorMobile && styles.inputError]}
+            placeholder="10-digit mobile number"
+            placeholderTextColor="#94A3B8"
+            value={donorMobile}
+            onChangeText={handleMobileChange}
+            keyboardType="number-pad"
+            maxLength={10}
+          />
+          {errors.donorMobile ? <Text style={styles.errorText}>{errors.donorMobile}</Text> : null}
+
+          {/* Amount */}
+          <Text style={styles.label}>Donation Amount (₹) *</Text>
+          <TextInput
+            style={[styles.input, styles.amountInput, errors.amount && styles.inputError]}
+            placeholder="₹ 0"
+            placeholderTextColor="#CBD5E1"
+            value={amount}
+            onChangeText={handleAmountChange}
+            keyboardType="number-pad"
+          />
+          {errors.amount ? <Text style={styles.errorText}>{errors.amount}</Text> : null}
+
+          {/* Quick Amount Chips */}
+          <View style={styles.quickRow}>
+            {QUICK_AMOUNTS.map((amt) => (
+              <TouchableOpacity
+                key={amt}
+                style={[styles.quickChip, amount === String(amt) && styles.quickChipActive]}
+                onPress={() => {
+                  setAmount(String(amt));
+                  if (errors.amount) setErrors(prev => ({ ...prev, amount: null }));
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.quickChipText, amount === String(amt) && styles.quickChipTextActive]}>
+                  ₹{amt.toLocaleString('en-IN')}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Purpose */}
+          <Text style={styles.label}>Donation Purpose / Seva (Optional)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. Visarjan Prasad, Aarti, Mahaprasad"
+            placeholderTextColor="#94A3B8"
+            value={purpose}
+            onChangeText={setPurpose}
+          />
+
+          {/* Payment Mode */}
+          <Text style={styles.label}>Payment Method</Text>
+          <View style={styles.modeRow}>
+            {MODES.map((m) => (
+              <TouchableOpacity
+                key={m}
+                style={[styles.modeChip, paymentMode === m && styles.modeChipActive]}
+                onPress={() => setPaymentMode(m)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.modeChipText, paymentMode === m && styles.modeChipTextActive]}>
+                  {m === 'cash' ? '💵 Cash' : m === 'upi' ? '📱 UPI' : '💳 Card'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Submit Button */}
+          <TouchableOpacity
+            style={[styles.button, saving && { opacity: 0.7 }]}
+            onPress={handleSave}
+            disabled={saving}
+            activeOpacity={0.88}
+          >
+            <Text style={styles.buttonText}>{saving ? 'Generating Receipt…' : 'Generate & Issue Receipt →'}</Text>
+          </TouchableOpacity>
         </View>
-        <TextInput
-          style={[styles.input, errors.donorMobile && styles.inputError]}
-          placeholder="10-digit mobile number"
-          placeholderTextColor="#9ca3af"
-          value={donorMobile}
-          onChangeText={handleMobileChange}
-          keyboardType="number-pad"
-          maxLength={10}
-        />
-        {errors.donorMobile ? <Text style={styles.errorText}>{errors.donorMobile}</Text> : null}
-
-        {/* Amount */}
-        <Text style={styles.label}>Amount (₹) *</Text>
-        <TextInput
-          style={[styles.input, styles.amountInput, errors.amount && styles.inputError]}
-          placeholder="₹ 0"
-          placeholderTextColor="#9ca3af"
-          value={amount}
-          onChangeText={handleAmountChange}
-          keyboardType="number-pad"
-        />
-        {errors.amount ? <Text style={styles.errorText}>{errors.amount}</Text> : null}
-
-        {/* Quick Amount Chips */}
-        <View style={styles.quickRow}>
-          {QUICK_AMOUNTS.map((amt) => (
-            <TouchableOpacity
-              key={amt}
-              style={[styles.quickChip, amount === String(amt) && styles.quickChipActive]}
-              onPress={() => {
-                setAmount(String(amt));
-                if (errors.amount) setErrors(prev => ({ ...prev, amount: null }));
-              }}
-            >
-              <Text style={[styles.quickChipText, amount === String(amt) && styles.quickChipTextActive]}>
-                ₹{amt.toLocaleString('en-IN')}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Purpose */}
-        <Text style={styles.label}>Purpose (Optional)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. Visarjan Prasad, Aarti, Decoration"
-          placeholderTextColor="#9ca3af"
-          value={purpose}
-          onChangeText={setPurpose}
-        />
-
-        {/* Payment Mode */}
-        <Text style={styles.label}>Payment Mode</Text>
-        <View style={styles.modeRow}>
-          {MODES.map((m) => (
-            <TouchableOpacity
-              key={m}
-              style={[styles.modeChip, paymentMode === m && styles.modeChipActive]}
-              onPress={() => setPaymentMode(m)}
-            >
-              <Text style={[styles.modeChipText, paymentMode === m && styles.modeChipTextActive]}>
-                {m === 'cash' ? '💵 Cash' : m === 'upi' ? '📱 UPI' : '💳 Card'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Submit Button */}
-        <TouchableOpacity style={[styles.button, saving && { opacity: 0.7 }]} onPress={handleSave} disabled={saving}>
-          <Text style={styles.buttonText}>{saving ? 'Saving…' : 'Generate Receipt →'}</Text>
-        </TouchableOpacity>
       </ScrollView>
 
       {/* Digital Receipt Modal with WhatsApp Sharing */}
@@ -216,52 +231,109 @@ export default function CollectionScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F8F6', padding: 20 },
-  label: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6, marginTop: 14 },
+  container: { flex: 1, backgroundColor: '#F8F7F4' },
+  contentContainer: { padding: 16, paddingBottom: 32 },
+  formCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.06)',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2
+  },
+  cardHeader: { marginBottom: 10, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(23, 37, 84, 0.05)' },
+  cardHeaderTitle: { fontSize: 18, fontWeight: '800', color: '#172554' },
+  cardHeaderSub: { fontSize: 12.5, color: '#64748B', marginTop: 2 },
+
+  label: { fontSize: 12.5, fontWeight: '700', color: '#172554', marginBottom: 6, marginTop: 14 },
   labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 },
-  charCount: { fontSize: 12, color: '#9CA3AF', fontWeight: '600' },
+  charCount: { fontSize: 11.5, color: '#94A3B8', fontWeight: '600' },
   input: {
-    backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#E5E7EB',
-    borderRadius: 12, padding: 14, fontSize: 15, color: '#17233C'
+    backgroundColor: '#F8F7F4',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    padding: 13,
+    fontSize: 14.5,
+    color: '#172554'
   },
   amountInput: {
-    fontSize: 20, fontWeight: '700', color: '#FF6B00'
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#F97316',
+    backgroundColor: 'rgba(249, 115, 22, 0.03)',
+    borderColor: 'rgba(249, 115, 22, 0.25)'
   },
   inputError: {
-    borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.02)'
+    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2'
   },
   errorText: {
-    color: '#EF4444', fontSize: 12, marginTop: 4, fontWeight: '500'
+    color: '#EF4444',
+    fontSize: 11.5,
+    marginTop: 4,
+    fontWeight: '600'
   },
   quickRow: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10, marginBottom: 4
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 10,
+    marginBottom: 4
   },
   quickChip: {
-    backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB',
-    borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 20,
+    paddingVertical: 7,
+    paddingHorizontal: 13
   },
   quickChipActive: {
-    backgroundColor: '#FF6B00', borderColor: '#FF6B00'
+    backgroundColor: '#F97316',
+    borderColor: '#F97316'
   },
   quickChipText: {
-    fontSize: 12, fontWeight: '600', color: '#4B5563'
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569'
   },
   quickChipTextActive: {
-    color: '#fff', fontWeight: '700'
+    color: '#FFFFFF',
+    fontWeight: '800'
   },
   modeRow: { flexDirection: 'row', gap: 10, marginTop: 6 },
   modeChip: {
-    flex: 1, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#E5E7EB',
-    borderRadius: 12, paddingVertical: 12, alignItems: 'center'
+    flex: 1,
+    backgroundColor: '#F8F7F4',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center'
   },
-  modeChipActive: { backgroundColor: '#FF6B00', borderColor: '#FF6B00' },
-  modeChipText: { color: '#374151', fontWeight: '700', fontSize: 13 },
-  modeChipTextActive: { color: '#fff' },
+  modeChipActive: {
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+    borderColor: '#F97316'
+  },
+  modeChipText: { color: '#475569', fontWeight: '700', fontSize: 13 },
+  modeChipTextActive: { color: '#F97316', fontWeight: '800' },
   button: {
-    backgroundColor: '#FF6B00', padding: 16, borderRadius: 14,
-    alignItems: 'center', marginTop: 30, marginBottom: 40,
-    shadowColor: '#FF6B00', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25, shadowRadius: 8, elevation: 4
+    backgroundColor: '#F97316',
+    padding: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginTop: 26,
+    marginBottom: 8,
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 4
   },
-  buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 }
+  buttonText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15.5 }
 });

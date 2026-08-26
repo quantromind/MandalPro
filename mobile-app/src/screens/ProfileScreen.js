@@ -14,7 +14,7 @@ const MEMBER_ROLES = [
   { id: 'secretary', label: 'Secretary' }
 ];
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
   const { user, mandal, logout, refreshProfile, updateMandal } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -209,39 +209,64 @@ export default function ProfileScreen() {
   return (
     <ScrollView 
       style={styles.container} 
-      contentContainerStyle={{ padding: 18 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      contentContainerStyle={styles.contentContainer}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F97316']} tintColor="#F97316" />}
+      showsVerticalScrollIndicator={false}
     >
       
-      {/* User Info Card */}
-      <View style={styles.card}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase()}</Text>
+      {/* ── Page Header ── */}
+      <View style={styles.pageHeaderSection}>
+        <View style={styles.pageHeaderTitleRow}>
+          <View style={styles.orangeAccentBar} />
+          <Text style={styles.pageHeaderTitle}>Mandal Profile</Text>
         </View>
-        <Text style={styles.title}>{user?.name}</Text>
-        <Text style={styles.subtitle}>{user?.email}</Text>
-        <View style={[styles.badge, isPresident ? styles.badgePresident : styles.badgeMember]}>
-          <Text style={[styles.badgeText, isPresident ? styles.badgeTextPresident : styles.badgeTextMember]}>
+        <Text style={styles.pageHeaderSub}>Manage your Mandal workspace, team & settings</Text>
+      </View>
+      
+      {/* ── Profile Hero Card ── */}
+      <View style={styles.heroCard}>
+        <View style={styles.avatarWrapper}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() || 'M'}</Text>
+          </View>
+        </View>
+        <Text style={styles.heroName}>{user?.name || 'Mandal User'}</Text>
+        <Text style={styles.heroEmail}>{user?.email}</Text>
+        
+        <View style={[styles.rolePill, isPresident ? styles.rolePillPresident : styles.rolePillMember]}>
+          <Text style={[styles.rolePillText, isPresident ? styles.rolePillTextPresident : styles.rolePillTextMember]}>
             {user?.role === 'president' ? '👑 MANDAL PRESIDENT' : '🛡️ MANDAL MEMBER / COLLECTOR'}
           </Text>
         </View>
         
         {user?.mobile ? (
-          <Text style={styles.info}>📞 {user.mobile}</Text>
+          <View style={styles.heroPhoneRow}>
+            <Text style={styles.phoneIcon}>📞</Text>
+            <Text style={styles.heroPhoneText}>{user.mobile}</Text>
+          </View>
         ) : null}
       </View>
 
       {/* Member Permissions & Info Box (For Non-President Members) */}
       {!isPresident && mandal && (
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Mandal Details</Text>
+          <View style={styles.sectionHeaderRow}>
+            <View>
+              <Text style={styles.sectionTitle}>Mandal Details</Text>
+              <Text style={styles.sectionSub}>Authorized access information</Text>
+            </View>
+            <View style={styles.memberAccessBadge}>
+              <Text style={styles.memberAccessBadgeText}>Active ✓</Text>
+            </View>
+          </View>
+
           <View style={styles.row}>
             <Text style={styles.label}>Mandal Name</Text>
             <Text style={styles.value}>{mandal.name}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Account Access</Text>
-            <Text style={[styles.value, { color: '#10B981', fontWeight: '700' }]}>Free Member Access ✓</Text>
+            <Text style={[styles.value, { color: '#15803D', fontWeight: '800' }]}>Free Member Access ✓</Text>
           </View>
 
           <View style={styles.memberPerksBox}>
@@ -258,23 +283,28 @@ export default function ProfileScreen() {
       {isPresident && (
         <View style={styles.card}>
           <View style={styles.sectionHeaderRow}>
-            <View style={{ flex: 1, paddingRight: 10 }}>
-              <Text style={styles.sectionTitle}>Team Members</Text>
+            <View style={{ flex: 1, paddingRight: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={styles.sectionTitle}>Team Members</Text>
+                <View style={styles.countBadge}>
+                  <Text style={styles.countBadgeText}>{members.length} {members.length === 1 ? 'Member' : 'Members'}</Text>
+                </View>
+              </View>
               <Text style={styles.sectionSub}>Add members to log in via OTP for free</Text>
             </View>
             <TouchableOpacity
               style={styles.addMemberBtn}
               onPress={() => setShowMemberModal(true)}
-              activeOpacity={0.85}
+              activeOpacity={0.88}
             >
               <Text style={styles.addMemberBtnText}>+ Add Member</Text>
             </TouchableOpacity>
           </View>
 
           {loadingMembers ? (
-            <ActivityIndicator color="#FF6B00" style={{ marginVertical: 20 }} />
+            <ActivityIndicator color="#F97316" style={{ marginVertical: 20 }} />
           ) : members.length > 0 ? (
-            <View style={{ width: '100%', marginTop: 8 }}>
+            <View style={{ width: '100%', marginTop: 6 }}>
               {members.map((m) => (
                 <View key={m._id} style={styles.memberListItem}>
                   <View style={styles.memberAvatar}>
@@ -283,14 +313,17 @@ export default function ProfileScreen() {
                   <View style={{ flex: 1, paddingRight: 8 }}>
                     <Text style={styles.memberName}>{m.name}</Text>
                     <Text style={styles.memberEmail}>{m.email}</Text>
-                    <Text style={styles.memberRoleTag}>
-                      {m.role === 'president' ? '👑 President' : m.role === 'treasurer' ? '💰 Treasurer' : m.role === 'secretary' ? '📝 Secretary' : '🛡️ Volunteer / Collector'}
-                    </Text>
+                    <View style={styles.memberRoleTagContainer}>
+                      <Text style={styles.memberRoleTag}>
+                        {m.role === 'president' ? '👑 President' : m.role === 'treasurer' ? '💰 Treasurer' : m.role === 'secretary' ? '📝 Secretary' : '🛡️ Volunteer'}
+                      </Text>
+                    </View>
                   </View>
                   {m.role !== 'president' && (
                     <TouchableOpacity
                       style={styles.removeMemberBtn}
                       onPress={() => handleRemoveMember(m._id, m.name)}
+                      activeOpacity={0.8}
                     >
                       <Text style={styles.removeMemberBtnText}>✕</Text>
                     </TouchableOpacity>
@@ -300,7 +333,7 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <View style={styles.noMembersBox}>
-              <Text style={styles.noMembersText}>No members added yet. Tap "+ Add Member" to add collectors.</Text>
+              <Text style={styles.noMembersText}>No members added yet. Tap "+ Add Member" to invite collectors.</Text>
             </View>
           )}
         </View>
@@ -309,7 +342,12 @@ export default function ProfileScreen() {
       {/* President Management: Branding & Mandal Info */}
       {isPresident && mandal && (
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Mandal Branding & Details</Text>
+          <View style={styles.sectionHeaderRow}>
+            <View>
+              <Text style={styles.sectionTitle}>Mandal Branding & Details</Text>
+              <Text style={styles.sectionSub}>Logo & official payment credentials</Text>
+            </View>
+          </View>
 
           {/* Logo Management */}
           <View style={styles.logoSection}>
@@ -325,12 +363,12 @@ export default function ProfileScreen() {
               </View>
             )}
 
-            <View style={{ flex: 1, marginLeft: 16 }}>
+            <View style={{ flex: 1, marginLeft: 14 }}>
               <TouchableOpacity
                 style={[styles.uploadBtn, uploadingLogo && { opacity: 0.7 }]}
                 onPress={pickLogo}
                 disabled={uploadingLogo}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
               >
                 {uploadingLogo ? (
                   <ActivityIndicator color="#fff" size="small" />
@@ -345,28 +383,67 @@ export default function ProfileScreen() {
           </View>
           
           <View style={styles.row}>
-            <Text style={styles.label}>Name</Text>
+            <Text style={styles.label}>Mandal Name</Text>
             <Text style={styles.value}>{mandal.name}</Text>
           </View>
           
           <View style={styles.row}>
-            <Text style={styles.label}>Subscription Plan</Text>
-            <Text style={styles.value}>{mandal.plan}</Text>
+            <Text style={styles.label}>Address</Text>
+            <Text style={styles.value}>{mandal.address || 'Not specified'}</Text>
           </View>
-          
+
           <View style={styles.row}>
-            <Text style={styles.label}>Plan Status</Text>
-            <Text style={[styles.value, { color: mandal.planStatus === 'Active' ? '#10B981' : '#EF4444' }]}>
-              {mandal.planStatus}
-            </Text>
+            <Text style={styles.label}>UPI ID</Text>
+            <Text style={styles.value}>{mandal.upiId || 'Not specified'}</Text>
           </View>
-          
-          {mandal.planRenewsAt && (
-            <View style={styles.row}>
-              <Text style={styles.label}>Renews On</Text>
-              <Text style={styles.value}>{new Date(mandal.planRenewsAt).toLocaleDateString()}</Text>
+        </View>
+      )}
+
+      {/* President Management: Subscription & Upgrade Plan */}
+      {isPresident && mandal && (
+        <View style={styles.card}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={{ flex: 1, paddingRight: 10 }}>
+              <Text style={styles.sectionTitle}>💎 Subscription Plan</Text>
+              <Text style={styles.sectionSub}>Manage features, limits & billing</Text>
             </View>
-          )}
+            <View style={[styles.planBadge, { backgroundColor: mandal.plan === 'Premium' ? '#EDE9FE' : mandal.plan === 'Pro' ? '#FFEDD5' : '#F1F5F9' }]}>
+              <Text style={[styles.planBadgeText, { color: mandal.plan === 'Premium' ? '#6C4DD9' : mandal.plan === 'Pro' ? '#F97316' : '#475569' }]}>
+                {mandal.plan || 'Basic'} Plan
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.planStatusCard}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <Text style={{ fontSize: 13, color: '#64748B', fontWeight: '600' }}>Status</Text>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: mandal.planStatus === 'Active' ? '#10B981' : '#EF4444' }}>
+                ● {mandal.planStatus || 'Active'}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: 13, color: '#64748B', fontWeight: '600' }}>Configured Events</Text>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#172554' }}>
+                {mandal.eventTypes?.length || 1} Event Types (Max 3)
+              </Text>
+            </View>
+            {mandal.planRenewsAt && (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+                <Text style={{ fontSize: 13, color: '#64748B', fontWeight: '600' }}>Renewal Date</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#172554' }}>
+                  {new Date(mandal.planRenewsAt).toLocaleDateString()}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={styles.upgradePlanBtn}
+            onPress={() => navigation?.navigate('Subscription')}
+            activeOpacity={0.88}
+          >
+            <Text style={styles.upgradePlanBtnText}>⭐ Upgrade / Change Subscription Plan →</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -377,8 +454,9 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-        <Text style={styles.logoutText}>Log Out</Text>
+      {/* Logout Action */}
+      <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.85}>
+        <Text style={styles.logoutText}>Log Out of Account</Text>
       </TouchableOpacity>
 
       {!isSuperAdmin && (
@@ -387,7 +465,7 @@ export default function ProfileScreen() {
           <Text style={styles.dangerText}>
             Permanently delete your account and associated records from the database. This action requires OTP verification and cannot be undone.
           </Text>
-          <TouchableOpacity style={styles.deleteAccountBtn} onPress={handleOpenDeleteModal}>
+          <TouchableOpacity style={styles.deleteAccountBtn} onPress={handleOpenDeleteModal} activeOpacity={0.8}>
             <Text style={styles.deleteAccountBtnText}>Delete Account Permanently</Text>
           </TouchableOpacity>
         </View>
@@ -553,134 +631,243 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F6',
+    backgroundColor: '#F8F7F4',
   },
+  contentContainer: {
+    padding: 18,
+    paddingBottom: 100,
+  },
+
+  /* ── Page Header ── */
+  pageHeaderSection: {
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  pageHeaderTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  orangeAccentBar: {
+    width: 4,
+    height: 20,
+    borderRadius: 2,
+    backgroundColor: '#F97316',
+  },
+  pageHeaderTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#172554',
+    letterSpacing: -0.3,
+  },
+  pageHeaderSub: {
+    fontSize: 12.5,
+    color: '#64748B',
+    marginTop: 3,
+    fontWeight: '500',
+    marginLeft: 12,
+  },
+
+  /* ── Profile Hero Card ── */
+  heroCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.06)',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  avatarWrapper: {
+    marginBottom: 12,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FFF1E7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(249, 115, 22, 0.25)',
+  },
+  avatarText: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#F97316',
+  },
+  heroName: {
+    fontSize: 21,
+    fontWeight: '800',
+    color: '#172554',
+    textAlign: 'center',
+    letterSpacing: -0.3,
+    marginBottom: 2,
+  },
+  heroEmail: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 12,
+    fontWeight: '500',
+  },
+  rolePill: {
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginBottom: 10,
+  },
+  rolePillPresident: {
+    backgroundColor: '#FEF3C7',
+  },
+  rolePillMember: {
+    backgroundColor: '#DCFCE7',
+  },
+  rolePillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  rolePillTextPresident: {
+    color: '#B45309',
+  },
+  rolePillTextMember: {
+    color: '#15803D',
+  },
+  heroPhoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+  },
+  phoneIcon: {
+    fontSize: 13,
+  },
+  heroPhoneText: {
+    fontSize: 13,
+    color: '#475569',
+    fontWeight: '600',
+  },
+
+  /* ── General Section Cards ── */
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
     padding: 18,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    borderColor: 'rgba(23, 37, 84, 0.06)',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 2,
   },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(255, 107, 0, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-    alignSelf: 'center'
-  },
-  avatarText: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#FF6B00',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#17233C',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  badge: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 16,
-    alignSelf: 'center',
-    marginBottom: 10
-  },
-  badgePresident: { backgroundColor: '#FEF3C7' },
-  badgeMember: { backgroundColor: '#DCFCE7' },
-  badgeText: { fontSize: 11.5, fontWeight: '800' },
-  badgeTextPresident: { color: '#B45309' },
-  badgeTextMember: { color: '#15803D' },
-  info: {
-    fontSize: 14,
-    color: '#4B5563',
-    textAlign: 'center',
-    marginTop: 2
-  },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 16.5,
     fontWeight: '800',
-    color: '#17233C',
-    marginBottom: 4,
+    color: '#172554',
+    letterSpacing: -0.2,
   },
   sectionSub: {
     fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 8,
+    color: '#64748B',
+    marginTop: 2,
+    fontWeight: '500',
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-    paddingBottom: 8,
+    marginBottom: 14,
+    paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6'
+    borderBottomColor: 'rgba(23, 37, 84, 0.05)',
+  },
+  countBadge: {
+    backgroundColor: '#FFF1E7',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  countBadgeText: {
+    color: '#F97316',
+    fontWeight: '800',
+    fontSize: 11,
   },
   addMemberBtn: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F97316',
     paddingVertical: 7,
-    paddingHorizontal: 12,
-    borderRadius: 8
+    paddingHorizontal: 13,
+    borderRadius: 10,
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   addMemberBtnText: {
-    color: '#fff',
-    fontSize: 12.5,
-    fontWeight: '700'
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
   },
+  memberAccessBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  memberAccessBadgeText: {
+    color: '#15803D',
+    fontWeight: '800',
+    fontSize: 11,
+  },
+
+  /* ── Team Member List ── */
   memberListItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6'
+    borderBottomColor: 'rgba(23, 37, 84, 0.04)',
   },
   memberAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#F3F4F6',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10
+    marginRight: 12,
   },
   memberAvatarText: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#374151'
+    fontWeight: '800',
+    color: '#172554',
   },
   memberName: {
     fontSize: 14.5,
-    fontWeight: '700',
-    color: '#17233C'
+    fontWeight: '800',
+    color: '#172554',
   },
   memberEmail: {
     fontSize: 12,
-    color: '#6B7280',
-    marginTop: 1
+    color: '#64748B',
+    marginTop: 1,
+  },
+  memberRoleTagContainer: {
+    marginTop: 3,
+    alignSelf: 'flex-start',
   },
   memberRoleTag: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#FF6B00',
-    marginTop: 2
+    fontWeight: '700',
+    color: '#F97316',
   },
   removeMemberBtn: {
     width: 28,
@@ -688,88 +875,95 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: '#FEE2E2',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   removeMemberBtnText: {
     color: '#EF4444',
-    fontSize: 12,
-    fontWeight: '700'
+    fontSize: 11,
+    fontWeight: '800',
   },
   noMembersBox: {
     padding: 16,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 10,
+    backgroundColor: '#F8F7F4',
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 6
+    marginTop: 4,
   },
   noMembersText: {
-    fontSize: 13,
-    color: '#6B7280',
-    textAlign: 'center'
+    fontSize: 12.5,
+    color: '#64748B',
+    textAlign: 'center',
   },
+
   memberPerksBox: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: 'rgba(16, 185, 129, 0.06)',
     borderWidth: 1,
-    borderColor: '#BBF7D0',
-    borderRadius: 12,
+    borderColor: 'rgba(16, 185, 129, 0.2)',
+    borderRadius: 14,
     padding: 14,
-    marginTop: 12
+    marginTop: 12,
   },
   perksTitle: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#166534',
-    marginBottom: 6
+    fontWeight: '800',
+    color: '#15803D',
+    marginBottom: 6,
   },
   perkItem: {
     fontSize: 12.5,
-    color: '#15803D',
+    color: '#166534',
     lineHeight: 18,
-    fontWeight: '500'
+    fontWeight: '500',
   },
+
+  /* ── Mandal Logo & Details ── */
   logoSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
-    backgroundColor: '#FFF7ED',
+    backgroundColor: '#FFF1E7',
     borderWidth: 1,
     borderColor: '#FED7AA',
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 14,
     marginVertical: 12,
   },
   mandalLogoPreview: {
     width: 60,
     height: 60,
-    borderRadius: 10,
-    backgroundColor: '#fff',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#FED7AA',
   },
   mandalLogoPlaceholder: {
     width: 60,
     height: 60,
-    borderRadius: 10,
-    backgroundColor: '#fff',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#FED7AA',
     justifyContent: 'center',
     alignItems: 'center',
   },
   placeholderIcon: {
-    fontSize: 26,
+    fontSize: 24,
   },
   uploadBtn: {
-    backgroundColor: '#FF6B00',
-    paddingVertical: 9,
+    backgroundColor: '#F97316',
+    paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   uploadBtnText: {
     color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 12.5,
+    fontWeight: '800',
+    fontSize: 12,
   },
   logoHint: {
     fontSize: 11,
@@ -781,70 +975,120 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F9FAFB',
+    borderBottomColor: 'rgba(23, 37, 84, 0.04)',
   },
   label: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  value: {
-    fontSize: 14,
-    color: '#111827',
+    fontSize: 13,
+    color: '#64748B',
     fontWeight: '600',
   },
-  logoutBtn: {
-    backgroundColor: '#374151',
-    paddingVertical: 14,
+  value: {
+    fontSize: 13.5,
+    color: '#172554',
+    fontWeight: '700',
+  },
+
+  /* ── Subscription Card ── */
+  planBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  planBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  planStatusCard: {
+    backgroundColor: '#F8F7F4',
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.06)',
+    borderRadius: 14,
+    padding: 14,
+    marginVertical: 10,
+  },
+  upgradePlanBtn: {
+    backgroundColor: '#F97316',
+    paddingVertical: 13,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 6,
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  upgradePlanBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '800',
+  },
+
+  info: {
+    fontSize: 13.5,
+    color: '#475569',
+    marginTop: 2,
+    lineHeight: 19,
+  },
+
+  /* ── Logout & Danger Zone ── */
+  logoutBtn: {
+    backgroundColor: '#172554',
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 6,
     marginBottom: 16,
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
   },
   logoutText: {
-    color: '#fff',
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontWeight: '800',
     fontSize: 15,
   },
   dangerCard: {
     backgroundColor: '#FEF2F2',
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 18,
-    marginBottom: 40,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#FCA5A5',
+    borderColor: '#FECACA',
   },
   dangerTitle: {
-    fontSize: 16,
+    fontSize: 15.5,
     fontWeight: '800',
     color: '#DC2626',
     marginBottom: 4,
   },
   dangerText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#991B1B',
-    lineHeight: 18,
+    lineHeight: 17,
     marginBottom: 14,
   },
   deleteAccountBtn: {
     borderWidth: 1.5,
     borderColor: '#DC2626',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingVertical: 11,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
   },
   deleteAccountBtnText: {
     color: '#DC2626',
-    fontWeight: '700',
-    fontSize: 14,
+    fontWeight: '800',
+    fontSize: 13,
   },
   warningBox: {
     backgroundColor: '#FEE2E2',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     borderLeftWidth: 3,
     borderLeftColor: '#DC2626',
     marginVertical: 14,
@@ -874,43 +1118,117 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   resendLinkText: {
-    color: '#FF6B00',
+    color: '#F97316',
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
-  /* Modal */
+  /* ── Modals ── */
   modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end'
+    flex: 1,
+    backgroundColor: 'rgba(23, 37, 84, 0.45)',
+    justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    padding: 20, paddingBottom: 30
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 22,
+    paddingBottom: 34,
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 10,
   },
   sheetHandle: {
-    width: 40, height: 4, backgroundColor: '#D1D5DB', borderRadius: 2,
-    alignSelf: 'center', marginBottom: 14
+    width: 44,
+    height: 5,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginBottom: 16,
   },
-  modalHeading: { fontSize: 20, fontWeight: '800', color: '#17233C', marginBottom: 4 },
-  modalSubheading: { fontSize: 13, color: '#6B7280', marginBottom: 16 },
-  inputLabel: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6, marginTop: 10 },
+  modalHeading: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#172554',
+    marginBottom: 4,
+  },
+  modalSubheading: {
+    fontSize: 13,
+    color: '#64748B',
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  inputLabel: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#172554',
+    marginBottom: 6,
+    marginTop: 10,
+  },
   input: {
-    backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: '#E5E7EB',
-    borderRadius: 12, padding: 12, fontSize: 14.5, color: '#17233C'
+    backgroundColor: '#F8F7F4',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    padding: 13,
+    fontSize: 14.5,
+    color: '#172554',
   },
-  roleChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  roleChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
   roleChip: {
-    backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB',
-    paddingVertical: 6, paddingHorizontal: 10, borderRadius: 16
+    backgroundColor: '#F8F7F4',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 16,
   },
-  roleChipActive: { backgroundColor: '#FF6B00', borderColor: '#FF6B00' },
-  roleChipText: { fontSize: 12, color: '#4B5563', fontWeight: '600' },
-  roleChipTextActive: { color: '#fff', fontWeight: '700' },
+  roleChipActive: {
+    backgroundColor: '#F97316',
+    borderColor: '#F97316',
+  },
+  roleChipText: {
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '700',
+  },
+  roleChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
   submitBtn: {
-    backgroundColor: '#FF6B00', paddingVertical: 14, borderRadius: 12,
-    alignItems: 'center', marginTop: 18
+    backgroundColor: '#F97316',
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 20,
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  submitBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  cancelBtn: { paddingVertical: 10, alignItems: 'center', marginTop: 6 },
-  cancelBtnText: { color: '#6B7280', fontSize: 14, fontWeight: '600' }
+  submitBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 15,
+  },
+  cancelBtn: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  cancelBtnText: {
+    color: '#64748B',
+    fontSize: 14,
+    fontWeight: '700',
+  },
 });
