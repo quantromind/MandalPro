@@ -169,7 +169,7 @@ const Settings = () => {
           <div className="card" style={{ marginBottom: 16 }}>
             <h2 className="text-h2" style={{ fontSize: 18, marginBottom: 12 }}>Legal &amp; Compliance</h2>
             <p className="text-sub mb-3" style={{ fontSize: 13 }}>
-              MandalPro platform policies, terms of service, and regulatory disclosures.
+              Apla Mandal platform policies, terms of service, and regulatory disclosures.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Link 

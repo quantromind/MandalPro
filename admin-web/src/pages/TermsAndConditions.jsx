@@ -24,7 +24,6 @@ const TermsAndConditions = () => {
           <nav className="legal-nav-links">
             <Link to="/privacy-policy" className="legal-nav-link">Privacy Policy</Link>
             <Link to="/terms-and-conditions" className="legal-nav-link active">Terms &amp; Conditions</Link>
-            <Link to="/login" className="btn btn-outline btn-sm">Sign In</Link>
           </nav>
         </div>
       </header>
@@ -40,7 +39,7 @@ const TermsAndConditions = () => {
 
           <div className="legal-intro">
             <p>
-              These terms govern use of the MandalPro platform, operated by <strong>Quantromind Pvt. Ltd.</strong> By creating an account, you agree to them.
+              These terms govern use of the Apla Mandal platform, operated by <strong>Quantromind Pvt. Ltd.</strong> By creating an account, you agree to them.
             </p>
           </div>
 
@@ -48,7 +47,7 @@ const TermsAndConditions = () => {
             <section className="legal-section">
               <h2>1. The service</h2>
               <p>
-                MandalPro is a record-keeping and workflow tool for mandals &mdash; donation collection, digital receipts, expense approval, budgeting, event and volunteer management, and related AI-assisted features. MandalPro is not an accounting firm, chartered accountant, or legal advisor; using it doesn&apos;t substitute for professional tax, audit, or compliance advice.
+                Apla Mandal is a record-keeping and workflow tool for mandals &mdash; donation collection, digital receipts, expense approval, budgeting, event and volunteer management, and related AI-assisted features. Apla Mandal is not an accounting firm, chartered accountant, or legal advisor; using it doesn&apos;t substitute for professional tax, audit, or compliance advice.
               </p>
             </section>
 
@@ -76,7 +75,7 @@ const TermsAndConditions = () => {
             <section className="legal-section">
               <h2>5. Your responsibilities</h2>
               <p>
-                You agree to use MandalPro only for lawful donation and event management, keep records accurate, and not use the platform to launder funds, misrepresent donations, or violate any law applicable to your organization (including, where relevant, rules on receiving foreign contributions).
+                You agree to use Apla Mandal only for lawful donation and event management, keep records accurate, and not use the platform to launder funds, misrepresent donations, or violate any law applicable to your organization (including, where relevant, rules on receiving foreign contributions).
               </p>
             </section>
 
@@ -90,7 +89,7 @@ const TermsAndConditions = () => {
             <section className="legal-section">
               <h2>7. Limitation of liability</h2>
               <p>
-                MandalPro is provided &ldquo;as is.&rdquo; To the extent permitted by law, <strong>Quantromind Pvt. Ltd.</strong> isn&apos;t liable for indirect or consequential losses, or for decisions made on AI-generated suggestions that a human didn&apos;t independently verify.
+                Apla Mandal is provided &ldquo;as is.&rdquo; To the extent permitted by law, <strong>Quantromind Pvt. Ltd.</strong> isn&apos;t liable for indirect or consequential losses, or for decisions made on AI-generated suggestions that a human didn&apos;t independently verify.
               </p>
             </section>
 
@@ -126,8 +125,6 @@ const TermsAndConditions = () => {
             <div className="legal-links">
               <span>Related:</span>
               <Link to="/privacy-policy">Privacy Policy</Link>
-              <span>&bull;</span>
-              <Link to="/login">MandalPro Login</Link>
             </div>
             <p className="legal-copyright">&copy; {new Date().getFullYear()} Quantromind Pvt. Ltd. All rights reserved.</p>
           </div>

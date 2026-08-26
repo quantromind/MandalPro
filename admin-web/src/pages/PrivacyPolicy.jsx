@@ -24,7 +24,6 @@ const PrivacyPolicy = () => {
           <nav className="legal-nav-links">
             <Link to="/privacy-policy" className="legal-nav-link active">Privacy Policy</Link>
             <Link to="/terms-and-conditions" className="legal-nav-link">Terms &amp; Conditions</Link>
-            <Link to="/login" className="btn btn-outline btn-sm">Sign In</Link>
           </nav>
         </div>
       </header>
@@ -40,7 +39,7 @@ const PrivacyPolicy = () => {
 
           <div className="legal-intro">
             <p>
-              <strong>Quantromind Pvt. Ltd.</strong> (&ldquo;MandalPro&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;) operates the MandalPro platform for managing donation collection, receipts, expenses, events, and related activities for community organizations (&ldquo;mandals&rdquo;). This policy explains what data we collect, how we use it, and the choices available to you.
+              <strong>Quantromind Pvt. Ltd.</strong> (&ldquo;Apla Mandal&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;) operates the Apla Mandal platform for managing donation collection, receipts, expenses, events, and related activities for community organizations (&ldquo;mandals&rdquo;). This policy explains what data we collect, how we use it, and the choices available to you.
             </p>
           </div>
 
@@ -70,7 +69,7 @@ const PrivacyPolicy = () => {
                 <li>To comply with legal, tax, and audit obligations.</li>
               </ul>
               <div className="legal-highlight">
-                We do not sell personal data and do not use it for third-party advertising &mdash; MandalPro does not carry ads.
+                We do not sell personal data and do not use it for third-party advertising &mdash; Apla Mandal does not carry ads.
               </div>
             </section>
 
@@ -111,7 +110,7 @@ const PrivacyPolicy = () => {
             <section className="legal-section">
               <h2>7. Children</h2>
               <p>
-                MandalPro is not directed at children under 18 and we do not knowingly collect their data.
+                Apla Mandal is not directed at children under 18 and we do not knowingly collect their data.
               </p>
             </section>
 
@@ -150,8 +149,6 @@ const PrivacyPolicy = () => {
             <div className="legal-links">
               <span>Related:</span>
               <Link to="/terms-and-conditions">Terms &amp; Conditions</Link>
-              <span>&bull;</span>
-              <Link to="/login">MandalPro Login</Link>
             </div>
             <p className="legal-copyright">&copy; {new Date().getFullYear()} Quantromind Pvt. Ltd. All rights reserved.</p>
           </div>
