@@ -196,6 +196,10 @@ const Register = () => {
         <p style={{ textAlign: 'center', margin: '24px 0 0', color: 'var(--text-muted)' }}>
           Already have an account? <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 600 }}>Sign in</Link>
         </p>
+
+        <div className="auth-footer" style={{ marginTop: 24 }}>
+          By creating an account, you agree to our <Link to="/terms-and-conditions">Terms &amp; Conditions</Link> and <Link to="/privacy-policy">Privacy Policy</Link>
+        </div>
       </div>
     </div>
   );

@@ -74,29 +74,12 @@ const Login = () => {
           </button>
         </form>
 
-        <div style={{ marginTop: 16 }}>
-          <button 
-            className="btn btn-outline" 
-            style={{ width: '100%', padding: '12px' }}
-            onClick={(e) => {
-              e.preventDefault();
-              setEmail('quantromind@gmail.com');
-              setPassword('Nakshatra@#12345');
-              setTimeout(() => {
-                document.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-              }, 100);
-            }}
-          >
-            🚀 Quick Admin Login
-          </button>
-        </div>
-
         <p style={{ textAlign: 'center', margin: '24px 0 16px', color: 'var(--text-muted)' }}>
           Don't have an account? <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 600 }}>Create Mandal</Link>
         </p>
 
         <div className="auth-footer">
-          By continuing, you agree to our <a href="#">Terms</a> & <a href="#">Privacy Policy</a>
+          By continuing, you agree to our <Link to="/terms-and-conditions">Terms &amp; Conditions</Link> &amp; <Link to="/privacy-policy">Privacy Policy</Link>
         </div>
       </div>
       

@@ -220,7 +220,7 @@ export default function Onboarding() {
   /* ── Step 3 Submit ── */
   const handlePlanSubmit = async () => {
     if (selectedPlan === 'Enterprise') {
-      window.open('mailto:sales@mandalpro.com?subject=Enterprise Plan Enquiry', '_blank');
+      window.open('mailto:contact@quantromind.com?subject=Enterprise Plan Enquiry', '_blank');
     } else {
       next(); // All plans go to payment
     }
@@ -245,7 +245,7 @@ export default function Onboarding() {
         const rzp = new window.Razorpay({
           key: orderData.keyId, amount: orderData.amount,
           currency: orderData.currency, order_id: orderData.orderId,
-          name: 'MandalPro', description: `${selectedPlan} Plan Subscription`,
+          name: 'Apla Mandal', description: `${selectedPlan} Plan Subscription`,
           image: '/logo.png',
           prefill: { name: user?.name, email: user?.email },
           theme: { color: '#FF6B00' },
