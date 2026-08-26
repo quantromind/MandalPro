@@ -1,32 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@500;600;700;800&display=swap');
 
 :root {
   /* Colors */
-  --primary: #FF6B00;
-  --primary-hover: #E55C00;
-  --secondary: #17233C;
-  --secondary-hover: #223459;
-  --accent: #6C4DD9;
+  --primary: #F97316;
+  --primary-hover: #EA580C;
+  --secondary: #172554;
+  --secondary-hover: #1E3A8A;
+  --accent: #6366F1;
   --success: #10B981;
   --warning: #F59E0B;
   --danger: #EF4444;
   
-  --bg: #F8F8F6;
+  --bg: #F8F7F4;
   --card: #FFFFFF;
-  --text-main: #17233C;
+  --text-main: #172554;
   --text-muted: #64748B;
   --border: #E2E8F0;
-  --border-light: #F1F5F9;
+  --border-light: rgba(23, 37, 84, 0.05);
 
   /* Geometry & Spacing (8px grid) */
-  --radius-card: 16px;
-  --radius-btn: 12px;
-  --radius-input: 12px;
+  --radius-card: 20px;
+  --radius-btn: 14px;
+  --radius-input: 14px;
   --radius-pill: 9999px;
 
-  --shadow-sm: 0 2px 8px rgba(23, 35, 60, 0.04);
-  --shadow-md: 0 8px 24px rgba(23, 35, 60, 0.06);
-  --shadow-lg: 0 16px 32px rgba(23, 35, 60, 0.08);
+  --shadow-sm: 0 4px 12px rgba(23, 37, 84, 0.04);
+  --shadow-md: 0 10px 28px rgba(23, 37, 84, 0.06);
+  --shadow-lg: 0 18px 36px rgba(23, 37, 84, 0.08);
 
   /* Nav */
   --mobile-nav-height: 72px;
@@ -38,11 +38,16 @@ body {
   margin: 0; 
   background: var(--bg); 
   color: var(--text-main); 
-  font-family: 'Inter', -apple-system, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 a { text-decoration: none; color: inherit; }
-h1, h2, h3, h4, h5, h6 { margin-top: 0; font-weight: 700; color: var(--text-main); }
+h1, h2, h3, h4, h5, h6 { 
+  margin-top: 0; 
+  font-family: 'Poppins', 'Inter', sans-serif; 
+  font-weight: 700; 
+  color: var(--text-main); 
+}
 p { margin-top: 0; }
 
 /* App Shell (Mobile First / Desktop Responsive) */

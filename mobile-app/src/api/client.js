@@ -21,7 +21,7 @@ const isExpoGo =
 
 export const API_URL = (USE_LOCAL_BACKEND && isExpoGo) ? LOCAL_API_URL : PROD_API_URL;
 
-console.log(`[MandalPro API] Mode: ${isExpoGo ? 'Expo Go' : 'Standalone APK'} | Target: ${API_URL}`);
+console.log(`[Apla Mandal API] Mode: ${isExpoGo ? 'Expo Go' : 'Standalone APK'} | Target: ${API_URL}`);
 
 const client = axios.create({
   baseURL: API_URL,

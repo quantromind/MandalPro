@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { sendOtp, verifyOtp, testEmail } = require('../controllers/otpController');
+const { sendOtp, verifyOtp, testEmail, checkEmail } = require('../controllers/otpController');
 const {
   register,
   login,
@@ -15,6 +15,7 @@ const { protect } = require('../middleware/auth');
 const { allowRoles } = require('../middleware/rbac');
 
 router.all('/test-email', testEmail);
+router.post('/check-email', checkEmail);
 router.post('/send-otp', sendOtp);
 router.post('/verify-otp', verifyOtp);
 router.post('/register', register);

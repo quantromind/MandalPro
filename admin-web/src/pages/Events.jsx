@@ -10,10 +10,19 @@ const Events = () => {
   const [tasks, setTasks] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [taskForm, setTaskForm] = useState({ title: '', dueDate: '' });
+  const [mandalEventTypes, setMandalEventTypes] = useState([]);
   const [form, setForm] = useState({ name: '', type: 'Ganesh Utsav', startDate: '', endDate: '' });
   const [error, setError] = useState('');
 
-  const load = () => api.get('/events').then((res) => setEvents(res.data));
+  const load = () => {
+    api.get('/events').then((res) => setEvents(res.data));
+    api.get('/mandal').then((res) => {
+      if (res.data?.eventTypes?.length > 0) {
+        setMandalEventTypes(res.data.eventTypes);
+        setForm((prev) => ({ ...prev, type: res.data.eventTypes[0] }));
+      }
+    });
+  };
   useEffect(() => { load(); }, []);
 
   const openEvent = async (id) => {
@@ -188,8 +197,15 @@ const Events = () => {
               <div className="field">
                 <label>Event Type</label>
                 <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                  {EVENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {(mandalEventTypes.length > 0 ? mandalEventTypes : EVENT_TYPES).map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
                 </select>
+                {mandalEventTypes.length > 0 && (
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Only event types configured for your Mandal plan ({mandalEventTypes.join(', ')}) are available.
+                  </div>
+                )}
               </div>
               <div className="grid-2">
                 <div className="field">

@@ -3,10 +3,22 @@ import api from '../api/axios';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
 
+const PLANS = [
+  { id: 'Basic', name: 'Basic', price: '₹199/mo', color: '#64748B', desc: '1 Mandal, Up to 5 events/year, Basic receipts, Up to 10 members' },
+  { id: 'Pro', name: 'Pro (Most Popular)', price: '₹499/mo', color: '#FF6B00', desc: '1 Mandal, Unlimited events, Custom receipt branding, Up to 25 members, Verified badge' },
+  { id: 'Premium', name: 'Premium (Best Value)', price: '₹999/mo', color: '#6C4DD9', desc: '3 Mandals, Unlimited events, Full branding, Unlimited members, Analytics export' },
+  { id: 'Enterprise', name: 'Enterprise', price: 'Custom', color: '#10B981', desc: 'Unlimited Mandals, White-label, Dedicated API & 24/7 SLA Support' }
+];
+
 const Settings = () => {
   const { user, logout } = useAuth();
   const [mandal, setMandal] = useState(null);
   const [saved, setSaved] = useState(false);
+
+  // Upgrade Modal State
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [targetPlan, setTargetPlan] = useState('Pro');
+  const [upgrading, setUpgrading] = useState(false);
 
   // Deletion Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -68,6 +80,20 @@ const Settings = () => {
     }
   };
 
+  const handleUpgrade = async () => {
+    setUpgrading(true);
+    try {
+      await api.patch('/onboarding/plan', { plan: targetPlan });
+      setMandal((prev) => ({ ...prev, plan: targetPlan, planStatus: 'Active' }));
+      setShowUpgradeModal(false);
+      alert(`Subscription plan updated to ${targetPlan}! 🎉`);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update subscription plan.');
+    } finally {
+      setUpgrading(false);
+    }
+  };
+
   if (!mandal) return <Layout><div className="flex-center" style={{ height: '50vh' }}><p>Loading…</p></div></Layout>;
 
   return (
@@ -125,9 +151,17 @@ const Settings = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, background: 'rgba(255,107,0,0.05)', borderRadius: 8, border: '1px solid var(--primary)' }}>
               <div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)', marginBottom: 4 }}>{mandal.plan} Plan</div>
-                <div className="text-caption">Active until Dec 2026</div>
+                <div className="text-caption">Status: <strong style={{ color: mandal.planStatus === 'Active' ? 'var(--success)' : 'var(--danger)' }}>{mandal.planStatus || 'Active'}</strong></div>
               </div>
-              <button className="btn btn-primary btn-sm">Upgrade</button>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  setTargetPlan(mandal.plan === 'Basic' ? 'Pro' : mandal.plan === 'Pro' ? 'Premium' : 'Pro');
+                  setShowUpgradeModal(true);
+                }}
+              >
+                ⭐ Upgrade Plan
+              </button>
             </div>
           </div>
 
@@ -219,6 +253,61 @@ const Settings = () => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* ── Upgrade Plan Modal ── */}
+      {showUpgradeModal && (
+        <div className="modal-backdrop" onClick={() => setShowUpgradeModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 640 }}>
+            <div className="flex-between mb-3">
+              <h2 className="text-h2" style={{ fontSize: 20 }}>💎 Upgrade Subscription Plan</h2>
+              <button className="btn-icon" onClick={() => setShowUpgradeModal(false)}>✕</button>
+            </div>
+            <p className="text-sub mb-3">
+              Select the plan that fits your Mandal needs. Current plan: <strong>{mandal.plan}</strong>
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+              {PLANS.map((p) => {
+                const isCurrent = mandal.plan === p.id;
+                const isSelected = targetPlan === p.id;
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => setTargetPlan(p.id)}
+                    style={{
+                      padding: '16px',
+                      borderRadius: 12,
+                      border: `2px solid ${isSelected ? p.color : '#E5E7EB'}`,
+                      background: isSelected ? `${p.color}0D` : '#fff',
+                      cursor: 'pointer',
+                      position: 'relative'
+                    }}
+                  >
+                    {isCurrent && (
+                      <span style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, background: '#10B981', color: '#fff', padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>
+                        CURRENT
+                      </span>
+                    )}
+                    <div style={{ fontSize: 16, fontWeight: 800, color: p.color, marginBottom: 4 }}>{p.name}</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#17233C', marginBottom: 6 }}>{p.price}</div>
+                    <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.4 }}>{p.desc}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex-end gap-2">
+              <button className="btn btn-outline" onClick={() => setShowUpgradeModal(false)}>Cancel</button>
+              <button
+                className="btn btn-primary"
+                onClick={handleUpgrade}
+                disabled={upgrading || targetPlan === mandal.plan}
+              >
+                {upgrading ? 'Upgrading…' : `Confirm & Activate ${targetPlan} Plan →`}
+              </button>
+            </div>
           </div>
         </div>
       )}

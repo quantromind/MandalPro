@@ -54,20 +54,28 @@ export default function ApprovalsScreen() {
       <FlatList
         data={expenses}
         keyExtractor={(item) => item._id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        contentContainerStyle={{ padding: 16 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F97316']} tintColor="#F97316" />}
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <View>
-                <Text style={styles.category}>{item.category}</Text>
-                <Text style={styles.vendor}>Vendor: {item.vendor || 'General'}</Text>
+              <View style={styles.iconCategoryRow}>
+                <View style={styles.categoryIconCircle}>
+                  <Text style={{ fontSize: 16 }}>⏳</Text>
+                </View>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={styles.category}>{item.category}</Text>
+                  <Text style={styles.vendor}>Payee: {item.vendor || 'General'}</Text>
+                </View>
               </View>
               <Text style={styles.amount}>{inr(item.amount)}</Text>
             </View>
 
             {item.description ? (
-              <Text style={styles.desc}>{item.description}</Text>
+              <View style={styles.descBox}>
+                <Text style={styles.desc}>"{item.description}"</Text>
+              </View>
             ) : null}
 
             <View style={styles.cardFooter}>
@@ -78,8 +86,9 @@ export default function ApprovalsScreen() {
                 <TouchableOpacity
                   style={styles.approveBtn}
                   onPress={() => handleApprove(item._id, item.category, item.amount)}
+                  activeOpacity={0.85}
                 >
-                  <Text style={styles.approveBtnText}>✓ Approve</Text>
+                  <Text style={styles.approveBtnText}>Approve Request ✓</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -87,7 +96,9 @@ export default function ApprovalsScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🎉</Text>
+            <View style={styles.emptyIconCircle}>
+              <Text style={styles.emptyIcon}>🎉</Text>
+            </View>
             <Text style={styles.emptyTitle}>All caught up!</Text>
             <Text style={styles.emptySubtitle}>No expenses are currently waiting for your approval.</Text>
           </View>
@@ -98,36 +109,86 @@ export default function ApprovalsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F8F6' },
+  container: { flex: 1, backgroundColor: '#F8F7F4' },
   card: {
-    backgroundColor: '#fff', borderRadius: 14, padding: 16,
-    marginBottom: 12, borderWidth: 1, borderColor: '#E5E7EB',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04, shadowRadius: 6, elevation: 2
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.06)',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2
   },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  category: { fontSize: 16, fontWeight: '700', color: '#17233C' },
-  vendor: { fontSize: 13, color: '#6B7280', marginTop: 2 },
-  amount: { fontSize: 18, fontWeight: '800', color: '#FF6B00' },
-  desc: { fontSize: 13, color: '#4B5563', marginTop: 8, fontStyle: 'italic' },
+  iconCategoryRow: { flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 8 },
+  categoryIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  category: { fontSize: 16, fontWeight: '800', color: '#172554' },
+  vendor: { fontSize: 12.5, color: '#64748B', marginTop: 2, fontWeight: '500' },
+  amount: { fontSize: 18, fontWeight: '800', color: '#EF4444' },
+  descBox: {
+    backgroundColor: '#F8F7F4',
+    padding: 10,
+    borderRadius: 10,
+    marginTop: 10
+  },
+  desc: { fontSize: 12.5, color: '#475569', fontStyle: 'italic', lineHeight: 17 },
   cardFooter: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', marginTop: 14, paddingTop: 10,
-    borderTopWidth: 1, borderTopColor: '#F3F4F6'
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(23, 37, 84, 0.04)'
   },
   badge: {
-    backgroundColor: 'rgba(245, 158, 11, 0.1)', paddingHorizontal: 10,
-    paddingVertical: 4, borderRadius: 12
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 9,
+    paddingVertical: 3.5,
+    borderRadius: 6
   },
-  badgeText: { color: '#D97706', fontSize: 12, fontWeight: '700' },
+  badgeText: { color: '#B45309', fontSize: 11, fontWeight: '800' },
   approveBtn: {
-    backgroundColor: '#10B981', paddingVertical: 8, paddingHorizontal: 16,
-    borderRadius: 8, shadowColor: '#10B981', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2, shadowRadius: 4, elevation: 2
+    backgroundColor: '#10B981',
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2
   },
-  approveBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  approveBtnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 12 },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 80, padding: 20 },
-  emptyIcon: { fontSize: 44, marginBottom: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#17233C', marginBottom: 4 },
-  emptySubtitle: { fontSize: 14, color: '#6B7280', textAlign: 'center', lineHeight: 20 }
+  emptyIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2
+  },
+  emptyIcon: { fontSize: 32 },
+  emptyTitle: { fontSize: 18, fontWeight: '800', color: '#172554', marginBottom: 4 },
+  emptySubtitle: { fontSize: 13.5, color: '#64748B', textAlign: 'center', lineHeight: 20 }
 });

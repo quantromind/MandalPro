@@ -254,25 +254,25 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F6'
+    backgroundColor: '#F8F7F4'
   },
   topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: 'rgba(23, 37, 84, 0.06)',
     gap: 12
   },
   headerAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFF7ED',
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
     borderWidth: 1,
-    borderColor: '#FED7AA',
+    borderColor: 'rgba(249, 115, 22, 0.25)',
     alignItems: 'center',
     justifyContent: 'center'
   },
@@ -282,12 +282,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#17233C'
+    color: '#172554'
   },
   onlineRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     marginTop: 2
   },
   onlineDot: {
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   },
   headerSub: {
     fontSize: 11.5,
-    color: '#6B7280',
+    color: '#64748B',
     fontWeight: '500'
   },
   loaderContainer: {
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 13,
-    color: '#6B7280'
+    color: '#64748B'
   },
   messagesList: {
     paddingHorizontal: 14,
@@ -322,16 +322,16 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
   myBubble: {
-    backgroundColor: '#FF6B00',
-    borderRadius: 16,
-    borderBottomRightRadius: 3,
-    paddingHorizontal: 14,
+    backgroundColor: '#F97316',
+    borderRadius: 18,
+    borderBottomRightRadius: 4,
+    paddingHorizontal: 15,
     paddingVertical: 10,
     maxWidth: '82%',
-    shadowColor: '#FF6B00',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
     elevation: 2
   },
   myMessageText: {
@@ -341,11 +341,11 @@ const styles = StyleSheet.create({
     fontWeight: '500'
   },
   myMessageTime: {
-    color: 'rgba(255, 255, 255, 0.75)',
+    color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 10,
     alignSelf: 'flex-end',
     marginTop: 4,
-    fontWeight: '500'
+    fontWeight: '600'
   },
   otherMessageRow: {
     flexDirection: 'row',
@@ -354,31 +354,31 @@ const styles = StyleSheet.create({
     gap: 8
   },
   otherAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#E5E7EB',
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: 'rgba(23, 37, 84, 0.08)',
     alignItems: 'center',
     justifyContent: 'center'
   },
   otherAvatarText: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#374151'
+    fontWeight: '800',
+    color: '#172554'
   },
   otherBubble: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderBottomLeftRadius: 3,
+    borderRadius: 18,
+    borderBottomLeftRadius: 4,
     paddingHorizontal: 14,
     paddingVertical: 10,
     maxWidth: '82%',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
+    borderColor: 'rgba(23, 37, 84, 0.06)',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
     elevation: 1
   },
   otherHeaderRow: {
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   otherSenderName: {
     fontSize: 12.5,
     fontWeight: '800',
-    color: '#17233C'
+    color: '#172554'
   },
   roleBadge: {
     paddingHorizontal: 6,
@@ -403,12 +403,12 @@ const styles = StyleSheet.create({
     fontWeight: '700'
   },
   otherMessageText: {
-    color: '#1F2937',
+    color: '#334155',
     fontSize: 14,
     lineHeight: 20
   },
   otherMessageTime: {
-    color: '#9CA3AF',
+    color: '#94A3B8',
     fontSize: 10,
     alignSelf: 'flex-end',
     marginTop: 4
@@ -426,12 +426,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#17233C',
+    color: '#172554',
     marginBottom: 6
   },
   emptySubtitle: {
     fontSize: 13.5,
-    color: '#6B7280',
+    color: '#64748B',
     textAlign: 'center',
     lineHeight: 19
   },
@@ -442,40 +442,43 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    gap: 10
+    borderTopColor: 'rgba(23, 37, 84, 0.06)',
+    gap: 10,
+    marginBottom: Platform.OS === 'ios' ? 82 : 72
   },
   textInput: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 22,
+    backgroundColor: '#F8F7F4',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
     paddingHorizontal: 16,
     paddingVertical: 10,
     maxHeight: 100,
     fontSize: 14.5,
-    color: '#17233C'
+    color: '#172554'
   },
   sendButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#F97316',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#FF6B00',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.28,
+    shadowRadius: 6,
     elevation: 3
   },
   sendButtonDisabled: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#E2E8F0',
     shadowOpacity: 0,
     elevation: 0
   },
   sendIcon: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     marginLeft: 2
   },
@@ -484,7 +487,7 @@ const styles = StyleSheet.create({
     marginVertical: 12
   },
   dateDividerBadge: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: 'rgba(23, 37, 84, 0.06)',
     paddingHorizontal: 12,
     paddingVertical: 3.5,
     borderRadius: 12
@@ -492,6 +495,6 @@ const styles = StyleSheet.create({
   dateDividerText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#4B5563'
+    color: '#64748B'
   }
 });

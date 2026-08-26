@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const sendEmail = require('../utils/sendEmail');
 const Otp = require('../models/Otp');
+const User = require('../models/User');
 
 // In-memory OTP fallback: { email: { code, expiresAt } }
 const memoryOtpStore = new Map();
@@ -11,13 +12,23 @@ const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 // @desc  Send OTP to an email address
 // @route POST /api/auth/send-otp
 const sendOtp = asyncHandler(async (req, res) => {
-  const { email } = req.body;
+  const { email, purpose } = req.body;
   if (!email) {
     res.status(400);
     throw new Error('email is required');
   }
 
   const normalizedEmail = email.toLowerCase().trim();
+
+  // If purpose is registration, verify if account already exists
+  if (purpose === 'register') {
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      res.status(409);
+      throw new Error('This email is already registered. Please log in to your account.');
+    }
+  }
+
   const code = generateOTP();
   
   // Persist to MongoDB (upsert so latest code is valid)
@@ -34,11 +45,11 @@ const sendOtp = asyncHandler(async (req, res) => {
   // Dispatch email asynchronously so client response is instant
   sendEmail({
     to: normalizedEmail,
-    subject: 'Your MandalPro Verification Code',
+    subject: 'Your Apla Mandal Verification Code',
     text: `Your verification code is ${code}. It will expire in 10 minutes.`,
     html: `
       <div style="font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 8px;">
-        <h2 style="color: #FF6B00;">MandalPro Verification</h2>
+        <h2 style="color: #FF6B00;">Apla Mandal Verification</h2>
         <p style="font-size: 16px; color: #333;">Your verification code is:</p>
         <div style="background: #FFF3E0; padding: 15px; border-radius: 6px; text-align: center; margin: 20px 0;">
           <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #FF6B00;">${code}</span>
@@ -92,17 +103,47 @@ const validateAndConsumeOtp = async (email, code) => {
   return true;
 };
 
+// @desc  Check if email is already registered
+// @route POST /api/auth/check-email
+const checkEmail = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    res.status(400);
+    throw new Error('email is required');
+  }
+  const normalizedEmail = email.toLowerCase().trim();
+  const existingUser = await User.findOne({ email: normalizedEmail });
+  // Always return 200 so frontend can read exists flag without catching 409
+  return res.json({
+    exists: Boolean(existingUser),
+    message: existingUser
+      ? 'This email is already registered. Please log in to your account.'
+      : 'Email is available'
+  });
+});
+
 // @desc  Verify OTP
 // @route POST /api/auth/verify-otp
 const verifyOtp = asyncHandler(async (req, res) => {
-  const { email, code } = req.body;
+  const { email, code, purpose } = req.body;
   if (!email || !code) {
     res.status(400);
     throw new Error('email and code are required');
   }
 
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // If purpose is registration, double-check if account exists
+  if (purpose === 'register') {
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      res.status(409);
+      throw new Error('This email is already registered. Please log in to your account.');
+    }
+  }
+
   try {
-    await validateAndConsumeOtp(email, code);
+    await validateAndConsumeOtp(normalizedEmail, code);
     return res.json({ verified: true });
   } catch (err) {
     res.status(400);
@@ -141,6 +182,7 @@ const testEmail = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  checkEmail,
   sendOtp,
   verifyOtp,
   testEmail,

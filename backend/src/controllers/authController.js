@@ -35,8 +35,8 @@ const register = asyncHandler(async (req, res) => {
 
   const existing = await User.findOne({ email: normalizedEmail });
   if (existing) {
-    res.status(400);
-    throw new Error('An account with this email already exists');
+    res.status(409);
+    throw new Error('An account with this email is already registered. Please log in.');
   }
 
   // Auto-generate receipt prefix from mandal name initials
@@ -47,6 +47,10 @@ const register = asyncHandler(async (req, res) => {
     .slice(0, 4) || 'RCPT';
 
   const selectedTypes = eventTypes || [];
+  if (Array.isArray(selectedTypes) && selectedTypes.length > 3) {
+    res.status(400);
+    throw new Error('You can select a maximum of 3 event types for your Mandal plan.');
+  }
 
   const mandal = await Mandal.create({
     name: mandalName,
@@ -54,6 +58,8 @@ const register = asyncHandler(async (req, res) => {
     plan: 'Basic',
     planStatus: 'Active',
     receiptPrefix: initials,
+    onboardingComplete: false,
+    'checklist.profileComplete': true,
     'checklist.eventTypesSelected': selectedTypes.length > 0,
     'checklist.planSelected': false
   });
@@ -164,6 +170,12 @@ const login = asyncHandler(async (req, res) => {
   let mandal = null;
   if (user.mandalId) {
     mandal = await Mandal.findById(user.mandalId);
+    if (mandal && (!mandal.name.includes("'s Mandal") || user.mobile || mandal.checklist?.profileComplete)) {
+      mandal.onboardingComplete = true;
+      mandal.checklist.profileComplete = true;
+      mandal.checklist.planSelected = true;
+      await mandal.save();
+    }
   }
 
   res.json({
@@ -177,7 +189,14 @@ const login = asyncHandler(async (req, res) => {
 // @desc Get current logged-in user
 // @route GET /api/auth/me
 const getMe = asyncHandler(async (req, res) => {
-  res.json(req.user);
+  let mandal = null;
+  if (req.user.mandalId) {
+    mandal = await Mandal.findById(req.user.mandalId);
+  }
+  res.json({
+    ...req.user.toObject(),
+    mandal
+  });
 });
 
 // @desc Update user profile & mandal onboarding details
@@ -204,11 +223,20 @@ const updateProfile = asyncHandler(async (req, res) => {
           .slice(0, 4) || 'MNDL';
         mandal.receiptPrefix = initials;
       }
-      if (logoBase64 !== undefined) mandal.logoBase64 = logoBase64;
-      if (eventTypes && Array.isArray(eventTypes)) mandal.eventTypes = eventTypes;
+      if (eventTypes && Array.isArray(eventTypes)) {
+        if (eventTypes.length > 3) {
+          res.status(400);
+          throw new Error('You can select a maximum of 3 event types for your Mandal plan.');
+        }
+        mandal.eventTypes = eventTypes;
+      }
       if (address !== undefined) mandal.address = address;
       if (upiId !== undefined) mandal.upiId = upiId;
+      if (logoBase64 !== undefined) mandal.logoBase64 = logoBase64;
+      mandal.onboardingComplete = true;
       mandal.checklist.profileComplete = true;
+      mandal.checklist.eventTypesSelected = true;
+      mandal.checklist.planSelected = true;
       await mandal.save();
     }
   }
@@ -334,6 +362,12 @@ const loginWithOtp = asyncHandler(async (req, res) => {
   let mandal = null;
   if (user.mandalId) {
     mandal = await Mandal.findById(user.mandalId);
+    if (mandal && (!mandal.name.includes("'s Mandal") || user.mobile || mandal.checklist?.profileComplete)) {
+      mandal.onboardingComplete = true;
+      mandal.checklist.profileComplete = true;
+      mandal.checklist.planSelected = true;
+      await mandal.save();
+    }
   }
 
   res.json({
@@ -379,12 +413,12 @@ const sendDeleteAccountOtp = asyncHandler(async (req, res) => {
   // Dispatch warning email
   sendEmail({
     to: normalizedEmail,
-    subject: '⚠️ MandalPro - Account Deletion Verification Code',
-    text: `Your verification code to permanently delete your MandalPro account is ${code}. It will expire in 10 minutes. If you did not request this, please secure your account immediately.`,
+    subject: '⚠️ Apla Mandal - Account Deletion Verification Code',
+    text: `Your verification code to permanently delete your Apla Mandal account is ${code}. It will expire in 10 minutes. If you did not request this, please secure your account immediately.`,
     html: `
       <div style="font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; border: 1px solid #fee2e2; border-radius: 8px;">
         <h2 style="color: #dc2626; margin-top: 0;">⚠️ Confirm Account Deletion</h2>
-        <p style="font-size: 15px; color: #333;">You have requested to permanently delete your MandalPro account (<strong>${normalizedEmail}</strong>).</p>
+        <p style="font-size: 15px; color: #333;">You have requested to permanently delete your Apla Mandal account (<strong>${normalizedEmail}</strong>).</p>
         <p style="font-size: 14px; color: #666;">Use the verification code below to confirm deletion:</p>
         <div style="background: #fef2f2; border: 1px dashed #ef4444; padding: 15px; border-radius: 6px; text-align: center; margin: 20px 0;">
           <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #dc2626;">${code}</span>

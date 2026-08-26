@@ -43,43 +43,50 @@ export default function ReceiptsScreen() {
         data={combined}
         keyExtractor={(item) => item._id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.card}
-            activeOpacity={0.7}
+            activeOpacity={0.78}
             onPress={() => setSelectedReceipt(item)}
           >
             <View style={styles.cardTop}>
-              <View style={{ flex: 1 }}>
+              <View style={styles.avatarBox}>
+                <Text style={styles.avatarText}>{item.donorName ? item.donorName[0].toUpperCase() : '🙏'}</Text>
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={styles.donor}>{item.donorName}</Text>
-                <Text style={styles.receiptNo}>#{item.receiptNumber}</Text>
+                <Text style={styles.receiptNo}>Receipt #{item.receiptNumber}</Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={styles.amount}>{inr(item.amount)}</Text>
                 <View style={[styles.statusBadge, item.status === 'Pending' && styles.statusPending]}>
                   <Text style={[styles.statusText, item.status === 'Pending' && styles.statusTextPending]}>
-                    {item.status || 'Issued'}
+                    {item.status === 'Pending' ? '⏳ Pending' : '✓ Issued'}
                   </Text>
                 </View>
               </View>
             </View>
 
             <View style={styles.cardBottom}>
-              <Text style={styles.metaText}>
-                {item.donorMobile ? `📱 ${item.donorMobile} · ` : ''}
-                {item.paymentMode ? `💳 ${item.paymentMode.toUpperCase()}` : ''}
-                {item.purpose ? ` · 🎯 ${item.purpose}` : ''}
+              <Text style={styles.metaText} numberOfLines={1}>
+                {item.donorMobile ? `📱 ${item.donorMobile} ` : ''}
+                {item.paymentMode ? `· 💳 ${item.paymentMode.toUpperCase()} ` : ''}
+                {item.purpose ? `· 🎯 ${item.purpose}` : ''}
               </Text>
-              <Text style={styles.viewText}>View & Share 📲</Text>
+              <View style={styles.sharePill}>
+                <Text style={styles.viewText}>Share 📲</Text>
+              </View>
             </View>
           </TouchableOpacity>
         )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🧾</Text>
+            <View style={styles.emptyIconCircle}>
+              <Text style={styles.emptyIcon}>🧾</Text>
+            </View>
             <Text style={styles.emptyTitle}>No receipts issued yet</Text>
-            <Text style={styles.emptySubtitle}>All issued donation receipts will appear here.</Text>
+            <Text style={styles.emptySubtitle}>All issued donation receipts and offline entries will appear here.</Text>
           </View>
         }
       />
@@ -97,42 +104,50 @@ export default function ReceiptsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F8F6' },
+  container: { flex: 1, backgroundColor: '#F8F7F4' },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    borderColor: 'rgba(23, 37, 84, 0.06)',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 2
   },
   cardTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start'
+    alignItems: 'center'
   },
-  donor: { fontWeight: '700', fontSize: 16, color: '#17233C' },
-  receiptNo: { color: '#6B7280', fontSize: 12, marginTop: 3, fontWeight: '500' },
-  amount: { fontWeight: '800', fontSize: 17, color: '#FF6B00' },
+  avatarBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  avatarText: { fontSize: 16, fontWeight: '800', color: '#F97316' },
+  donor: { fontWeight: '800', fontSize: 15.5, color: '#172554' },
+  receiptNo: { color: '#64748B', fontSize: 11.5, marginTop: 2, fontWeight: '600' },
+  amount: { fontWeight: '800', fontSize: 17.5, color: '#F97316' },
   statusBadge: {
     backgroundColor: 'rgba(16, 185, 129, 0.1)',
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
     marginTop: 4
   },
   statusPending: {
-    backgroundColor: 'rgba(245, 158, 11, 0.1)'
+    backgroundColor: 'rgba(245, 158, 11, 0.12)'
   },
   statusText: {
-    fontSize: 11,
+    fontSize: 10.5,
     color: '#059669',
-    fontWeight: '700'
+    fontWeight: '800'
   },
   statusTextPending: {
     color: '#D97706'
@@ -144,12 +159,35 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6'
+    borderTopColor: 'rgba(23, 37, 84, 0.04)'
   },
-  metaText: { fontSize: 12, color: '#6B7280', flex: 1 },
-  viewText: { fontSize: 12, color: '#25D366', fontWeight: '700' },
+  metaText: { fontSize: 12, color: '#64748B', flex: 1, fontWeight: '500' },
+  sharePill: {
+    backgroundColor: 'rgba(37, 211, 102, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginLeft: 8
+  },
+  viewText: { fontSize: 11.5, color: '#15803D', fontWeight: '800' },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 80, padding: 20 },
-  emptyIcon: { fontSize: 44, marginBottom: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#17233C', marginBottom: 4 },
-  emptySubtitle: { fontSize: 14, color: '#6B7280', textAlign: 'center', lineHeight: 20 }
+  emptyIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2
+  },
+  emptyIcon: { fontSize: 32 },
+  emptyTitle: { fontSize: 18, fontWeight: '800', color: '#172554', marginBottom: 4 },
+  emptySubtitle: { fontSize: 13.5, color: '#64748B', textAlign: 'center', lineHeight: 20 }
 });
