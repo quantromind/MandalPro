@@ -8,10 +8,14 @@ const PROD_API_URL = 'https://mandalpro.quantromind.tech/api';
 // Set to true only if you want to force Expo Go to use your local machine's backend (port 5000)
 const USE_LOCAL_BACKEND = false;
 
-// Dynamically extract laptop IP from Expo Go hostUri (e.g. 192.168.1.13)
-const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest2?.extra?.expoGo?.debuggerHost || Constants.manifest?.debuggerHost;
-const devHostIp = debuggerHost ? debuggerHost.split(':')[0] : '192.168.1.13';
-const LOCAL_API_URL = `http://${devHostIp}:5000/api`;
+let LOCAL_API_URL = 'http://192.168.1.13:5000/api';
+try {
+  const debuggerHost = Constants?.expoConfig?.hostUri || Constants?.manifest2?.extra?.expoGo?.debuggerHost || Constants?.manifest?.debuggerHost;
+  const devHostIp = debuggerHost ? debuggerHost.split(':')[0] : '192.168.1.13';
+  LOCAL_API_URL = `http://${devHostIp}:5000/api`;
+} catch (e) {
+  // Safe fallback
+}
 
 // Detect if running in Expo Go (Development) or Standalone APK (Production)
 const isExpoGo =

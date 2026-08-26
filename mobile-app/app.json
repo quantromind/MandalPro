@@ -5,14 +5,18 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "icon": "./assets/logo.jpg",
+    "icon": "./assets/logo.png",
     "splash": {
-      "image": "./assets/logo.jpg",
+      "image": "./assets/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#F8F8F6"
     },
     "android": {
-      "package": "com.mandalpro.app"
+      "package": "com.mandalpro.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo.png",
+        "backgroundColor": "#F8F8F6"
+      }
     },
     "ios": {
       "bundleIdentifier": "com.mandalpro.app"
