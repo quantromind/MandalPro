@@ -3,6 +3,23 @@ const sendEmail = require('../utils/sendEmail');
 const Otp = require('../models/Otp');
 const User = require('../models/User');
 
+// Demo / Reviewer accounts with static OTP for Google Play Console testing & app reviews
+const DEMO_EMAILS = [
+  'demo@mandalpro.com',
+  'demo@aplamandal.com',
+  'reviewer@mandalpro.com',
+  'reviewer@aplamandal.com',
+  'test@aplamandal.com',
+  'google-play@mandalpro.com'
+];
+const DEMO_OTP = '123456';
+
+const isDemoAccount = (email) => {
+  if (!email) return false;
+  const lower = email.toLowerCase().trim();
+  return DEMO_EMAILS.includes(lower) || lower.startsWith('demo@') || lower.startsWith('reviewer@');
+};
+
 // In-memory OTP fallback: { email: { code, expiresAt } }
 const memoryOtpStore = new Map();
 
@@ -27,6 +44,17 @@ const sendOtp = asyncHandler(async (req, res) => {
       res.status(409);
       throw new Error('This email is already registered. Please log in to your account.');
     }
+  }
+
+  // Handle Demo / Reviewer account bypass
+  if (isDemoAccount(normalizedEmail)) {
+    try {
+      await Otp.deleteMany({ email: normalizedEmail });
+      await Otp.create({ email: normalizedEmail, code: DEMO_OTP });
+    } catch (e) {}
+    memoryOtpStore.set(normalizedEmail, { code: DEMO_OTP, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
+    console.log(`\n========================================\n[DEMO OTP] For: ${normalizedEmail} | Fixed Code: ${DEMO_OTP}\n========================================\n`);
+    return res.json({ message: 'OTP sent successfully to email' });
   }
 
   const code = generateOTP();
@@ -69,6 +97,11 @@ const validateAndConsumeOtp = async (email, code) => {
   const normalizedEmail = email.toLowerCase().trim();
   const inputCode = String(code).trim();
 
+  // Demo / Reviewer accounts always accept DEMO_OTP (123456)
+  if (isDemoAccount(normalizedEmail) && inputCode === DEMO_OTP) {
+    return true;
+  }
+
   // Try DB first
   let otpRecord = null;
   try {
@@ -81,8 +114,10 @@ const validateAndConsumeOtp = async (email, code) => {
     if (otpRecord.code !== inputCode) {
       throw new Error('Invalid OTP');
     }
-    // Delete OTP once used
-    await Otp.deleteMany({ email: normalizedEmail }).catch(() => {});
+    // Delete OTP once used (unless it's a demo account)
+    if (!isDemoAccount(normalizedEmail)) {
+      await Otp.deleteMany({ email: normalizedEmail }).catch(() => {});
+    }
     return true;
   }
 
@@ -99,7 +134,9 @@ const validateAndConsumeOtp = async (email, code) => {
     throw new Error('Invalid OTP');
   }
 
-  memoryOtpStore.delete(normalizedEmail);
+  if (!isDemoAccount(normalizedEmail)) {
+    memoryOtpStore.delete(normalizedEmail);
+  }
   return true;
 };
 

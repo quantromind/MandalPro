@@ -215,12 +215,31 @@ export default function SubscriptionScreen({ navigation }) {
         {/* Header */}
         <View style={s.header}>
           <Text style={s.brand}>🪔 Apla Mandal</Text>
-          <Text style={s.title}>Choose your Plan</Text>
-          <Text style={s.sub}>Unlock the full power of Apla Mandal for your community.</Text>
+          <Text style={s.title}>
+            {mandal?.planStatus === 'Expired' ? 'Renew Your Plan' : 'Choose your Plan'}
+          </Text>
+          <Text style={s.sub}>
+            {mandal?.planStatus === 'Expired'
+              ? 'Your subscription has expired. Renew your plan below to continue managing donations and receipts.'
+              : 'Unlock the full power of Apla Mandal for your community.'}
+          </Text>
         </View>
 
+        {/* Expired Plan Alert */}
+        {mandal?.planStatus === 'Expired' && (
+          <View style={s.expiredBanner}>
+            <Text style={s.expiredIcon}>⚠️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={s.expiredTitle}>Subscription Expired</Text>
+              <Text style={s.expiredSub}>
+                Please select a plan below to activate your account and continue using all features.
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Recommendation Banner */}
-        {mandal?.eventTypes?.length > 0 && (
+        {mandal?.eventTypes?.length > 0 && mandal?.planStatus !== 'Expired' && (
           <View style={s.recBanner}>
             <Text style={s.recIcon}>🎯</Text>
             <View style={{ flex: 1 }}>
@@ -350,6 +369,15 @@ const s = StyleSheet.create({
   recIcon: { fontSize: 20 },
   recTitle: { fontSize: 13, fontWeight: '800', color: '#F97316', marginBottom: 2 },
   recSub: { fontSize: 12, color: '#172554', lineHeight: 18, fontWeight: '500' },
+
+  expiredBanner: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.08)', borderRadius: 16,
+    padding: 14, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.25)'
+  },
+  expiredIcon: { fontSize: 20 },
+  expiredTitle: { fontSize: 13, fontWeight: '800', color: '#DC2626', marginBottom: 2 },
+  expiredSub: { fontSize: 12, color: '#172554', lineHeight: 18, fontWeight: '500' },
 
   billingRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',

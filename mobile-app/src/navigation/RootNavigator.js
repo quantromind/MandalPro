@@ -57,17 +57,26 @@ export default function RootNavigator() {
     (mandal?.name && !mandal.name.includes("'s Mandal"))
   );
 
-  const needsOnboarding = Boolean(user && isPresident && !isSetupCompleted);
-
-  // New users see the Subscription Screen after selecting events to pick their plan.
-  // Existing users with an active plan (planSelected: true or active subscription) proceed to Dashboard.
+  // Check subscription requirements:
+  // Show SubscriptionScreen immediately after login/launch if:
+  // 1. User is using the app for the 1st time / has not selected a plan (mandal?.checklist?.planSelected !== true)
+  // 2. User has no active plan (mandal?.plan is missing or mandal?.planStatus !== 'Active')
+  // 3. User's subscription plan is expired (mandal?.planStatus === 'Expired')
+  const isPlanActive = Boolean(
+    mandal?.plan &&
+    mandal?.plan !== 'None' &&
+    mandal?.planStatus === 'Active' &&
+    mandal?.checklist?.planSelected === true
+  );
   const isPlanExpired = mandal?.planStatus === 'Expired';
   const hasPlanSelected = mandal?.checklist?.planSelected === true;
+  const hasNoPlan = !mandal?.plan || mandal?.plan === 'None';
+
   const needsSubscription = Boolean(
     user &&
     isPresident &&
     !needsOnboarding &&
-    (!hasPlanSelected || isPlanExpired)
+    (!hasPlanSelected || !isPlanActive || isPlanExpired || hasNoPlan)
   );
 
   return (
