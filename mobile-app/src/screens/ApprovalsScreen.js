@@ -4,10 +4,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
+import { useLanguage } from '../context/LanguageContext';
+
 export default function ApprovalsScreen() {
   const [expenses, setExpenses] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const { user } = useAuth();
+  const { t } = useLanguage();
   const canApprove = user?.role === 'president' || user?.role === 'treasurer';
 
   const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
@@ -19,7 +22,7 @@ export default function ApprovalsScreen() {
       const pending = data.filter(e => e.status === 'Submitted');
       setExpenses(pending);
     } catch (err) {
-      console.log('Failed to load pending approvals', err);
+      // ignore
     }
   };
 
@@ -29,19 +32,19 @@ export default function ApprovalsScreen() {
 
   const handleApprove = async (id, category, amt) => {
     Alert.alert(
-      'Approve Expense',
-      `Approve ${category} of ${inr(amt)}?`,
+      t('approvals.approveExpense'),
+      `${t('approvals.approveExpense')} ${category} of ${inr(amt)}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Approve',
+          text: `${t('approvals.approve')} ✓`,
           onPress: async () => {
             try {
               await client.patch(`/expenses/${id}/approve`);
-              Alert.alert('Approved', 'Expense has been approved successfully.');
+              Alert.alert(t('approvals.approved'), 'Expense has been approved successfully.');
               load();
             } catch (err) {
-              Alert.alert('Error', err.response?.data?.message || 'Could not approve expense.');
+              Alert.alert(t('common.error'), err.response?.data?.message || 'Could not approve expense.');
             }
           }
         }
@@ -66,7 +69,7 @@ export default function ApprovalsScreen() {
                 </View>
                 <View style={{ flex: 1, marginLeft: 10 }}>
                   <Text style={styles.category}>{item.category}</Text>
-                  <Text style={styles.vendor}>Payee: {item.vendor || 'General'}</Text>
+                  <Text style={styles.vendor}>{t('expenses.payee')}: {item.vendor || 'General'}</Text>
                 </View>
               </View>
               <Text style={styles.amount}>{inr(item.amount)}</Text>
@@ -80,7 +83,7 @@ export default function ApprovalsScreen() {
 
             <View style={styles.cardFooter}>
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>⏳ Pending Approval</Text>
+                <Text style={styles.badgeText}>⏳ {t('approvals.pendingApproval')}</Text>
               </View>
               {canApprove && (
                 <TouchableOpacity
@@ -88,7 +91,7 @@ export default function ApprovalsScreen() {
                   onPress={() => handleApprove(item._id, item.category, item.amount)}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.approveBtnText}>Approve Request ✓</Text>
+                  <Text style={styles.approveBtnText}>{t('approvals.approveRequest')} ✓</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -99,8 +102,8 @@ export default function ApprovalsScreen() {
             <View style={styles.emptyIconCircle}>
               <Text style={styles.emptyIcon}>🎉</Text>
             </View>
-            <Text style={styles.emptyTitle}>All caught up!</Text>
-            <Text style={styles.emptySubtitle}>No expenses are currently waiting for your approval.</Text>
+            <Text style={styles.emptyTitle}>{t('approvals.allCaughtUp')}</Text>
+            <Text style={styles.emptySubtitle}>{t('approvals.noExpensesPending')}</Text>
           </View>
         }
       />

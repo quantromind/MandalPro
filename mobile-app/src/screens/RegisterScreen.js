@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import client from '../api/client';
 
 const EVENT_TYPES = [
@@ -16,14 +17,15 @@ const EVENT_TYPES = [
   { id: 'Custom',       icon: '⚙️' },
 ];
 
-export default function RegisterScreen({ navigation }) {
+export default function RegisterScreen({ navigation, route }) {
   const { register } = useAuth();
+  const { t } = useLanguage();
 
   const [step, setStep]               = useState(1);
   const [loading, setLoading]         = useState(false);
 
   // Step 1 — Email + OTP
-  const [email, setEmail]             = useState('');
+  const [email, setEmail]             = useState(route?.params?.prefillEmail || '');
   const [otp, setOtp]                 = useState('');
   const [otpSent, setOtpSent]         = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
@@ -34,15 +36,69 @@ export default function RegisterScreen({ navigation }) {
   const [name, setName]               = useState('');
   const [mobile, setMobile]           = useState('');
   const [password, setPassword]       = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [mandalName, setMandalName]   = useState('');
   const [eventTypes, setEventTypes]   = useState(['Ganesh Utsav']);
+  const [errors, setErrors]           = useState({});
+
+  const clearError = (field) => {
+    if (errors[field]) {
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
+  const validateStep2 = () => {
+    const newErrors = {};
+    const trimmedName = name.trim();
+    const trimmedMandal = mandalName.trim();
+    const cleanMobile = mobile.replace(/[^0-9]/g, '');
+
+    if (!trimmedName) {
+      newErrors.name = t('register.errors.nameRequired');
+    } else if (trimmedName.length < 2) {
+      newErrors.name = t('register.errors.nameMin');
+    }
+
+    if (!trimmedMandal) {
+      newErrors.mandalName = t('register.errors.mandalRequired');
+    } else if (trimmedMandal.length < 3) {
+      newErrors.mandalName = t('register.errors.mandalMin');
+    }
+
+    if (mobile.trim() && cleanMobile.length !== 10) {
+      newErrors.mobile = t('register.errors.mobileInvalid');
+    }
+
+    if (!password) {
+      newErrors.password = t('register.errors.passwordRequired');
+    } else if (password.length < 8) {
+      newErrors.password = t('register.errors.passwordMin');
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleStep2Continue = () => {
+    if (validateStep2()) {
+      setStep(3);
+    }
+  };
 
   const toggleEvent = (id) => {
     if (eventTypes.includes(id)) {
+      if (eventTypes.length === 1) {
+        Alert.alert(t('register.selectionRequired'), t('register.keepOneEvent'));
+        return;
+      }
       setEventTypes(prev => prev.filter(x => x !== id));
     } else {
       if (eventTypes.length >= 3) {
-        Alert.alert('Limit Reached', 'You can select up to 3 event types for your Mandal in this plan.');
+        Alert.alert(t('register.limitReached'), t('register.maxThreeEvents'));
         return;
       }
       setEventTypes(prev => [...prev, id]);
@@ -57,15 +113,14 @@ export default function RegisterScreen({ navigation }) {
       const res = await client.post('/auth/check-email', { email: trimmed });
       if (res.data?.exists) {
         setIsExistingUser(true);
-        setExistingUserMessage('This email is already registered. Please sign in instead.');
+        setExistingUserMessage(t('register.accountExistsAlert'));
         return true;
       }
       return false;
     } catch (err) {
-      // 409 or any "already registered" error
       if (err.response?.status === 409 || err.response?.data?.message?.toLowerCase().includes('already registered')) {
         setIsExistingUser(true);
-        setExistingUserMessage('This email is already registered. Please sign in instead.');
+        setExistingUserMessage(t('register.accountExistsAlert'));
         return true;
       }
       return false;
@@ -75,25 +130,23 @@ export default function RegisterScreen({ navigation }) {
   // ── OTP ────────────────────────────────────────────
   const sendOtp = async () => {
     if (!email || !email.includes('@')) {
-      Alert.alert('Invalid', 'Enter a valid email address');
+      Alert.alert(t('common.error'), t('auth.invalidEmail'));
       return;
     }
 
-    // ① Always check if the user already exists BEFORE sending OTP
     setLoading(true);
     setIsExistingUser(false);
     setExistingUserMessage('');
     const alreadyExists = await checkEmailExists(email);
     if (alreadyExists) {
-      // Email is taken — show alert and stop here, don't send OTP
       setLoading(false);
       Alert.alert(
-        'Account Already Registered',
-        'An account with this email already exists. Please sign in to your existing account instead of creating a new one.',
+        t('register.accountExists'),
+        t('register.accountExistsAlert'),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Go to Login →',
+            text: t('register.goToLogin'),
             onPress: () => navigation.navigate('Login', { prefillEmail: email.trim() }),
           },
         ]
@@ -101,26 +154,25 @@ export default function RegisterScreen({ navigation }) {
       return;
     }
 
-    // ② Email is free — send OTP
     try {
       await client.post('/auth/send-otp', { email: email.trim(), purpose: 'register' });
       setOtpSent(true);
-      Alert.alert('OTP Sent', 'Check your email for the 6-digit verification code.');
+      Alert.alert(t('auth.otpVerification'), t('auth.otpSubtitle', { email: email.trim() }));
     } catch (e) {
-      const msg = e.response?.data?.message || 'Failed to send OTP';
+      const msg = e.response?.data?.message || t('auth.failedToSendOtp');
       if (e.response?.status === 409 || msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists')) {
         setIsExistingUser(true);
-        setExistingUserMessage('This email is already registered with Apla Mandal. Please sign in instead.');
+        setExistingUserMessage(t('register.accountExistsAlert'));
         Alert.alert(
-          'Account Already Registered',
-          'An account with this email already exists. Please sign in instead.',
+          t('register.accountExists'),
+          t('register.accountExistsAlert'),
           [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Go to Login →', onPress: () => navigation.navigate('Login', { prefillEmail: email.trim() }) },
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('register.goToLogin'), onPress: () => navigation.navigate('Login', { prefillEmail: email.trim() }) },
           ]
         );
       } else {
-        Alert.alert('Error', msg);
+        Alert.alert(t('common.error'), msg);
       }
     } finally {
       setLoading(false);
@@ -129,7 +181,7 @@ export default function RegisterScreen({ navigation }) {
 
   const verifyOtp = async () => {
     if (!otp || otp.trim().length < 6) {
-      Alert.alert('Invalid OTP', 'Please enter the 6-digit OTP code');
+      Alert.alert(t('common.error'), t('auth.enterSixDigitOtp'));
       return;
     }
     setLoading(true);
@@ -138,55 +190,64 @@ export default function RegisterScreen({ navigation }) {
       setOtpVerified(true);
       setStep(2);
     } catch (e) {
-      const msg = e.response?.data?.message || 'Invalid OTP';
+      const msg = e.response?.data?.message || t('auth.invalidOtp');
       if (e.response?.status === 409 || msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists')) {
         setIsExistingUser(true);
-        setExistingUserMessage('This email is already registered with Apla Mandal. Please sign in instead.');
+        setExistingUserMessage(t('register.accountExistsAlert'));
         Alert.alert(
-          'Existing Account',
-          'This email is already registered with Apla Mandal. Please sign in to your existing account.',
+          t('register.accountExists'),
+          t('register.accountExistsAlert'),
           [
-            { text: 'Cancel', style: 'cancel' },
+            { text: t('common.cancel'), style: 'cancel' },
             {
-              text: 'Go to Login →',
+              text: t('register.goToLogin'),
               onPress: () => navigation.navigate('Login', { prefillEmail: email.trim() })
             }
           ]
         );
       } else {
-        Alert.alert('Error', msg);
+        Alert.alert(t('common.error'), msg);
       }
     } finally { setLoading(false); }
   };
 
   // ── Register ────────────────────────────────────────
   const handleRegister = async () => {
-    if (!name || !email || !password || !mandalName) {
-      Alert.alert('Missing fields', 'Please fill all fields'); return;
+    if (!validateStep2()) {
+      setStep(2);
+      Alert.alert(t('common.error'), t('register.errors.fillAllFields'));
+      return;
     }
-    if (password.length < 8) {
-      Alert.alert('Weak password', 'Password must be at least 8 characters'); return;
+    if (!eventTypes || eventTypes.length === 0) {
+      Alert.alert(t('register.selectionRequired'), t('register.keepOneEvent'));
+      return;
     }
     setLoading(true);
     try {
-      await register({ name, email: email.trim(), password, mobile, mandalName, eventTypes });
-      // Navigation handled by RootNavigator based on auth state
+      await register({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        mobile: mobile.trim() ? mobile.replace(/[^0-9]/g, '') : undefined,
+        mandalName: mandalName.trim(),
+        eventTypes
+      });
     } catch (e) {
       const msg = e.response?.data?.message || 'Registration failed';
       if (e.response?.status === 409 || msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists')) {
         Alert.alert(
-          'Existing Account',
-          'An account with this email is already registered. Please sign in instead.',
+          t('register.accountExists'),
+          t('register.accountExistsAlert'),
           [
-            { text: 'Cancel', style: 'cancel' },
+            { text: t('common.cancel'), style: 'cancel' },
             {
-              text: 'Go to Login →',
+              text: t('register.goToLogin'),
               onPress: () => navigation.navigate('Login', { prefillEmail: email.trim() })
             }
           ]
         );
       } else {
-        Alert.alert('Registration Failed', msg);
+        Alert.alert(t('common.error'), msg);
       }
     } finally { setLoading(false); }
   };
@@ -202,7 +263,7 @@ export default function RegisterScreen({ navigation }) {
           {/* Header */}
           <View style={s.header}>
             <Image source={require('../../assets/logo.jpg')} style={s.logo} />
-            <Text style={s.title}>Apla Mandal</Text>
+            <Text style={s.title}>{t('nav.appTitle')}</Text>
             <View style={s.stepper}>
               {[1,2,3].map(n => (
                 <View key={n} style={[s.dot, step === n && s.dotActive, step > n && s.dotDone]}>
@@ -213,34 +274,34 @@ export default function RegisterScreen({ navigation }) {
               ))}
             </View>
             <Text style={s.stepLabel}>
-              {step === 1 ? 'Verify Email' : step === 2 ? 'Account Details' : 'Event Types'}
+              {step === 1 ? t('register.verifyEmail') : step === 2 ? t('register.accountDetails') : t('register.eventTypes')}
             </Text>
           </View>
 
           {/* ── STEP 1: OTP ── */}
           {step === 1 && (
             <View style={s.card}>
-              <Text style={s.cardTitle}>✉️ Email Verification</Text>
+              <Text style={s.cardTitle}>✉️ {t('register.emailVerification')}</Text>
               
               {isExistingUser && (
                 <View style={s.existingBanner}>
-                  <Text style={s.existingTitle}>⚠️ Account Already Registered</Text>
+                  <Text style={s.existingTitle}>⚠️ {t('register.accountExists')}</Text>
                   <Text style={s.existingText}>
-                    An account with this email address already exists. Please sign in to your existing account.
+                    {t('register.accountExistsAlert')}
                   </Text>
                   <TouchableOpacity
                     style={s.loginRedirectBtn}
                     onPress={() => navigation.navigate('Login', { prefillEmail: email.trim() })}
                   >
-                    <Text style={s.loginRedirectBtnText}>Go to Login →</Text>
+                    <Text style={s.loginRedirectBtnText}>{t('register.goToLogin')}</Text>
                   </TouchableOpacity>
                 </View>
               )}
 
-              <Text style={s.label}>Email Address</Text>
+              <Text style={s.label}>{t('auth.emailLabel')}</Text>
               <TextInput
                 style={[s.input, isExistingUser && { borderColor: '#EF4444' }]}
-                placeholder="president@mandal.com"
+                placeholder={t('auth.emailPlaceholder')}
                 placeholderTextColor="#9ca3af"
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -257,50 +318,102 @@ export default function RegisterScreen({ navigation }) {
               />
               {!otpSent && !isExistingUser && (
                 <TouchableOpacity style={s.btnPrimary} onPress={sendOtp} disabled={loading}>
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Send OTP →</Text>}
+                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>{t('auth.sendOtp')}</Text>}
                 </TouchableOpacity>
               )}
               {otpSent && !otpVerified && !isExistingUser && (
                 <>
-                  <Text style={s.label}>Enter OTP</Text>
+                  <Text style={s.label}>{t('auth.otpVerification')}</Text>
                   <TextInput
                     style={s.input} placeholder="123456" placeholderTextColor="#9ca3af"
                     keyboardType="number-pad" maxLength={6} value={otp} onChangeText={setOtp}
                   />
                   <TouchableOpacity style={s.btnPrimary} onPress={verifyOtp} disabled={loading}>
-                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Verify OTP</Text>}
+                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>{t('auth.verifyOtp')}</Text>}
                   </TouchableOpacity>
                 </>
               )}
             </View>
           )}
 
-          {/* ── STEP 2: Account ── */}
+          {/* ── STEP 2: Account Details ── */}
           {step === 2 && (
             <View style={s.card}>
-              <Text style={s.cardTitle}>👤 Account Details</Text>
-              {[
-                { label: 'Your Name', value: name, setter: setName, placeholder: 'Ramesh Sharma' },
-                { label: 'Mandal Name', value: mandalName, setter: setMandalName, placeholder: 'Shri Ganesh Mandal' },
-                { label: 'Mobile Number (Optional)', value: mobile, setter: setMobile, placeholder: '9876543210', keyboard: 'phone-pad' },
-                { label: 'Password', value: password, setter: setPassword, placeholder: '8+ characters', secure: true },
-              ].map(field => (
-                <View key={field.label}>
-                  <Text style={s.label}>{field.label}</Text>
-                  <TextInput
-                    style={s.input}
-                    placeholder={field.placeholder}
-                    placeholderTextColor="#9ca3af"
-                    keyboardType={field.keyboard || 'default'}
-                    secureTextEntry={field.secure}
-                    value={field.value}
-                    onChangeText={field.setter}
-                    autoCapitalize="none"
-                  />
-                </View>
-              ))}
-              <TouchableOpacity style={s.btnPrimary} onPress={() => setStep(3)}>
-                <Text style={s.btnText}>Continue →</Text>
+              <Text style={s.cardTitle}>👤 {t('register.accountDetails')}</Text>
+
+              {/* Your Name */}
+              <Text style={s.label}>{t('register.yourName')} *</Text>
+              <TextInput
+                style={[s.input, errors.name && s.inputError]}
+                placeholder={t('register.yourNamePlaceholder')}
+                placeholderTextColor="#9ca3af"
+                value={name}
+                onChangeText={(text) => {
+                  setName(text);
+                  clearError('name');
+                }}
+                autoCapitalize="words"
+              />
+              {errors.name ? <Text style={s.errorText}>⚠️ {errors.name}</Text> : null}
+
+              {/* Mandal Name */}
+              <Text style={s.label}>{t('register.mandalName')} *</Text>
+              <TextInput
+                style={[s.input, errors.mandalName && s.inputError]}
+                placeholder={t('register.mandalNamePlaceholder')}
+                placeholderTextColor="#9ca3af"
+                value={mandalName}
+                onChangeText={(text) => {
+                  setMandalName(text);
+                  clearError('mandalName');
+                }}
+                autoCapitalize="words"
+              />
+              {errors.mandalName ? <Text style={s.errorText}>⚠️ {errors.mandalName}</Text> : null}
+
+              {/* Mobile */}
+              <Text style={s.label}>{t('register.mobileOptional')}</Text>
+              <TextInput
+                style={[s.input, errors.mobile && s.inputError]}
+                placeholder={t('register.mobilePlaceholder')}
+                placeholderTextColor="#9ca3af"
+                keyboardType="phone-pad"
+                maxLength={10}
+                value={mobile}
+                onChangeText={(text) => {
+                  setMobile(text.replace(/[^0-9]/g, ''));
+                  clearError('mobile');
+                }}
+              />
+              {errors.mobile ? <Text style={s.errorText}>⚠️ {errors.mobile}</Text> : null}
+
+              {/* Password */}
+              <Text style={s.label}>{t('register.password')} *</Text>
+              <View style={s.passwordWrapper}>
+                <TextInput
+                  style={[s.input, s.passwordInput, errors.password && s.inputError]}
+                  placeholder={t('register.passwordPlaceholder')}
+                  placeholderTextColor="#9ca3af"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    clearError('password');
+                  }}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={s.togglePassBtn}
+                  onPress={() => setShowPassword(!showPassword)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.togglePassText}>{showPassword ? t('register.hide') : t('register.show')}</Text>
+                </TouchableOpacity>
+              </View>
+              {errors.password ? <Text style={s.errorText}>⚠️ {errors.password}</Text> : null}
+
+              <TouchableOpacity style={s.btnPrimary} onPress={handleStep2Continue}>
+                <Text style={s.btnText}>{t('register.continueToEvents')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -309,34 +422,40 @@ export default function RegisterScreen({ navigation }) {
           {step === 3 && (
             <View style={s.card}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={s.cardTitle}>🎪 Event Types</Text>
+                <Text style={s.cardTitle}>🎪 {t('register.eventTypes')}</Text>
                 <Text style={{ fontSize: 12, fontWeight: '700', color: eventTypes.length === 3 ? '#FF6B00' : '#6b7280' }}>
-                  {eventTypes.length}/3 selected
+                  {t('register.selectedCount', { count: eventTypes.length })}
                 </Text>
               </View>
-              <Text style={s.hint}>Select up to 3 event types your mandal organizes</Text>
+              <Text style={s.hint}>{t('register.selectUpToThree')}</Text>
               <View style={s.eventGrid}>
-                {EVENT_TYPES.map(t => (
+                {EVENT_TYPES.map(item => (
                   <TouchableOpacity
-                    key={t.id}
-                    style={[s.eventCard, eventTypes.includes(t.id) && s.eventCardSel]}
-                    onPress={() => toggleEvent(t.id)}
+                    key={item.id}
+                    style={[s.eventCard, eventTypes.includes(item.id) && s.eventCardSel]}
+                    onPress={() => toggleEvent(item.id)}
                   >
-                    <Text style={s.eventIcon}>{t.icon}</Text>
-                    <Text style={[s.eventName, eventTypes.includes(t.id) && s.eventNameSel]}>{t.id}</Text>
-                    {eventTypes.includes(t.id) && <View style={s.eventCheck}><Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>✓</Text></View>}
+                    <Text style={s.eventIcon}>{item.icon}</Text>
+                    <Text style={[s.eventName, eventTypes.includes(item.id) && s.eventNameSel]}>
+                      {t(`events.types.${item.id}`) || item.id}
+                    </Text>
+                    {eventTypes.includes(item.id) && <View style={s.eventCheck}><Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>✓</Text></View>}
                   </TouchableOpacity>
                 ))}
               </View>
               <TouchableOpacity style={s.btnPrimary} onPress={handleRegister} disabled={loading}>
-                {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Create My Mandal 🎉</Text>}
+                {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>{t('register.createMyMandal')}</Text>}
+              </TouchableOpacity>
+
+              <TouchableOpacity style={s.backStepBtn} onPress={() => setStep(2)}>
+                <Text style={s.backStepText}>{t('register.editAccountDetails')}</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {/* Sign in link */}
           <TouchableOpacity style={s.link} onPress={() => navigation.navigate('Login')}>
-            <Text style={s.linkText}>Already have an account? <Text style={s.linkBold}>Sign in</Text></Text>
+            <Text style={s.linkText}>{t('register.alreadyHaveAccount')} <Text style={s.linkBold}>{t('register.signIn')}</Text></Text>
           </TouchableOpacity>
 
         </ScrollView>
@@ -459,5 +578,46 @@ const s = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '800',
+  },
+  inputError: {
+    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: -8,
+    marginBottom: 12,
+    marginLeft: 2,
+  },
+  passwordWrapper: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  passwordInput: {
+    paddingRight: 60,
+  },
+  togglePassBtn: {
+    position: 'absolute',
+    right: 14,
+    top: 14,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+  },
+  togglePassText: {
+    color: PRIMARY,
+    fontWeight: '800',
+    fontSize: 12.5,
+  },
+  backStepBtn: {
+    alignItems: 'center',
+    marginTop: 14,
+    paddingVertical: 8,
+  },
+  backStepText: {
+    color: '#64748B',
+    fontSize: 13.5,
+    fontWeight: '700',
   },
 });

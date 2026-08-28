@@ -16,10 +16,13 @@ import ApprovalsScreen from '../screens/ApprovalsScreen';
 import ChatScreen from '../screens/ChatScreen';
 import MainTabNavigator from './MainTabNavigator';
 
+import { useLanguage } from '../context/LanguageContext';
+
 const Stack = createNativeStackNavigator();
 
 export default function RootNavigator() {
   const { user, mandal, loading } = useAuth();
+  const { t } = useLanguage();
 
   if (loading) {
     return (
@@ -33,8 +36,6 @@ export default function RootNavigator() {
   const isSuperAdmin = user?.role === 'superadmin';
   const isPresident = user?.role === 'president';
 
-  // If user is a president with a mandalId, wait until mandal object is loaded
-  // to prevent any frame glitch or screen flicker
   if (user && isPresident && user.mandalId && mandal === null) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F8F6' }}>
@@ -43,40 +44,21 @@ export default function RootNavigator() {
     );
   }
 
-  // An existing registered user should NEVER be trapped in mandal setup.
-  // Mandal Setup (OnboardingScreen) is ONLY rendered for a brand-new auto-created OTP president
-  // who has not yet completed their Mandal Profile details.
-  // Setup is considered COMPLETED if any of the following is true:
-  // 1. mandal.checklist.profileComplete is true
-  // 2. mandal.onboardingComplete is true
-  // 3. mandal.name is customized and does not contain placeholder "'s Mandal"
-  // 4. The user is a member/collector/treasurer/secretary/superadmin (not president)
-  const isSetupCompleted = !isPresident || (
-    mandal?.checklist?.profileComplete === true ||
-    mandal?.onboardingComplete === true ||
-    (mandal?.name && !mandal.name.includes("'s Mandal"))
+  const needsOnboarding = Boolean(
+    user &&
+    isPresident &&
+    (!mandal?.name || mandal.name.includes("'s Mandal") || !mandal?.checklist?.profileComplete)
   );
 
-  // Check subscription requirements:
-  // Show SubscriptionScreen immediately after login/launch if:
-  // 1. User is using the app for the 1st time / has not selected a plan (mandal?.checklist?.planSelected !== true)
-  // 2. User has no active plan (mandal?.plan is missing or mandal?.planStatus !== 'Active')
-  // 3. User's subscription plan is expired (mandal?.planStatus === 'Expired')
-  const isPlanActive = Boolean(
-    mandal?.plan &&
-    mandal?.plan !== 'None' &&
-    mandal?.planStatus === 'Active' &&
-    mandal?.checklist?.planSelected === true
-  );
-  const isPlanExpired = mandal?.planStatus === 'Expired';
-  const hasPlanSelected = mandal?.checklist?.planSelected === true;
-  const hasNoPlan = !mandal?.plan || mandal?.plan === 'None';
+  const hasPlanSelected = !!mandal?.checklist?.planSelected;
+  const isPlanActive = mandal?.planStatus === 'Active';
+  const hasValidPlan = mandal?.plan && mandal.plan !== 'None';
 
-  const needsSubscription = Boolean(
+  const needsSubscription = (
     user &&
     isPresident &&
     !needsOnboarding &&
-    (!hasPlanSelected || !isPlanActive || isPlanExpired || hasNoPlan)
+    !(hasPlanSelected && isPlanActive && hasValidPlan)
   );
 
   return (
@@ -108,7 +90,7 @@ export default function RootNavigator() {
           // ── Subscription Gate ───────────────────────────
           <>
             <Stack.Screen
-              name="Subscription"
+              name="SubscriptionGate"
               component={SubscriptionScreen}
               options={{ headerShown: false }}
             />
@@ -117,18 +99,16 @@ export default function RootNavigator() {
           // ── Main App Stack ──────────────────────────────
           <>
             <Stack.Screen name="MainTabs" component={MainTabNavigator} options={{ headerShown: false }} />
-            <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: 'Subscription Plans' }} />
-            <Stack.Screen name="Collection" component={CollectionScreen} options={{ title: 'New Collection' }} />
-            <Stack.Screen name="Receipts" component={ReceiptsScreen} options={{ title: 'Donation Receipts' }} />
-            <Stack.Screen name="Expenses" component={ExpensesScreen} options={{ title: 'Expenses' }} />
-            <Stack.Screen name="Approvals" component={ApprovalsScreen} options={{ title: 'Pending Approvals' }} />
-            <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'Committee Chat' }} />
-            <Stack.Screen name="Events" component={EventsScreen} options={{ title: 'Events & Tasks' }} />
+            <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: t('nav.subscription') }} />
+            <Stack.Screen name="Collection" component={CollectionScreen} options={{ title: t('nav.collection') }} />
+            <Stack.Screen name="Receipts" component={ReceiptsScreen} options={{ title: t('nav.donationReceipts') }} />
+            <Stack.Screen name="Expenses" component={ExpensesScreen} options={{ title: t('nav.expenses') }} />
+            <Stack.Screen name="Approvals" component={ApprovalsScreen} options={{ title: t('nav.approvals') }} />
+            <Stack.Screen name="Chat" component={ChatScreen} options={{ title: t('nav.chat') }} />
+            <Stack.Screen name="Events" component={EventsScreen} options={{ title: t('nav.events') }} />
           </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
-
-

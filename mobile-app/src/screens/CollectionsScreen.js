@@ -8,29 +8,36 @@ import { useFocusEffect } from '@react-navigation/native';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import ReceiptModal from '../components/ReceiptModal';
 
-export default function ExpensesScreen() {
-  const [expenses, setExpenses] = useState([]);
+const MODES = ['cash', 'upi', 'card', 'netbanking'];
+const QUICK_AMOUNTS = [100, 250, 500, 1000, 2100, 5100];
+
+export default function CollectionsScreen() {
+  const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  
+
   // Modal states
   const [showModal, setShowModal] = useState(false);
-  const [editingExpense, setEditingExpense] = useState(null);
-  const [selectedExpense, setSelectedExpense] = useState(null);
+  const [editingCollection, setEditingCollection] = useState(null);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [receiptToShow, setReceiptToShow] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Form State
+  const [contributor, setContributor] = useState('');
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('Misc / Other');
   const [amount, setAmount] = useState('');
-  const [vendor, setVendor] = useState('');
+  const [category, setCategory] = useState('Donation');
+  const [paymentMode, setPaymentMode] = useState('cash');
   const [date, setDate] = useState('');
+  const [mobile, setMobile] = useState('');
   const [description, setDescription] = useState('');
   const [formErrors, setFormErrors] = useState({});
 
-  const { user } = useAuth();
+  const { mandal, user } = useAuth();
   const { t } = useLanguage();
 
   const isPresident = user?.role === 'president' || user?.role === 'superadmin' || user?.role === 'treasurer';
@@ -38,26 +45,15 @@ export default function ExpensesScreen() {
 
   const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
-  const CATEGORIES = [
-    { id: 'Pooja & Aarti', label: t('expenses.categories.Pooja & Aarti') || 'Pooja & Aarti', icon: '🪔' },
-    { id: 'Decoration', label: t('expenses.categories.Decoration') || 'Decoration', icon: '🎨' },
-    { id: 'Sound & Lights', label: t('expenses.categories.Sound & Lights') || 'Sound & Lights', icon: '🔊' },
-    { id: 'Food & Prasad', label: t('expenses.categories.Food & Prasad') || 'Food & Prasad', icon: '🍲' },
-    { id: 'Visarjan / Procession', label: t('expenses.categories.Visarjan / Procession') || 'Visarjan / Procession', icon: '🥁' },
-    { id: 'Tent & Stage', label: t('expenses.categories.Tent & Stage') || 'Tent & Stage', icon: '🎪' },
-    { id: 'Security & Safety', label: t('expenses.categories.Security & Safety') || 'Security & Safety', icon: '🛡️' },
-    { id: 'Misc / Other', label: t('expenses.categories.Misc / Other') || 'Misc / Other', icon: '💸' }
-  ];
-
   const load = async () => {
     try {
       setError(null);
-      const { data } = await client.get('/expenses');
+      const { data } = await client.get('/donations');
       if (Array.isArray(data)) {
-        setExpenses(data);
+        setCollections(data);
       }
     } catch (err) {
-      setError(t('expenses.unableToLoad'));
+      setError(t('collections.unableToLoad'));
     } finally {
       setLoading(false);
     }
@@ -71,28 +67,32 @@ export default function ExpensesScreen() {
     setRefreshing(false);
   };
 
-  const totalExpenses = expenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const totalCollections = collections.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 
   const openAddModal = () => {
-    setEditingExpense(null);
+    setEditingCollection(null);
+    setContributor('');
     setTitle('');
-    setCategory(CATEGORIES[0].id);
     setAmount('');
-    setVendor('');
+    setCategory('Donation');
+    setPaymentMode('cash');
     setDate(new Date().toISOString().split('T')[0]);
+    setMobile('');
     setDescription('');
     setFormErrors({});
     setShowModal(true);
   };
 
   const openEditModal = (item) => {
-    setSelectedExpense(null);
-    setEditingExpense(item);
-    setTitle(item.title || item.category || '');
-    setCategory(item.category || CATEGORIES[0].id);
+    setSelectedRecord(null);
+    setEditingCollection(item);
+    setContributor(item.donorName || item.contributor || '');
+    setTitle(item.title || item.purpose || '');
     setAmount(String(item.amount || ''));
-    setVendor(item.vendor || '');
+    setCategory(item.category || 'Donation');
+    setPaymentMode(item.paymentMode || 'cash');
     setDate(item.date ? new Date(item.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+    setMobile(item.donorMobile || '');
     setDescription(item.description || '');
     setFormErrors({});
     setShowModal(true);
@@ -100,12 +100,12 @@ export default function ExpensesScreen() {
 
   const validate = () => {
     const errs = {};
-    if (!title.trim()) {
-      errs.title = t('expenses.enterTitleError');
+    if (!contributor.trim() && !title.trim()) {
+      errs.contributor = t('collections.enterTitleError');
     }
     const numAmount = Number(amount);
     if (!amount || isNaN(numAmount) || numAmount <= 0) {
-      errs.amount = t('expenses.validAmountError');
+      errs.amount = t('collections.validAmountError');
     }
     setFormErrors(errs);
     return Object.keys(errs).length === 0;
@@ -117,29 +117,31 @@ export default function ExpensesScreen() {
     setSubmitting(true);
     const numAmount = Number(amount);
     const payload = {
-      title: title.trim(),
-      category,
+      donorName: contributor.trim() || title.trim(),
+      contributor: contributor.trim(),
+      title: title.trim() || contributor.trim() || 'General Donation',
+      purpose: title.trim() || contributor.trim() || 'General Donation',
       amount: numAmount,
-      vendor: vendor.trim() || undefined,
+      category,
+      paymentMode,
       date: date || new Date().toISOString(),
+      donorMobile: mobile.trim() || undefined,
       description: description.trim() || undefined,
-      status: isPresident ? 'Approved' : 'Submitted'
+      idempotencyKey: editingCollection ? undefined : `col-${Date.now()}`
     };
 
     try {
-      if (editingExpense) {
-        await client.put(`/expenses/${editingExpense._id}`, payload);
+      if (editingCollection) {
+        await client.put(`/donations/${editingCollection._id}`, payload);
       } else {
-        await client.post('/expenses', payload);
+        const { data } = await client.post('/donations', payload);
+        // Show receipt modal after generating
+        setReceiptToShow(data);
       }
       setShowModal(false);
-      Alert.alert(
-        t('common.success'),
-        isPresident ? t('expenses.expenseRecordedDesc') : t('expenses.requestSubmittedDesc')
-      );
       load();
     } catch (err) {
-      Alert.alert(t('common.error'), err.response?.data?.message || 'Failed to save expense.');
+      Alert.alert(t('common.error'), err.response?.data?.message || 'Failed to save collection.');
     } finally {
       setSubmitting(false);
     }
@@ -147,8 +149,8 @@ export default function ExpensesScreen() {
 
   const handleDelete = (item) => {
     Alert.alert(
-      t('expenses.deleteExpense'),
-      t('expenses.deleteConfirm'),
+      t('collections.deleteCollection'),
+      t('collections.deleteConfirm'),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
@@ -156,53 +158,16 @@ export default function ExpensesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await client.delete(`/expenses/${item._id}`);
-              setSelectedExpense(null);
+              await client.delete(`/donations/${item._id}`);
+              setSelectedRecord(null);
               load();
             } catch (err) {
-              Alert.alert(t('common.error'), err.response?.data?.message || 'Failed to delete expense.');
+              Alert.alert(t('common.error'), err.response?.data?.message || 'Failed to delete record.');
             }
           }
         }
       ]
     );
-  };
-
-  const handleApprove = async (id, cat, amt) => {
-    Alert.alert(
-      t('approvals.approveExpense'),
-      `${t('approvals.approveExpense')} ${cat} (${inr(amt)})?`,
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: `${t('approvals.approved')} ✓`,
-          onPress: async () => {
-            try {
-              await client.patch(`/expenses/${id}/approve`);
-              setSelectedExpense(null);
-              load();
-            } catch (err) {
-              Alert.alert(t('common.error'), err.response?.data?.message || 'Failed to approve');
-            }
-          }
-        }
-      ]
-    );
-  };
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'Approved':
-        return { text: `✓ ${t('expenses.approved')}`, bg: '#DCFCE7', color: '#15803D' };
-      case 'Submitted':
-        return { text: `⏳ ${t('expenses.pendingApproval')}`, bg: '#FEF3C7', color: '#B45309' };
-      case 'Paid':
-        return { text: `💵 ${t('expenses.paid')}`, bg: '#E0E7FF', color: '#4338CA' };
-      case 'Rejected':
-        return { text: `✕ ${t('expenses.rejected')}`, bg: '#FEE2E2', color: '#B91C1C' };
-      default:
-        return { text: status || 'Draft', bg: '#F3F4F6', color: '#4B5563' };
-    }
   };
 
   const formatDateHeader = (dateStr) => {
@@ -217,22 +182,31 @@ export default function ExpensesScreen() {
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
+  const getModeLabel = (m) => {
+    switch (m) {
+      case 'cash': return `💵 ${t('collections.modes.cash') || 'Cash'}`;
+      case 'upi': return `📱 ${t('collections.modes.upi') || 'UPI'}`;
+      case 'card': return `💳 ${t('collections.modes.card') || 'Card'}`;
+      default: return `🏦 ${t('collections.modes.netbanking') || 'Online'}`;
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {/* 1. Header Card: Total Expenses */}
+      {/* 1. Header Card: Total Collections */}
       <View style={styles.headerCard}>
         <View style={styles.headerTopRow}>
           <View style={styles.badgePill}>
-            <Text style={styles.badgePillText}>💸 {t('expenses.title')}</Text>
+            <Text style={styles.badgePillText}>💰 {t('collections.title')}</Text>
           </View>
-          <Text style={styles.countPill}>{expenses.length} {t('common.total')}</Text>
+          <Text style={styles.countPill}>{collections.length} {t('common.total')}</Text>
         </View>
 
-        <Text style={styles.headerTitle}>{t('expenses.totalExpenses')}</Text>
-        <Text style={styles.headerAmount}>{inr(totalExpenses)}</Text>
+        <Text style={styles.headerTitle}>{t('collections.totalCollections')}</Text>
+        <Text style={styles.headerAmount}>{inr(totalCollections)}</Text>
 
         <TouchableOpacity style={styles.headerAddBtn} onPress={openAddModal} activeOpacity={0.88}>
-          <Text style={styles.headerAddBtnText}>+ {t('expenses.addExpense')}</Text>
+          <Text style={styles.headerAddBtnText}>+ {t('collections.addCollection')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -247,64 +221,58 @@ export default function ExpensesScreen() {
           <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={styles.errorTitle}>{error}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={load} activeOpacity={0.8}>
-            <Text style={styles.retryBtnText}>{t('expenses.retry')}</Text>
+            <Text style={styles.retryBtnText}>{t('collections.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
-          data={expenses}
+          data={collections}
           keyExtractor={(item) => item._id}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F97316']} tintColor="#F97316" />}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => {
-            const badge = getStatusBadge(item.status);
-            const matchedCategory = CATEGORIES.find(c => c.id === item.category);
-            const categoryLabel = matchedCategory ? matchedCategory.label : item.category;
-            const categoryIcon = matchedCategory ? matchedCategory.icon : '💸';
-
-            return (
-              <TouchableOpacity
-                style={styles.card}
-                activeOpacity={0.85}
-                onPress={() => setSelectedExpense(item)}
-              >
-                <View style={styles.cardHeader}>
-                  <View style={styles.iconCircle}>
-                    <Text style={{ fontSize: 18 }}>{categoryIcon}</Text>
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.cardTitle} numberOfLines={1}>{item.title || categoryLabel}</Text>
-                    <Text style={styles.cardCategory}>{categoryLabel} {item.vendor ? `• ${item.vendor}` : ''}</Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.cardAmount}>{inr(item.amount)}</Text>
-                    <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
-                      <Text style={[styles.statusBadgeText, { color: badge.color }]}>{badge.text}</Text>
-                    </View>
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.card}
+              activeOpacity={0.85}
+              onPress={() => setSelectedRecord(item)}
+            >
+              <View style={styles.cardHeader}>
+                <View style={styles.avatarBox}>
+                  <Text style={styles.avatarText}>
+                    {item.donorName ? item.donorName[0].toUpperCase() : '🙏'}
+                  </Text>
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.cardTitle} numberOfLines={1}>
+                    {item.donorName || item.contributor || item.title}
+                  </Text>
+                  <Text style={styles.cardSubtitle} numberOfLines={1}>
+                    {item.purpose || item.title || 'Donation'} {item.receiptNumber ? `• #${item.receiptNumber}` : ''}
+                  </Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={styles.cardAmount}>{inr(item.amount)}</Text>
+                  <View style={styles.modePill}>
+                    <Text style={styles.modePillText}>{item.paymentMode ? item.paymentMode.toUpperCase() : 'CASH'}</Text>
                   </View>
                 </View>
+              </View>
 
-                {item.description ? (
-                  <View style={styles.descBox}>
-                    <Text style={styles.cardDesc} numberOfLines={2}>"{item.description}"</Text>
-                  </View>
-                ) : null}
-
-                <View style={styles.cardFooter}>
-                  <Text style={styles.cardDate}>{formatDateHeader(item.date || item.createdAt)}</Text>
-                  <Text style={styles.cardDetailsHint}>•••</Text>
-                </View>
-              </TouchableOpacity>
-            );
-          }}
+              <View style={styles.cardFooter}>
+                <Text style={styles.cardDate}>{formatDateHeader(item.date || item.createdAt)}</Text>
+                {item.donorMobile ? <Text style={styles.cardMobile}>📱 {item.donorMobile}</Text> : null}
+                <Text style={styles.cardDetailsHint}>•••</Text>
+              </View>
+            </TouchableOpacity>
+          )}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconCircle}>
-                <Text style={styles.emptyIcon}>💸</Text>
+                <Text style={styles.emptyIcon}>💰</Text>
               </View>
-              <Text style={styles.emptyTitle}>{t('expenses.noExpensesYet')}</Text>
-              <Text style={styles.emptySubtitle}>{t('expenses.noExpensesSub')}</Text>
+              <Text style={styles.emptyTitle}>{t('collections.noCollectionsYet')}</Text>
+              <Text style={styles.emptySubtitle}>{t('collections.noCollectionsSub')}</Text>
             </View>
           }
         />
@@ -315,62 +283,76 @@ export default function ExpensesScreen() {
         style={styles.fab}
         onPress={openAddModal}
         activeOpacity={0.88}
-        accessibilityLabel={t('expenses.addExpense')}
+        accessibilityLabel={t('collections.addCollection')}
       >
         <Text style={styles.fabIcon}>+</Text>
       </TouchableOpacity>
 
       {/* 4. Details / Actions Modal */}
-      <Modal visible={!!selectedExpense} transparent animationType="fade" onRequestClose={() => setSelectedExpense(null)}>
+      <Modal visible={!!selectedRecord} transparent animationType="fade" onRequestClose={() => setSelectedRecord(null)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.detailCard}>
             <View style={styles.detailHeader}>
-              <Text style={styles.detailTitle}>{selectedExpense?.title || selectedExpense?.category}</Text>
-              <TouchableOpacity onPress={() => setSelectedExpense(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Text style={styles.detailTitle}>{selectedRecord?.donorName || selectedRecord?.title}</Text>
+              <TouchableOpacity onPress={() => setSelectedRecord(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <Text style={styles.detailClose}>✕</Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.detailAmount}>{inr(selectedExpense?.amount)}</Text>
-            
+            <Text style={styles.detailAmount}>{inr(selectedRecord?.amount)}</Text>
+
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>{t('expenses.category')}:</Text>
-              <Text style={styles.detailValue}>{selectedExpense?.category}</Text>
+              <Text style={styles.detailLabel}>{t('collections.collectionTitle')}:</Text>
+              <Text style={styles.detailValue}>{selectedRecord?.purpose || selectedRecord?.title || 'Donation'}</Text>
             </View>
 
-            {selectedExpense?.vendor ? (
+            {selectedRecord?.receiptNumber ? (
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>{t('expenses.payeeVendor')}:</Text>
-                <Text style={styles.detailValue}>{selectedExpense?.vendor}</Text>
+                <Text style={styles.detailLabel}>Receipt #:</Text>
+                <Text style={styles.detailValue}>#{selectedRecord.receiptNumber}</Text>
+              </View>
+            ) : null}
+
+            {selectedRecord?.donorMobile ? (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Mobile:</Text>
+                <Text style={styles.detailValue}>📱 {selectedRecord.donorMobile}</Text>
               </View>
             ) : null}
 
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>{t('expenses.date')}:</Text>
-              <Text style={styles.detailValue}>{selectedExpense ? formatDateHeader(selectedExpense.date || selectedExpense.createdAt) : ''}</Text>
+              <Text style={styles.detailLabel}>{t('collections.paymentMode')}:</Text>
+              <Text style={styles.detailValue}>{selectedRecord?.paymentMode?.toUpperCase() || 'CASH'}</Text>
             </View>
 
-            {selectedExpense?.description ? (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>{t('collections.date')}:</Text>
+              <Text style={styles.detailValue}>{selectedRecord ? formatDateHeader(selectedRecord.date || selectedRecord.createdAt) : ''}</Text>
+            </View>
+
+            {selectedRecord?.description ? (
               <View style={styles.detailDescBox}>
-                <Text style={styles.detailDesc}>{selectedExpense?.description}</Text>
+                <Text style={styles.detailDesc}>{selectedRecord?.description}</Text>
               </View>
             ) : null}
 
             {/* Action buttons */}
             <View style={styles.detailActionRow}>
-              {canManage && selectedExpense?.status === 'Submitted' && (
-                <TouchableOpacity
-                  style={styles.actionBtnApprove}
-                  onPress={() => handleApprove(selectedExpense._id, selectedExpense.category, selectedExpense.amount)}
-                >
-                  <Text style={styles.actionBtnApproveText}>✓ {t('approvals.approveBtn')}</Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={styles.actionBtnReceipt}
+                onPress={() => {
+                  const r = selectedRecord;
+                  setSelectedRecord(null);
+                  setReceiptToShow(r);
+                }}
+              >
+                <Text style={styles.actionBtnReceiptText}>🧾 {t('receipts.shareWhatsApp')}</Text>
+              </TouchableOpacity>
 
               {canManage && (
                 <TouchableOpacity
                   style={styles.actionBtnEdit}
-                  onPress={() => openEditModal(selectedExpense)}
+                  onPress={() => openEditModal(selectedRecord)}
                 >
                   <Text style={styles.actionBtnEditText}>✏️ {t('common.edit')}</Text>
                 </TouchableOpacity>
@@ -379,7 +361,7 @@ export default function ExpensesScreen() {
               {canManage && (
                 <TouchableOpacity
                   style={styles.actionBtnDelete}
-                  onPress={() => handleDelete(selectedExpense)}
+                  onPress={() => handleDelete(selectedRecord)}
                 >
                   <Text style={styles.actionBtnDeleteText}>🗑️ {t('common.delete')}</Text>
                 </TouchableOpacity>
@@ -389,32 +371,32 @@ export default function ExpensesScreen() {
         </View>
       </Modal>
 
-      {/* 5. Add / Edit Expense Form Modal */}
+      {/* 5. Add / Edit Collection Form Modal */}
       <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
         <KeyboardAvoidingView style={styles.modalBackdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.sheetContainer}>
             <View style={styles.sheetHandle} />
             <Text style={styles.sheetTitle}>
-              {editingExpense ? t('expenses.editExpense') : t('expenses.newExpense')}
+              {editingCollection ? t('collections.editCollection') : t('collections.newCollection')}
             </Text>
 
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 460 }}>
-              {/* Expense Title */}
-              <Text style={styles.inputLabel}>{t('expenses.expenseTitle')}</Text>
+              {/* Contributor Name */}
+              <Text style={styles.inputLabel}>{t('collections.contributorName')}</Text>
               <TextInput
-                style={[styles.input, formErrors.title && styles.inputError]}
-                placeholder={t('expenses.titlePlaceholder')}
+                style={[styles.input, formErrors.contributor && styles.inputError]}
+                placeholder={t('collections.contributorPlaceholder')}
                 placeholderTextColor="#94A3B8"
-                value={title}
+                value={contributor}
                 onChangeText={(text) => {
-                  setTitle(text);
-                  if (formErrors.title) setFormErrors(prev => ({ ...prev, title: null }));
+                  setContributor(text);
+                  if (formErrors.contributor) setFormErrors(prev => ({ ...prev, contributor: null }));
                 }}
               />
-              {formErrors.title ? <Text style={styles.errorText}>{formErrors.title}</Text> : null}
+              {formErrors.contributor ? <Text style={styles.errorText}>{formErrors.contributor}</Text> : null}
 
               {/* Amount */}
-              <Text style={styles.inputLabel}>{t('expenses.expenseAmount')}</Text>
+              <Text style={styles.inputLabel}>{t('collections.amount')}</Text>
               <TextInput
                 style={[styles.input, styles.amountInput, formErrors.amount && styles.inputError]}
                 placeholder="₹ 0"
@@ -428,25 +410,54 @@ export default function ExpensesScreen() {
               />
               {formErrors.amount ? <Text style={styles.errorText}>{formErrors.amount}</Text> : null}
 
-              {/* Category Chips */}
-              <Text style={styles.inputLabel}>{t('expenses.category')}</Text>
-              <View style={styles.categoryChipsRow}>
-                {CATEGORIES.map((cat) => (
+              {/* Quick Amount Chips */}
+              <View style={styles.quickRow}>
+                {QUICK_AMOUNTS.map((amt) => (
                   <TouchableOpacity
-                    key={cat.id}
-                    style={[styles.catChip, category === cat.id && styles.catChipActive]}
-                    onPress={() => setCategory(cat.id)}
+                    key={amt}
+                    style={[styles.quickChip, amount === String(amt) && styles.quickChipActive]}
+                    onPress={() => {
+                      setAmount(String(amt));
+                      if (formErrors.amount) setFormErrors(prev => ({ ...prev, amount: null }));
+                    }}
                     activeOpacity={0.75}
                   >
-                    <Text style={[styles.catChipText, category === cat.id && styles.catChipTextActive]}>
-                      {cat.icon} {cat.label}
+                    <Text style={[styles.quickChipText, amount === String(amt) && styles.quickChipTextActive]}>
+                      ₹{amt.toLocaleString('en-IN')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Purpose / Title */}
+              <Text style={styles.inputLabel}>{t('collections.collectionTitle')}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder={t('collections.titlePlaceholder')}
+                placeholderTextColor="#94A3B8"
+                value={title}
+                onChangeText={setTitle}
+              />
+
+              {/* Payment Mode */}
+              <Text style={styles.inputLabel}>{t('collections.paymentMode')}</Text>
+              <View style={styles.modeRow}>
+                {MODES.map((m) => (
+                  <TouchableOpacity
+                    key={m}
+                    style={[styles.modeChip, paymentMode === m && styles.modeChipActive]}
+                    onPress={() => setPaymentMode(m)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.modeChipText, paymentMode === m && styles.modeChipTextActive]}>
+                      {getModeLabel(m)}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
               {/* Date */}
-              <Text style={styles.inputLabel}>{t('expenses.date')}</Text>
+              <Text style={styles.inputLabel}>{t('collections.date')}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="YYYY-MM-DD"
@@ -455,21 +466,23 @@ export default function ExpensesScreen() {
                 onChangeText={setDate}
               />
 
-              {/* Vendor */}
-              <Text style={styles.inputLabel}>{t('expenses.payeeVendor')}</Text>
+              {/* Mobile */}
+              <Text style={styles.inputLabel}>{t('collection.donorMobile')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder={t('expenses.vendorPlaceholder')}
+                placeholder="10-digit mobile number"
                 placeholderTextColor="#94A3B8"
-                value={vendor}
-                onChangeText={setVendor}
+                keyboardType="number-pad"
+                maxLength={10}
+                value={mobile}
+                onChangeText={(t) => setMobile(t.replace(/[^0-9]/g, ''))}
               />
 
               {/* Description */}
-              <Text style={styles.inputLabel}>{t('expenses.notesDescription')}</Text>
+              <Text style={styles.inputLabel}>{t('collections.description')}</Text>
               <TextInput
-                style={[styles.input, { height: 75, textAlignVertical: 'top' }]}
-                placeholder={t('expenses.notesPlaceholder')}
+                style={[styles.input, { height: 70, textAlignVertical: 'top' }]}
+                placeholder={t('collections.descriptionPlaceholder')}
                 placeholderTextColor="#94A3B8"
                 multiline
                 value={description}
@@ -487,7 +500,7 @@ export default function ExpensesScreen() {
               {submitting ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.submitBtnText}>{t('expenses.saveExpense')} ✓</Text>
+                <Text style={styles.submitBtnText}>{t('collections.saveCollection')} ✓</Text>
               )}
             </TouchableOpacity>
 
@@ -497,13 +510,22 @@ export default function ExpensesScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* 6. Digital Receipt Modal with WhatsApp Sharing */}
+      <ReceiptModal
+        visible={!!receiptToShow}
+        receipt={receiptToShow}
+        mandal={mandal}
+        collectorName={user?.name}
+        onClose={() => setReceiptToShow(null)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F7F4' },
-  
+
   /* 1. Header Card */
   headerCard: {
     backgroundColor: '#FFFFFF',
@@ -526,13 +548,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   badgePill: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
     paddingHorizontal: 10,
     paddingVertical: 3.5,
     borderRadius: 8,
   },
   badgePillText: {
-    color: '#EF4444',
+    color: '#059669',
     fontWeight: '800',
     fontSize: 11,
   },
@@ -549,21 +571,21 @@ const styles = StyleSheet.create({
   headerAmount: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#EF4444',
+    color: '#059669',
     letterSpacing: -0.5,
     marginTop: 2,
     marginBottom: 14,
   },
   headerAddBtn: {
-    backgroundColor: '#FFF1F2',
+    backgroundColor: '#ECFDF5',
     borderWidth: 1,
-    borderColor: '#FECDD3',
+    borderColor: '#A7F3D0',
     borderRadius: 12,
     paddingVertical: 9,
     alignItems: 'center',
   },
   headerAddBtnText: {
-    color: '#E11D48',
+    color: '#059669',
     fontWeight: '800',
     fontSize: 13.5,
   },
@@ -591,20 +613,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  iconCircle: {
+  avatarBox: {
     width: 42,
     height: 42,
     borderRadius: 14,
-    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#059669',
   },
   cardTitle: {
     fontSize: 15,
     fontWeight: '800',
     color: '#172554',
   },
-  cardCategory: {
+  cardSubtitle: {
     fontSize: 12,
     color: '#64748B',
     marginTop: 2,
@@ -613,29 +640,19 @@ const styles = StyleSheet.create({
   cardAmount: {
     fontSize: 16.5,
     fontWeight: '800',
-    color: '#EF4444',
+    color: '#059669',
   },
-  statusBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
+  modePill: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
     marginTop: 3,
   },
-  statusBadgeText: {
-    fontSize: 9.5,
+  modePillText: {
+    fontSize: 9,
     fontWeight: '800',
-  },
-  descBox: {
-    backgroundColor: '#F8F7F4',
-    padding: 10,
-    borderRadius: 10,
-    marginTop: 10,
-  },
-  cardDesc: {
-    fontSize: 12,
     color: '#475569',
-    fontStyle: 'italic',
-    lineHeight: 16,
   },
   cardFooter: {
     flexDirection: 'row',
@@ -651,6 +668,11 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     fontWeight: '600',
   },
+  cardMobile: {
+    fontSize: 11.5,
+    color: '#64748B',
+    fontWeight: '500',
+  },
   cardDetailsHint: {
     color: '#CBD5E1',
     fontWeight: '800',
@@ -665,10 +687,10 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#E11D48',
+    backgroundColor: '#059669',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#E11D48',
+    shadowColor: '#059669',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 10,
@@ -791,42 +813,69 @@ const styles = StyleSheet.create({
   amountInput: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#E11D48',
+    color: '#059669',
   },
-  categoryChipsRow: {
+  quickRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 7,
-    marginVertical: 4,
+    gap: 6,
+    marginTop: 8,
   },
-  catChip: {
+  quickChip: {
     backgroundColor: '#F1F5F9',
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5.5,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  catChipActive: {
-    backgroundColor: '#FFF1F2',
-    borderColor: '#E11D48',
+  quickChipActive: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#059669',
   },
-  catChipText: {
+  quickChipText: {
     fontSize: 12,
     color: '#475569',
     fontWeight: '600',
   },
-  catChipTextActive: {
-    color: '#E11D48',
+  quickChipTextActive: {
+    color: '#059669',
+    fontWeight: '800',
+  },
+  modeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 6,
+  },
+  modeChip: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  modeChipActive: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#059669',
+  },
+  modeChipText: {
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '600',
+  },
+  modeChipTextActive: {
+    color: '#059669',
     fontWeight: '800',
   },
   submitBtn: {
-    backgroundColor: '#E11D48',
+    backgroundColor: '#059669',
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 18,
-    shadowColor: '#E11D48',
+    shadowColor: '#059669',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
@@ -875,7 +924,7 @@ const styles = StyleSheet.create({
   detailAmount: {
     fontSize: 26,
     fontWeight: '900',
-    color: '#E11D48',
+    color: '#059669',
     marginVertical: 10,
   },
   detailRow: {
@@ -911,20 +960,20 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 18,
   },
-  actionBtnApprove: {
-    flex: 1,
+  actionBtnReceipt: {
+    flex: 1.2,
     backgroundColor: '#10B981',
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
   },
-  actionBtnApproveText: {
+  actionBtnReceiptText: {
     color: '#FFFFFF',
     fontWeight: '800',
-    fontSize: 13,
+    fontSize: 12.5,
   },
   actionBtnEdit: {
-    flex: 1,
+    flex: 0.9,
     backgroundColor: '#F1F5F9',
     paddingVertical: 10,
     borderRadius: 10,
@@ -936,7 +985,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   actionBtnDelete: {
-    flex: 1,
+    flex: 0.9,
     backgroundColor: '#FEE2E2',
     paddingVertical: 10,
     borderRadius: 10,

@@ -6,7 +6,7 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 const PROD_API_URL = 'https://mandalpro.quantromind.tech/api';
 
 // Set to true only if you want to force Expo Go to use your local machine's backend (port 5000)
-const USE_LOCAL_BACKEND = false;
+const USE_LOCAL_BACKEND = true;
 
 let LOCAL_API_URL = 'http://192.168.1.13:5000/api';
 try {

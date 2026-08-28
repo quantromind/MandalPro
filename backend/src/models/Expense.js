@@ -4,9 +4,11 @@ const expenseSchema = new mongoose.Schema(
   {
     mandalId: { type: mongoose.Schema.Types.ObjectId, ref: 'Mandal', required: true, index: true },
     eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' },
+    title: { type: String },
     category: { type: String, required: true },
     amount: { type: Number, required: true },
     vendor: { type: String },
+    date: { type: Date, default: Date.now },
     description: { type: String },
     billImageUrl: { type: String },
     ocrData: {

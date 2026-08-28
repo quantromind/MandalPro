@@ -89,6 +89,7 @@ const verifyPayment = asyncHandler(async (req, res) => {
       plan,
       planStatus: 'Active',
       planRenewsAt: renewsAt,
+      onboardingComplete: true,
       lastPaymentId: razorpay_payment_id,
       'checklist.planSelected': true
     },
@@ -226,9 +227,11 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
     <div class="status" id="statusText">🔒 256-bit Encrypted Checkout</div>
 
     <div class="tips">
-      <strong>💡 Razorpay Test Mode Notes:</strong><br/>
-      • In Netbanking, pick <strong>HDFC Bank / SBI / ICICI</strong> (Bank of Baroda mock is unsupported in test mode by Razorpay).<br/>
-      • Or tap the green <strong>1-Click Test Payment</strong> button above for instant activation!
+      <strong>💡 Razorpay Test Mode Guide (India Domestic):</strong><br/>
+      • <strong>Cards</strong>: Use <code>4000 0000 0000 0002</code> (Domestic Visa), expiry <code>12/28</code>, CVV <code>123</code>, OTP <code>123456</code><br/>
+      • <strong>Netbanking</strong>: Pick <strong>HDFC Bank / SBI / ICICI</strong> & tap "Success"<br/>
+      • <strong>UPI</strong>: Enter VPA <code>success@razorpay</code><br/>
+      • <strong>Instant</strong>: Tap the green <strong>1-Click Test Payment</strong> button above!
     </div>
   </div>
 

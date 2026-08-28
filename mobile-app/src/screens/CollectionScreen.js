@@ -4,6 +4,7 @@ import NetInfo from '@react-native-community/netinfo';
 import client from '../api/client';
 import { queueDonation } from '../utils/offlineQueue';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import ReceiptModal from '../components/ReceiptModal';
 
 const MODES = ['cash', 'upi', 'card'];
@@ -19,6 +20,7 @@ export default function CollectionScreen({ navigation }) {
   const [errors, setErrors] = useState({});
   const [generatedReceipt, setGeneratedReceipt] = useState(null);
   const { mandal, user } = useAuth();
+  const { t } = useLanguage();
 
   const validate = () => {
     const errs = {};
@@ -26,29 +28,29 @@ export default function CollectionScreen({ navigation }) {
     // Donor Name validation
     const trimmedName = donorName.trim();
     if (!trimmedName) {
-      errs.donorName = 'Donor name is required';
+      errs.donorName = t('collection.donorNameRequired');
     } else if (trimmedName.length < 2) {
-      errs.donorName = 'Donor name must be at least 2 characters';
+      errs.donorName = t('collection.donorNameMin');
     }
 
     // Donor Mobile validation (optional, but if provided must be valid 10 digits)
     const cleanMobile = donorMobile.trim();
     if (cleanMobile) {
       if (!/^\d{10}$/.test(cleanMobile)) {
-        errs.donorMobile = 'Mobile number must be exactly 10 digits';
+        errs.donorMobile = t('collection.mobileExactTen');
       } else if (!/^[6-9]\d{9}$/.test(cleanMobile)) {
-        errs.donorMobile = 'Mobile number must start with 6, 7, 8, or 9';
+        errs.donorMobile = t('collection.mobileStartDigit');
       }
     }
 
     // Amount validation
     const numAmount = Number(amount);
     if (!amount || isNaN(numAmount)) {
-      errs.amount = 'Amount is required';
+      errs.amount = t('collection.amountRequired');
     } else if (numAmount <= 0) {
-      errs.amount = 'Amount must be greater than ₹0';
+      errs.amount = t('collection.amountPositive');
     } else if (numAmount > 10000000) {
-      errs.amount = 'Amount exceeds maximum limit';
+      errs.amount = t('collection.amountLimitExceeded');
     }
 
     setErrors(errs);
@@ -111,12 +113,12 @@ export default function CollectionScreen({ navigation }) {
         {/* Form Card Container */}
         <View style={styles.formCard}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardHeaderTitle}>✨ Record New Donation</Text>
-            <Text style={styles.cardHeaderSub}>Issue an official digital WhatsApp receipt</Text>
+            <Text style={styles.cardHeaderTitle}>✨ {t('collection.recordNewDonation')}</Text>
+            <Text style={styles.cardHeaderSub}>{t('collection.issueDigitalReceipt')}</Text>
           </View>
 
           {/* Donor Name */}
-          <Text style={styles.label}>Donor Full Name *</Text>
+          <Text style={styles.label}>{t('collection.donorFullName')} *</Text>
           <TextInput
             style={[styles.input, errors.donorName && styles.inputError]}
             placeholder="e.g. Ramesh Patil"
@@ -131,7 +133,7 @@ export default function CollectionScreen({ navigation }) {
 
           {/* Donor Mobile */}
           <View style={styles.labelRow}>
-            <Text style={styles.label}>WhatsApp / Mobile (Optional)</Text>
+            <Text style={styles.label}>{t('collection.donorMobile')}</Text>
             <Text style={styles.charCount}>{donorMobile.length}/10</Text>
           </View>
           <TextInput
@@ -146,7 +148,7 @@ export default function CollectionScreen({ navigation }) {
           {errors.donorMobile ? <Text style={styles.errorText}>{errors.donorMobile}</Text> : null}
 
           {/* Amount */}
-          <Text style={styles.label}>Donation Amount (₹) *</Text>
+          <Text style={styles.label}>{t('collection.donationAmount')} *</Text>
           <TextInput
             style={[styles.input, styles.amountInput, errors.amount && styles.inputError]}
             placeholder="₹ 0"
@@ -177,17 +179,17 @@ export default function CollectionScreen({ navigation }) {
           </View>
 
           {/* Purpose */}
-          <Text style={styles.label}>Donation Purpose / Seva (Optional)</Text>
+          <Text style={styles.label}>{t('collection.donationPurpose')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. Visarjan Prasad, Aarti, Mahaprasad"
+            placeholder={t('collection.purposePlaceholder')}
             placeholderTextColor="#94A3B8"
             value={purpose}
             onChangeText={setPurpose}
           />
 
           {/* Payment Mode */}
-          <Text style={styles.label}>Payment Method</Text>
+          <Text style={styles.label}>{t('collection.paymentMode')}</Text>
           <View style={styles.modeRow}>
             {MODES.map((m) => (
               <TouchableOpacity
@@ -197,7 +199,7 @@ export default function CollectionScreen({ navigation }) {
                 activeOpacity={0.8}
               >
                 <Text style={[styles.modeChipText, paymentMode === m && styles.modeChipTextActive]}>
-                  {m === 'cash' ? '💵 Cash' : m === 'upi' ? '📱 UPI' : '💳 Card'}
+                  {m === 'cash' ? `💵 ${t('collection.modes.cash')}` : m === 'upi' ? `📱 ${t('collection.modes.upi')}` : `💳 ${t('collection.modes.card')}`}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -210,7 +212,7 @@ export default function CollectionScreen({ navigation }) {
             disabled={saving}
             activeOpacity={0.88}
           >
-            <Text style={styles.buttonText}>{saving ? 'Generating Receipt…' : 'Generate & Issue Receipt →'}</Text>
+            <Text style={styles.buttonText}>{saving ? `${t('common.saving')}…` : `${t('collection.generateReceipt')} →`}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

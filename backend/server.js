@@ -18,6 +18,7 @@ app.use('/api/auth', require('./src/routes/auth'));
 app.use('/api/onboarding', require('./src/routes/onboarding'));
 app.use('/api/mandal', require('./src/routes/mandal'));
 app.use('/api/donations', require('./src/routes/donation'));
+app.use('/api/collections', require('./src/routes/donation'));
 app.use('/api/expenses', require('./src/routes/expense'));
 app.use('/api/budgets', require('./src/routes/budget'));
 app.use('/api/events', require('./src/routes/event'));

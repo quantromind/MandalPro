@@ -1,16 +1,40 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import LanguageModal from '../components/LanguageModal';
+import ChatSlideModal from '../components/ChatSlideModal';
 
 export default function DashboardScreen({ navigation }) {
   const [summary, setSummary] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false);
   const { user, mandal, logout } = useAuth();
+  const { t, showLanguageModal, setShowLanguageModal, dismissLanguageModal, promptFirstTime } = useLanguage();
 
   const isPresident = user?.role === 'president' || user?.role === 'superadmin' || user?.role === 'treasurer';
   const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          style={styles.headerChatBtn}
+          onPress={() => setShowChatModal(true)}
+          activeOpacity={0.75}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityLabel={t('nav.chat')}
+        >
+          <View style={styles.chatIconBox}>
+            <Text style={styles.chatIconEmoji}>💬</Text>
+            <View style={styles.chatDot} />
+          </View>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, t]);
 
   const load = async () => {
     try {
@@ -21,7 +45,12 @@ export default function DashboardScreen({ navigation }) {
     }
   };
 
-  useFocusEffect(useCallback(() => { load(); }, []));
+  useFocusEffect(
+    useCallback(() => {
+      load();
+      promptFirstTime();
+    }, [promptFirstTime])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -30,226 +59,277 @@ export default function DashboardScreen({ navigation }) {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F97316']} tintColor="#F97316" />}
-    >
-      {/* Header Banner */}
-      <View style={styles.headerCard}>
-        <View style={{ flex: 1 }}>
-          <View style={styles.roleBadge}>
-            <Text style={styles.roleBadgeText}>
-              {user?.role === 'president' ? '👑 PRESIDENT WORKSPACE' : '👥 COMMITTEE MEMBER'}
+    <>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F97316']} tintColor="#F97316" />}
+      >
+        {/* Header Banner */}
+        <View style={styles.headerCard}>
+          <View style={{ flex: 1 }}>
+            <View style={styles.roleBadge}>
+              <Text style={styles.roleBadgeText}>
+                {user?.role === 'president' ? t('dashboard.presidentWorkspace') : t('dashboard.committeeMember')}
+              </Text>
+            </View>
+            <Text style={styles.greeting}>
+              {t('dashboard.greeting', { name: user?.name?.split(' ')[0] || '' })}
             </Text>
+            <Text style={styles.mandalSub}>{mandal?.name || 'Apla Mandal'} • {t('dashboard.activeSession')}</Text>
           </View>
-          <Text style={styles.greeting}>Namaste, {user?.name?.split(' ')[0]} 🪔</Text>
-          <Text style={styles.mandalSub}>{mandal?.name || 'Apla Mandal'} • Active Session</Text>
+          <TouchableOpacity style={styles.logoutPill} onPress={logout} activeOpacity={0.8}>
+            <Text style={styles.logoutText}>{t('common.logout')}</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.logoutPill} onPress={logout} activeOpacity={0.8}>
-          <Text style={styles.logoutText}>Log out</Text>
-        </TouchableOpacity>
-      </View>
 
-      {/* Section: Metrics & Summary */}
-      <View style={styles.sectionTitleRow}>
-        <Text style={styles.sectionHeader}>Financial Overview</Text>
-        <Text style={styles.sectionSub}>Live Mandal statistics</Text>
-      </View>
+        {/* Section: Metrics & Summary */}
+        <View style={styles.sectionTitleRow}>
+          <Text style={styles.sectionHeader}>{t('dashboard.financialOverview')}</Text>
+          <Text style={styles.sectionSub}>{t('dashboard.liveMandalStats')}</Text>
+        </View>
 
-      {/* Summary Cards */}
-      {isPresident ? (
-        <>
+        {/* Summary Cards */}
+        {isPresident ? (
+          <>
+            <View style={styles.cardsRow}>
+              {/* Collections */}
+              <View style={[styles.card, styles.cardCollection]}>
+                <View style={styles.cardHeaderRow}>
+                  <Text style={styles.cardIcon}>💰</Text>
+                  <View style={[styles.trendBadge, { backgroundColor: '#DCFCE7' }]}>
+                    <Text style={[styles.trendText, { color: '#15803D' }]}>↑ {t('common.inflow')}</Text>
+                  </View>
+                </View>
+                <Text style={styles.cardLabel}>{t('dashboard.collections')}</Text>
+                <Text style={[styles.cardValue, { color: '#15803D' }]}>{inr(summary?.totalCollections)}</Text>
+              </View>
+
+              {/* Expenses */}
+              <View style={[styles.card, styles.cardExpense]}>
+                <View style={styles.cardHeaderRow}>
+                  <Text style={styles.cardIcon}>💸</Text>
+                  <View style={[styles.trendBadge, { backgroundColor: '#FEE2E2' }]}>
+                    <Text style={[styles.trendText, { color: '#B91C1C' }]}>↓ {t('common.outflow')}</Text>
+                  </View>
+                </View>
+                <Text style={styles.cardLabel}>{t('dashboard.expenses')}</Text>
+                <Text style={[styles.cardValue, { color: '#B91C1C' }]}>{inr(summary?.totalExpenses)}</Text>
+              </View>
+            </View>
+
+            <View style={styles.cardsRow}>
+              {/* Pending Approvals */}
+              <View style={[styles.card, styles.cardPending]}>
+                <View style={styles.cardHeaderRow}>
+                  <Text style={styles.cardIcon}>⏳</Text>
+                  <View style={[styles.trendBadge, { backgroundColor: '#FEF3C7' }]}>
+                    <Text style={[styles.trendText, { color: '#B45309' }]}>{t('common.pending')}</Text>
+                  </View>
+                </View>
+                <Text style={styles.cardLabel}>{t('dashboard.approvals')}</Text>
+                <Text style={[styles.cardValue, { color: '#B45309' }]}>{summary?.pendingApprovals ?? '0'}</Text>
+              </View>
+
+              {/* Active Events */}
+              <View style={[styles.card, styles.cardEvents]}>
+                <View style={styles.cardHeaderRow}>
+                  <Text style={styles.cardIcon}>🎪</Text>
+                  <View style={[styles.trendBadge, { backgroundColor: '#E0E7FF' }]}>
+                    <Text style={[styles.trendText, { color: '#4338CA' }]}>{t('common.active')}</Text>
+                  </View>
+                </View>
+                <Text style={styles.cardLabel}>{t('dashboard.festivalsAndEvents')}</Text>
+                <Text style={[styles.cardValue, { color: '#172554' }]}>{summary?.activeEvents ?? '—'}</Text>
+              </View>
+            </View>
+          </>
+        ) : (
+          /* Member Summary */
           <View style={styles.cardsRow}>
-            {/* Collections */}
             <View style={[styles.card, styles.cardCollection]}>
               <View style={styles.cardHeaderRow}>
                 <Text style={styles.cardIcon}>💰</Text>
                 <View style={[styles.trendBadge, { backgroundColor: '#DCFCE7' }]}>
-                  <Text style={[styles.trendText, { color: '#15803D' }]}>↑ Inflow</Text>
+                  <Text style={[styles.trendText, { color: '#15803D' }]}>{t('common.total')}</Text>
                 </View>
               </View>
-              <Text style={styles.cardLabel}>Collections</Text>
+              <Text style={styles.cardLabel}>{t('dashboard.mandalCollections')}</Text>
               <Text style={[styles.cardValue, { color: '#15803D' }]}>{inr(summary?.totalCollections)}</Text>
             </View>
 
-            {/* Expenses */}
-            <View style={[styles.card, styles.cardExpense]}>
-              <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardIcon}>💸</Text>
-                <View style={[styles.trendBadge, { backgroundColor: '#FEE2E2' }]}>
-                  <Text style={[styles.trendText, { color: '#B91C1C' }]}>↓ Outflow</Text>
-                </View>
-              </View>
-              <Text style={styles.cardLabel}>Expenses</Text>
-              <Text style={[styles.cardValue, { color: '#B91C1C' }]}>{inr(summary?.totalExpenses)}</Text>
-            </View>
-          </View>
-
-          <View style={styles.cardsRow}>
-            {/* Pending Approvals */}
             <View style={[styles.card, styles.cardPending]}>
               <View style={styles.cardHeaderRow}>
                 <Text style={styles.cardIcon}>⏳</Text>
                 <View style={[styles.trendBadge, { backgroundColor: '#FEF3C7' }]}>
-                  <Text style={[styles.trendText, { color: '#B45309' }]}>Pending</Text>
+                  <Text style={[styles.trendText, { color: '#B45309' }]}>{t('common.pending')}</Text>
                 </View>
               </View>
-              <Text style={styles.cardLabel}>Approvals</Text>
+              <Text style={styles.cardLabel}>{t('dashboard.pendingApprovals')}</Text>
               <Text style={[styles.cardValue, { color: '#B45309' }]}>{summary?.pendingApprovals ?? '0'}</Text>
             </View>
+          </View>
+        )}
 
-            {/* Active Events */}
-            <View style={[styles.card, styles.cardEvents]}>
-              <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardIcon}>🎪</Text>
-                <View style={[styles.trendBadge, { backgroundColor: '#E0E7FF' }]}>
-                  <Text style={[styles.trendText, { color: '#4338CA' }]}>Active</Text>
-                </View>
-              </View>
-              <Text style={styles.cardLabel}>Festivals & Events</Text>
-              <Text style={[styles.cardValue, { color: '#172554' }]}>{summary?.activeEvents ?? '—'}</Text>
-            </View>
-          </View>
-        </>
-      ) : (
-        /* Member Summary */
-        <View style={styles.cardsRow}>
-          <View style={[styles.card, styles.cardCollection]}>
-            <View style={styles.cardHeaderRow}>
-              <Text style={styles.cardIcon}>💰</Text>
-              <View style={[styles.trendBadge, { backgroundColor: '#DCFCE7' }]}>
-                <Text style={[styles.trendText, { color: '#15803D' }]}>Total</Text>
-              </View>
-            </View>
-            <Text style={styles.cardLabel}>Mandal Collections</Text>
-            <Text style={[styles.cardValue, { color: '#15803D' }]}>{inr(summary?.totalCollections)}</Text>
-          </View>
-
-          <View style={[styles.card, styles.cardPending]}>
-            <View style={styles.cardHeaderRow}>
-              <Text style={styles.cardIcon}>⏳</Text>
-              <View style={[styles.trendBadge, { backgroundColor: '#FEF3C7' }]}>
-                <Text style={[styles.trendText, { color: '#B45309' }]}>Pending</Text>
-              </View>
-            </View>
-            <Text style={styles.cardLabel}>Pending Approvals</Text>
-            <Text style={[styles.cardValue, { color: '#B45309' }]}>{summary?.pendingApprovals ?? '0'}</Text>
-          </View>
+        {/* Quick Action Buttons */}
+        <View style={styles.sectionTitleRow}>
+          <Text style={styles.sectionHeader}>{t('dashboard.quickActions')}</Text>
+          <Text style={styles.sectionSub}>{t('dashboard.frequentlyUsedTools')}</Text>
         </View>
-      )}
-
-      {/* Quick Action Buttons */}
-      <View style={styles.sectionTitleRow}>
-        <Text style={styles.sectionHeader}>Quick Actions</Text>
-        <Text style={styles.sectionSub}>Frequently used tools</Text>
-      </View>
-      
-      {/* 1. Featured Primary Action: New Collection (Add Donor) */}
-      <TouchableOpacity
-        style={styles.featuredActionCard}
-        onPress={() => navigation.navigate('Collection')}
-        activeOpacity={0.88}
-      >
-        {/* Subtle decorative glow circle in corner */}
-        <View style={styles.featuredDecorCircle} />
-        <View style={styles.featuredDecorCircleSmall} />
-
-        <View style={styles.featuredCardTopRow}>
-          <View style={styles.featuredIconBox}>
-            <Text style={styles.featuredIconText}>➕</Text>
-          </View>
-          <View style={styles.featuredArrowCircle}>
-            <Text style={styles.featuredArrowText}>→</Text>
-          </View>
-        </View>
-
-        <View style={styles.featuredCardContent}>
-          <Text style={styles.featuredActionTitle}>New Collection (Add Donor)</Text>
-          <Text style={styles.featuredActionSub}>Record donation & generate WhatsApp receipt</Text>
-        </View>
-      </TouchableOpacity>
-
-      {/* 2 & 3. Responsive 2-Column Action Cards */}
-      <View style={styles.actionGridRow}>
-        {/* 2. View & Share Receipts */}
+        
+        {/* 1. Featured Primary Action: New Collection (Add Donor) */}
         <TouchableOpacity
-          style={[styles.gridActionCard, styles.cardBlueBorder]}
-          onPress={() => navigation.navigate('Receipts')}
-          activeOpacity={0.85}
+          style={styles.featuredActionCard}
+          onPress={() => navigation.navigate('Collection')}
+          activeOpacity={0.88}
         >
-          <View style={styles.gridCardTop}>
-            <View style={[styles.gridIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
-              <Text style={styles.gridIcon}>🧾</Text>
+          {/* Subtle decorative glow circle in corner */}
+          <View style={styles.featuredDecorCircle} />
+          <View style={styles.featuredDecorCircleSmall} />
+
+          <View style={styles.featuredCardTopRow}>
+            <View style={styles.featuredIconBox}>
+              <Text style={styles.featuredIconText}>➕</Text>
             </View>
-            <View style={[styles.arrowPill, { backgroundColor: 'rgba(59, 130, 246, 0.08)' }]}>
-              <Text style={[styles.arrowPillText, { color: '#2563EB' }]}>→</Text>
+            <View style={styles.featuredArrowCircle}>
+              <Text style={styles.featuredArrowText}>→</Text>
             </View>
           </View>
-          <Text style={styles.gridActionTitle}>View & Share Receipts</Text>
-          <Text style={styles.gridActionSub} numberOfLines={2}>
-            Search past receipts and share via WhatsApp
-          </Text>
+
+          <View style={styles.featuredCardContent}>
+            <Text style={styles.featuredActionTitle}>{t('dashboard.newCollection')}</Text>
+            <Text style={styles.featuredActionSub}>{t('dashboard.newCollectionSub')}</Text>
+          </View>
         </TouchableOpacity>
 
-        {/* 3. Expenses & Approvals */}
-        <TouchableOpacity
-          style={[styles.gridActionCard, styles.cardGreenBorder]}
-          onPress={() => navigation.navigate('Expenses')}
-          activeOpacity={0.85}
-        >
-          <View style={styles.gridCardTop}>
-            <View style={[styles.gridIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
-              <Text style={styles.gridIcon}>💸</Text>
+        {/* 2 & 3. Responsive 2-Column Action Cards */}
+        <View style={styles.actionGridRow}>
+          {/* 2. View & Share Receipts */}
+          <TouchableOpacity
+            style={[styles.gridActionCard, styles.cardBlueBorder]}
+            onPress={() => navigation.navigate('Receipts')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.gridCardTop}>
+              <View style={[styles.gridIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+                <Text style={styles.gridIcon}>🧾</Text>
+              </View>
+              <View style={[styles.arrowPill, { backgroundColor: 'rgba(59, 130, 246, 0.08)' }]}>
+                <Text style={[styles.arrowPillText, { color: '#2563EB' }]}>→</Text>
+              </View>
             </View>
-            <View style={[styles.arrowPill, { backgroundColor: 'rgba(16, 185, 129, 0.08)' }]}>
-              <Text style={[styles.arrowPillText, { color: '#15803D' }]}>→</Text>
+            <Text style={styles.gridActionTitle}>{t('dashboard.viewShareReceipts')}</Text>
+            <Text style={styles.gridActionSub} numberOfLines={2}>
+              {t('dashboard.viewShareReceiptsSub')}
+            </Text>
+          </TouchableOpacity>
+
+          {/* 3. Expenses & Approvals */}
+          <TouchableOpacity
+            style={[styles.gridActionCard, styles.cardGreenBorder]}
+            onPress={() => navigation.navigate('Expenses')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.gridCardTop}>
+              <View style={[styles.gridIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                <Text style={styles.gridIcon}>💸</Text>
+              </View>
+              <View style={[styles.arrowPill, { backgroundColor: 'rgba(16, 185, 129, 0.08)' }]}>
+                <Text style={[styles.arrowPillText, { color: '#15803D' }]}>→</Text>
+              </View>
             </View>
-          </View>
-          <Text style={styles.gridActionTitle}>
-            {isPresident ? 'Expenses & Approvals' : 'Request Expense'}
-          </Text>
-          <Text style={styles.gridActionSub} numberOfLines={2}>
-            {isPresident ? 'Record expenses or approve member requests' : 'Submit expense reimbursement or bill for approval'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 4. Events & Tasks (Wide Card for President) */}
-      {isPresident && (
-        <TouchableOpacity
-          style={styles.wideActionCard}
-          onPress={() => navigation.navigate('Events')}
-          activeOpacity={0.85}
-        >
-          <View style={[styles.wideIconBox, { backgroundColor: 'rgba(99, 102, 241, 0.1)' }]}>
-            <Text style={styles.wideIcon}>🎪</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.wideActionTitle}>Events & Tasks</Text>
-            <Text style={styles.wideActionSub}>Manage Mandal festival events and schedules</Text>
-          </View>
-          <View style={styles.wideActionPill}>
-            <Text style={styles.wideActionPillText}>Schedules →</Text>
-          </View>
-        </TouchableOpacity>
-      )}
-
-      {/* Info Banner for Members */}
-      {!isPresident && (
-        <View style={styles.memberInfoBox}>
-          <Text style={styles.memberInfoIcon}>ℹ️</Text>
-          <Text style={styles.memberInfoText}>
-            You are logged in as an authorized committee member. You can collect donations, generate official receipts, and submit expense requests directly to the Mandal President.
-          </Text>
+            <Text style={styles.gridActionTitle}>
+              {isPresident ? t('dashboard.expensesApprovals') : t('dashboard.requestExpense')}
+            </Text>
+            <Text style={styles.gridActionSub} numberOfLines={2}>
+              {isPresident ? t('dashboard.expensesApprovalsSub') : t('dashboard.requestExpenseSub')}
+            </Text>
+          </TouchableOpacity>
         </View>
-      )}
-    </ScrollView>
+
+        {/* 4. Events & Tasks (Wide Card for President) */}
+        {isPresident && (
+          <TouchableOpacity
+            style={styles.wideActionCard}
+            onPress={() => navigation.navigate('Events')}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.wideIconBox, { backgroundColor: 'rgba(99, 102, 241, 0.1)' }]}>
+              <Text style={styles.wideIcon}>🎪</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.wideActionTitle}>{t('dashboard.eventsTasks')}</Text>
+              <Text style={styles.wideActionSub}>{t('dashboard.eventsTasksSub')}</Text>
+            </View>
+            <View style={styles.wideActionPill}>
+              <Text style={styles.wideActionPillText}>{t('dashboard.schedules')}</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* Info Banner for Members */}
+        {!isPresident && (
+          <View style={styles.memberInfoBox}>
+            <Text style={styles.memberInfoIcon}>ℹ️</Text>
+            <Text style={styles.memberInfoText}>
+              {t('dashboard.memberInfoText')}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Language Selection Modal */}
+      <LanguageModal
+        visible={showLanguageModal}
+        onClose={dismissLanguageModal}
+        canDismiss={true}
+      />
+
+      {/* Slide-Down Chat Modal */}
+      <ChatSlideModal
+        visible={showChatModal}
+        onClose={() => setShowChatModal(false)}
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  headerChatBtn: {
+    marginRight: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chatIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: '#FFF1E7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.2,
+    borderColor: 'rgba(249, 115, 22, 0.22)',
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  chatIconEmoji: {
+    fontSize: 18,
+  },
+  chatDot: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
+    borderWidth: 1.5,
+    borderColor: '#FFF1E7',
+  },
   container: { flex: 1, backgroundColor: '#F8F7F4' },
   contentContainer: { padding: 16, paddingBottom: 100 },
   headerCard: {

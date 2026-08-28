@@ -106,14 +106,16 @@ export const AuthProvider = ({ children }) => {
         } else if (userData.mandalId) {
           try {
             const mandalRes = await client.get('/mandal');
-            if (mandalRes.data) await persistMandal(mandalRes.data);
+            if (mandalRes.data) {
+              await persistMandal(mandalRes.data);
+            }
           } catch (mErr) {
-            console.log('Failed to fetch mandal in refreshProfile', mErr);
+            // ignore
           }
         }
       }
     } catch (err) {
-      console.log('Failed to refresh profile', err);
+      // ignore
     }
   };
 

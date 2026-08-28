@@ -1,11 +1,12 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { HomeIcon, ReceiptsIcon, ChatIcon, MandalIcon } from '../components/TabIcons';
+import { HomeIcon, CollectionsIcon, ExpensesIcon, ReceiptsIcon, MandalIcon } from '../components/TabIcons';
 
 import DashboardScreen from '../screens/DashboardScreen';
+import CollectionsScreen from '../screens/CollectionsScreen';
+import ExpensesScreen from '../screens/ExpensesScreen';
 import ReceiptsScreen from '../screens/ReceiptsScreen';
-import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
@@ -17,10 +18,12 @@ function renderTabIcon(routeName, isFocused) {
   switch (routeName) {
     case 'HomeTab':
       return <HomeIcon size={size} color={color} isFocused={isFocused} />;
+    case 'CollectionsTab':
+      return <CollectionsIcon size={size} color={color} isFocused={isFocused} />;
+    case 'ExpensesTab':
+      return <ExpensesIcon size={size} color={color} isFocused={isFocused} />;
     case 'ReceiptsTab':
       return <ReceiptsIcon size={size} color={color} isFocused={isFocused} />;
-    case 'ChatTab':
-      return <ChatIcon size={size} color={color} isFocused={isFocused} />;
     case 'ProfileTab':
       return <MandalIcon size={size} color={color} isFocused={isFocused} />;
     default:
@@ -28,21 +31,35 @@ function renderTabIcon(routeName, isFocused) {
   }
 }
 
-const TAB_CONFIG = {
-  HomeTab: { label: 'Home' },
-  ReceiptsTab: { label: 'Receipts' },
-  ChatTab: { label: 'Committee' },
-  ProfileTab: { label: 'Mandal' },
-};
+import { useLanguage } from '../context/LanguageContext';
 
 function FloatingTabBar({ state, descriptors, navigation }) {
+  const { t } = useLanguage();
+
+  const getTabLabel = (routeName) => {
+    switch (routeName) {
+      case 'HomeTab':
+        return t('nav.home');
+      case 'CollectionsTab':
+        return t('nav.collections');
+      case 'ExpensesTab':
+        return t('nav.expenses');
+      case 'ReceiptsTab':
+        return t('nav.receipts');
+      case 'ProfileTab':
+        return t('nav.mandal');
+      default:
+        return routeName;
+    }
+  };
+
   return (
     <View style={styles.floatingBarContainer}>
       <View style={styles.floatingBar}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const isFocused = state.index === index;
-          const config = TAB_CONFIG[route.name] || { label: route.name };
+          const label = getTabLabel(route.name);
 
           const onPress = () => {
             const event = navigation.emit({
@@ -71,9 +88,9 @@ function FloatingTabBar({ state, descriptors, navigation }) {
             >
               {renderTabIcon(route.name, isFocused)}
               {isFocused ? (
-                <Text style={styles.tabLabelFocused}>{config.label}</Text>
+                <Text style={styles.tabLabelFocused} numberOfLines={1}>{label}</Text>
               ) : (
-                <Text style={styles.tabLabelUnfocused}>{config.label}</Text>
+                <Text style={styles.tabLabelUnfocused} numberOfLines={1}>{label}</Text>
               )}
             </TouchableOpacity>
           );
@@ -84,6 +101,8 @@ function FloatingTabBar({ state, descriptors, navigation }) {
 }
 
 export default function MainTabNavigator() {
+  const { t } = useLanguage();
+
   return (
     <Tab.Navigator
       tabBar={(props) => <FloatingTabBar {...props} />}
@@ -109,32 +128,40 @@ export default function MainTabNavigator() {
         name="HomeTab" 
         component={DashboardScreen} 
         options={{ 
-          title: 'Home',
-          headerTitle: 'Apla Mandal 🪔',
+          title: t('nav.home'),
+          headerTitle: t('nav.appTitle'),
+        }} 
+      />
+      <Tab.Screen 
+        name="CollectionsTab" 
+        component={CollectionsScreen} 
+        options={{ 
+          title: t('nav.collections'),
+          headerTitle: t('collections.title'),
+        }} 
+      />
+      <Tab.Screen 
+        name="ExpensesTab" 
+        component={ExpensesScreen} 
+        options={{ 
+          title: t('nav.expenses'),
+          headerTitle: t('expenses.title'),
         }} 
       />
       <Tab.Screen 
         name="ReceiptsTab" 
         component={ReceiptsScreen} 
         options={{ 
-          title: 'Receipts',
-          headerTitle: 'Donation Receipts',
-        }} 
-      />
-      <Tab.Screen 
-        name="ChatTab" 
-        component={ChatScreen} 
-        options={{ 
-          title: 'Committee',
-          headerTitle: 'Committee Chat',
+          title: t('nav.receipts'),
+          headerTitle: t('nav.donationReceipts'),
         }} 
       />
       <Tab.Screen 
         name="ProfileTab" 
         component={ProfileScreen} 
         options={{ 
-          title: 'Mandal',
-          headerTitle: 'Mandal Profile',
+          title: t('nav.mandal'),
+          headerTitle: t('nav.profile'),
         }} 
       />
     </Tab.Navigator>
@@ -144,19 +171,19 @@ export default function MainTabNavigator() {
 const styles = StyleSheet.create({
   floatingBarContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 22 : 12,
-    left: 14,
-    right: 14,
+    bottom: Platform.OS === 'ios' ? 20 : 10,
+    left: 10,
+    right: 10,
     backgroundColor: 'transparent',
   },
   floatingBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     backgroundColor: '#FFFFFF',
     borderRadius: 26,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    paddingHorizontal: 4,
+    paddingVertical: 6,
     height: 66,
     borderWidth: 1,
     borderColor: 'rgba(23, 37, 84, 0.06)',
@@ -169,38 +196,39 @@ const styles = StyleSheet.create({
   tabItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 20,
+    borderRadius: 18,
+    minWidth: 44,
   },
   tabItemFocused: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFF1E7',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    gap: 4,
   },
   tabItemUnfocused: {
     flexDirection: 'column',
     alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    paddingVertical: 4,
+    paddingHorizontal: 5,
     gap: 2,
   },
   tabIcon: {
-    fontSize: 18,
+    fontSize: 17,
   },
   tabIconFocused: {
-    fontSize: 18,
+    fontSize: 17,
   },
   tabLabelFocused: {
     color: '#F97316',
     fontWeight: '800',
-    fontSize: 12.5,
+    fontSize: 11.5,
     letterSpacing: -0.2,
   },
   tabLabelUnfocused: {
     color: '#64748B',
     fontWeight: '600',
-    fontSize: 10.5,
+    fontSize: 9.5,
   },
 });

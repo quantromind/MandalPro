@@ -55,8 +55,8 @@ const register = asyncHandler(async (req, res) => {
   const mandal = await Mandal.create({
     name: mandalName,
     eventTypes: selectedTypes,
-    plan: 'Basic',
-    planStatus: 'Active',
+    plan: 'None',
+    planStatus: 'Inactive',
     receiptPrefix: initials,
     onboardingComplete: false,
     'checklist.profileComplete': true,
@@ -170,12 +170,6 @@ const login = asyncHandler(async (req, res) => {
   let mandal = null;
   if (user.mandalId) {
     mandal = await Mandal.findById(user.mandalId);
-    if (mandal && (!mandal.name.includes("'s Mandal") || user.mobile || mandal.checklist?.profileComplete)) {
-      mandal.onboardingComplete = true;
-      mandal.checklist.profileComplete = true;
-      mandal.checklist.planSelected = true;
-      await mandal.save();
-    }
   }
 
   res.json({
@@ -233,10 +227,10 @@ const updateProfile = asyncHandler(async (req, res) => {
       if (address !== undefined) mandal.address = address;
       if (upiId !== undefined) mandal.upiId = upiId;
       if (logoBase64 !== undefined) mandal.logoBase64 = logoBase64;
-      mandal.onboardingComplete = true;
       mandal.checklist.profileComplete = true;
-      mandal.checklist.eventTypesSelected = true;
-      mandal.checklist.planSelected = true;
+      mandal.checklist.eventTypesSelected = (eventTypes && Array.isArray(eventTypes) && eventTypes.length > 0) ? true : mandal.checklist.eventTypesSelected;
+      // NOTE: planSelected and onboardingComplete are NOT set here.
+      // They are only set after a successful subscription payment/activation.
       await mandal.save();
     }
   }
@@ -293,58 +287,12 @@ const loginWithOtp = asyncHandler(async (req, res) => {
   // Regular user lookup
   let user = await User.findOne({ email: normalizedEmail });
 
-  // If the email is not registered or added by a president, create as a new President user!
+  // If the email is not registered, return 404 so the frontend can redirect to Register
   if (!user) {
-    const rawName = normalizedEmail.split('@')[0] || 'President';
-    const defaultName = rawName
-      .split(/[._-]/)
-      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ') || 'President';
-
-    const defaultMandalName = `${defaultName}'s Mandal`;
-    const initials = defaultName
-      .split(' ')
-      .map(w => w[0]?.toUpperCase() || '')
-      .join('')
-      .slice(0, 4) || 'MNDL';
-
-    const mandal = await Mandal.create({
-      name: defaultMandalName,
-      eventTypes: ['Ganesh Utsav'],
-      plan: 'Basic',
-      planStatus: 'Active',
-      receiptPrefix: initials,
-      'checklist.eventTypesSelected': true,
-      'checklist.planSelected': false
-    });
-
-    const randomPassword = Math.random().toString(36).slice(-8) + 'Mandal@1';
-    const passwordHash = await User.hashPassword(randomPassword);
-
-    user = await User.create({
-      name: defaultName,
-      email: normalizedEmail,
-      passwordHash,
-      role: 'president',
-      mandalId: mandal._id,
-      mandalIds: [mandal._id],
-      status: 'active'
-    });
-
-    mandal.createdBy = user._id;
-    await mandal.save();
-
-    const token = generateToken({
-      id: user._id,
-      mandalId: mandal._id.toString(),
-      role: user.role
-    });
-
-    return res.status(201).json({
-      token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role, mandalId: mandal._id },
-      mandal,
-      isNewPresident: true
+    return res.status(404).json({
+      success: false,
+      code: 'USER_NOT_FOUND',
+      message: 'No account found with this email. Please create an account first.'
     });
   }
 
@@ -362,12 +310,6 @@ const loginWithOtp = asyncHandler(async (req, res) => {
   let mandal = null;
   if (user.mandalId) {
     mandal = await Mandal.findById(user.mandalId);
-    if (mandal && (!mandal.name.includes("'s Mandal") || user.mobile || mandal.checklist?.profileComplete)) {
-      mandal.onboardingComplete = true;
-      mandal.checklist.profileComplete = true;
-      mandal.checklist.planSelected = true;
-      await mandal.save();
-    }
   }
 
   res.json({

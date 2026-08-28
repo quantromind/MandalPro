@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, Keyboard
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import client from '../api/client';
 
 export default function LoginScreen({ navigation, route }) {
@@ -13,7 +14,9 @@ export default function LoginScreen({ navigation, route }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  const [noAccount, setNoAccount] = useState(false); // true when email is not registered
   const { loginWithOtp } = useAuth();
+  const { t } = useLanguage();
   const inputRefs = useRef([]);
 
   React.useEffect(() => {
@@ -25,19 +28,28 @@ export default function LoginScreen({ navigation, route }) {
 
   // ── Step 1: Send OTP ──────────────────────────────────────────
   const handleSendOtp = async () => {
-    if (!email || !email.includes('@')) {
-      setError('Please enter a valid email address');
+    const trimmedEmail = (email || '').trim().toLowerCase();
+    if (!trimmedEmail || !trimmedEmail.includes('@')) {
+      setError(t('auth.invalidEmail'));
       return;
     }
     setError('');
+    setNoAccount(false);
     Keyboard.dismiss();
     setLoading(true);
+
     try {
-      await client.post('/auth/send-otp', { email: email.trim() });
+      await client.post('/auth/send-otp', { email: trimmedEmail });
       setStep('otp');
       startResendTimer();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send OTP. Check your email.');
+      if (err.response?.data?.code === 'USER_NOT_FOUND' || err.response?.status === 404) {
+        // Email not registered — show inline prompt to Create Account
+        setNoAccount(true);
+        setError('');
+      } else {
+        setError(err.response?.data?.message || t('auth.failedToSendOtp'));
+      }
     } finally {
       setLoading(false);
     }
@@ -56,15 +68,16 @@ export default function LoginScreen({ navigation, route }) {
   // ── Step 2: Verify OTP ────────────────────────────────────────
   const handleVerifyOtp = async () => {
     const code = otp.join('');
-    if (code.length < 6) { setError('Please enter the 6-digit OTP'); return; }
+    if (code.length < 6) { setError(t('auth.enterSixDigitOtp')); return; }
     Keyboard.dismiss();
     setError('');
     setLoading(true);
+    const trimmedEmail = (email || '').trim().toLowerCase();
     try {
-      await loginWithOtp(email.trim(), code);
+      await loginWithOtp(trimmedEmail, code);
       // Navigation is seamlessly handled by RootNavigator with fade animation
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid OTP. Please try again.');
+      setError(err.response?.data?.message || t('auth.invalidOtp'));
       setLoading(false);
     }
   };
@@ -92,7 +105,7 @@ export default function LoginScreen({ navigation, route }) {
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.brandHeader}>
           <Image source={require('../../assets/logo.jpg')} style={styles.logo} />
-          <Text style={styles.title}>Apla Mandal</Text>
+          <Text style={styles.title}>{t('nav.appTitle')}</Text>
           <Text style={styles.subtitle}>Mandal Management & Collector App</Text>
         </View>
 
@@ -101,32 +114,52 @@ export default function LoginScreen({ navigation, route }) {
 
           {step === 'email' ? (
             <>
-              <Text style={styles.stepTitle}>Sign In with OTP</Text>
-              <Text style={styles.stepLabel}>Enter your registered email address to receive a 6-digit one-time password.</Text>
-              
-              <Text style={styles.fieldLabel}>Email Address</Text>
+              <Text style={styles.stepTitle}>{t('auth.loginTitle')}</Text>
+              <Text style={styles.stepLabel}>{t('auth.loginSubtitle')}</Text>
+
+              {/* No Account Banner */}
+              {noAccount && (
+                <View style={styles.noAccountBanner}>
+                  <Text style={styles.noAccountTitle}>{t('auth.accountNotFound')}</Text>
+                  <Text style={styles.noAccountText}>
+                    {t('auth.accountNotFoundDesc')}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.createAccountBtn}
+                    onPress={() => navigation.navigate('Register', { prefillEmail: email.trim() })}
+                  >
+                    <Text style={styles.createAccountBtnText}>{t('auth.createAccount')}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              <Text style={styles.fieldLabel}>{t('auth.emailLabel')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="president@yourmandal.com"
+                placeholder={t('auth.emailPlaceholder')}
                 placeholderTextColor="#94A3B8"
                 autoCapitalize="none"
                 keyboardType="email-address"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (noAccount) setNoAccount(false);
+                  if (error) setError('');
+                }}
                 autoFocus
               />
               <TouchableOpacity style={styles.button} onPress={handleSendOtp} disabled={loading} activeOpacity={0.88}>
                 {loading
                   ? <ActivityIndicator color="#fff" />
-                  : <Text style={styles.buttonText}>Send OTP Code →</Text>
+                  : <Text style={styles.buttonText}>{t('auth.sendOtp')}</Text>
                 }
               </TouchableOpacity>
             </>
           ) : (
             <>
-              <Text style={styles.stepTitle}>Enter Verification Code</Text>
+              <Text style={styles.stepTitle}>{t('auth.otpVerification')}</Text>
               <Text style={styles.stepLabel}>
-                We sent a 6-digit code to{'\n'}
+                {t('auth.otpSubtitle', { email: '' })}{'\n'}
                 <Text style={{ color: '#F97316', fontWeight: '800' }}>{email}</Text>
               </Text>
 
@@ -155,30 +188,30 @@ export default function LoginScreen({ navigation, route }) {
               >
                 {loading
                   ? <ActivityIndicator color="#fff" />
-                  : <Text style={styles.buttonText}>Verify & Sign In →</Text>
+                  : <Text style={styles.buttonText}>{t('auth.verifyOtp')}</Text>
                 }
               </TouchableOpacity>
 
               <View style={styles.resendRow}>
                 <Text style={styles.resendText}>Didn't receive it? </Text>
                 {resendTimer > 0 ? (
-                  <Text style={styles.resendTimer}>Resend in {resendTimer}s</Text>
+                  <Text style={styles.resendTimer}>{t('auth.resendIn', { sec: resendTimer })}</Text>
                 ) : (
                   <TouchableOpacity onPress={handleSendOtp} disabled={loading}>
-                    <Text style={styles.resendLink}>Resend OTP</Text>
+                    <Text style={styles.resendLink}>{t('auth.resendOtp')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
 
               <TouchableOpacity style={styles.backLink} onPress={() => { setStep('email'); setOtp(['','','','','','']); setError(''); }}>
-                <Text style={styles.backText}>← Change email address</Text>
+                <Text style={styles.backText}>{t('auth.changeEmail')}</Text>
               </TouchableOpacity>
             </>
           )}
         </View>
 
         <TouchableOpacity style={styles.registerLink} onPress={() => navigation.navigate('Register')}>
-          <Text style={styles.registerText}>New mandal? <Text style={styles.registerBold}>Create account →</Text></Text>
+          <Text style={styles.registerText}>{t('auth.noAccountYet')} <Text style={styles.registerBold}>{t('auth.createAccount')}</Text></Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -239,4 +272,37 @@ const styles = StyleSheet.create({
   registerLink: { marginTop: 24, alignItems: 'center' },
   registerText: { color: '#64748B', fontSize: 14 },
   registerBold: { color: '#F97316', fontWeight: '800' },
+
+  noAccountBanner: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#FECACA',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+  },
+  noAccountTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#DC2626',
+    marginBottom: 4,
+  },
+  noAccountText: {
+    fontSize: 12.5,
+    color: '#991B1B',
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  createAccountBtn: {
+    backgroundColor: '#DC2626',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+  },
+  createAccountBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
 });

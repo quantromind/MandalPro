@@ -3,9 +3,12 @@ import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import client from '../api/client';
 
+import { useLanguage } from '../context/LanguageContext';
+
 export default function EventsScreen() {
   const [events, setEvents] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const { t } = useLanguage();
 
   const load = async () => {
     try {
@@ -25,29 +28,32 @@ export default function EventsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F97316']} tintColor="#F97316" />}
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.cardTop}>
-              <View style={styles.iconCircle}>
-                <Text style={{ fontSize: 20 }}>🎪</Text>
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.type}>Festival / Event Type: {item.type}</Text>
-              </View>
-              <View style={styles.statusBadge}>
-                <Text style={styles.status}>{item.status || 'Active'}</Text>
+        renderItem={({ item }) => {
+          const typeTranslated = t(`events.types.${item.type}`) || item.type;
+          return (
+            <View style={styles.card}>
+              <View style={styles.cardTop}>
+                <View style={styles.iconCircle}>
+                  <Text style={{ fontSize: 20 }}>🎪</Text>
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.name}>{item.name}</Text>
+                  <Text style={styles.type}>{t('events.eventType')}: {typeTranslated}</Text>
+                </View>
+                <View style={styles.statusBadge}>
+                  <Text style={styles.status}>{item.status === 'Active' ? t('common.active') : item.status || t('common.active')}</Text>
+                </View>
               </View>
             </View>
-          </View>
-        )}
+          );
+        }}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconCircle}>
               <Text style={{ fontSize: 32 }}>🎪</Text>
             </View>
-            <Text style={styles.emptyTitle}>No events scheduled</Text>
-            <Text style={styles.emptySubtitle}>Scheduled festival events and task plans will appear here.</Text>
+            <Text style={styles.emptyTitle}>{t('events.noEventsScheduled')}</Text>
+            <Text style={styles.emptySubtitle}>{t('events.noEventsSubtitle')}</Text>
           </View>
         }
       />

@@ -8,6 +8,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
+import { useLanguage } from '../context/LanguageContext';
+
 export default function ChatScreen() {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -16,6 +18,7 @@ export default function ChatScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const flatListRef = useRef(null);
   const { user, mandal } = useAuth();
+  const { t } = useLanguage();
 
   const currentUserId = user?._id || user?.id;
 
@@ -26,7 +29,7 @@ export default function ChatScreen() {
         setMessages(data);
       }
     } catch (err) {
-      console.log('Error loading messages', err);
+      // ignore
     } finally {
       setInitialLoading(false);
     }
@@ -74,7 +77,6 @@ export default function ChatScreen() {
       const { data } = await client.post('/chat', { text: trimmed });
       setMessages((prev) => prev.map((m) => (m._id === tempId ? data : m)));
     } catch (err) {
-      console.log('Error sending message', err);
       loadMessages();
     } finally {
       setSending(false);
@@ -82,17 +84,17 @@ export default function ChatScreen() {
   };
 
   const formatDateDivider = (dateStr) => {
-    if (!dateStr) return 'Today';
+    if (!dateStr) return t('common.today');
     const msgDate = new Date(dateStr);
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
 
     if (msgDate.toDateString() === today.toDateString()) {
-      return 'Today';
+      return t('common.today');
     }
     if (msgDate.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
+      return t('common.yesterday');
     }
     return msgDate.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
   };
@@ -106,13 +108,13 @@ export default function ChatScreen() {
   const getRoleBadge = (role) => {
     switch (role) {
       case 'president':
-        return { label: '👑 President', color: '#B45309', bg: '#FEF3C7' };
+        return { label: `👑 ${t('chat.president')}`, color: '#B45309', bg: '#FEF3C7' };
       case 'treasurer':
-        return { label: '💰 Treasurer', color: '#047857', bg: '#D1FAE5' };
+        return { label: `💰 ${t('chat.treasurer')}`, color: '#047857', bg: '#D1FAE5' };
       case 'secretary':
-        return { label: '📝 Secretary', color: '#4338CA', bg: '#E0E7FF' };
+        return { label: `📝 ${t('chat.secretary')}`, color: '#4338CA', bg: '#E0E7FF' };
       default:
-        return { label: '🛡️ Member', color: '#4B5563', bg: '#F3F4F6' };
+        return { label: `🛡️ ${t('chat.volunteer')}`, color: '#4B5563', bg: '#F3F4F6' };
     }
   };
 
@@ -130,11 +132,11 @@ export default function ChatScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.headerTitle} numberOfLines={1}>
-              {mandal?.name || 'Mandal Group Chat'}
+              {mandal?.name || t('chat.title')}
             </Text>
             <View style={styles.onlineRow}>
               <View style={styles.onlineDot} />
-              <Text style={styles.headerSub}>Committee Group • All Members & President</Text>
+              <Text style={styles.headerSub}>{t('chat.groupSub')}</Text>
             </View>
           </View>
         </View>
@@ -143,7 +145,7 @@ export default function ChatScreen() {
         {initialLoading ? (
           <View style={styles.loaderContainer}>
             <ActivityIndicator size="large" color="#FF6B00" />
-            <Text style={styles.loadingText}>Loading committee chat...</Text>
+            <Text style={styles.loadingText}>{t('chat.loadingChat')}</Text>
           </View>
         ) : (
           <FlatList
@@ -210,9 +212,9 @@ export default function ChatScreen() {
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyIcon}>💬</Text>
-                <Text style={styles.emptyTitle}>Mandal Group Chat</Text>
+                <Text style={styles.emptyTitle}>{t('chat.title')}</Text>
                 <Text style={styles.emptySubtitle}>
-                  Say hello! All committee members and the President can discuss collections, arrangements, and festival updates here.
+                  {t('chat.emptyChatSubtitle')}
                 </Text>
               </View>
             }
@@ -223,7 +225,7 @@ export default function ChatScreen() {
         <View style={styles.inputBar}>
           <TextInput
             style={styles.textInput}
-            placeholder="Message the Mandal team..."
+            placeholder={t('chat.typeMessage')}
             placeholderTextColor="#9CA3AF"
             value={inputText}
             onChangeText={setInputText}

@@ -27,22 +27,47 @@ const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString()
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 // @desc  Send OTP to an email address
+// @desc  Send OTP to an email address
 // @route POST /api/auth/send-otp
 const sendOtp = asyncHandler(async (req, res) => {
   const { email, purpose } = req.body;
   if (!email) {
-    res.status(400);
-    throw new Error('email is required');
+    return res.status(400).json({
+      success: false,
+      code: 'EMAIL_REQUIRED',
+      message: 'email is required'
+    });
   }
 
-  const normalizedEmail = email.toLowerCase().trim();
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const user = await User.findOne({
+    email: normalizedEmail
+  });
 
   // If purpose is registration, verify if account already exists
   if (purpose === 'register') {
-    const existingUser = await User.findOne({ email: normalizedEmail });
-    if (existingUser) {
-      res.status(409);
-      throw new Error('This email is already registered. Please log in to your account.');
+    if (user) {
+      return res.status(409).json({
+        success: false,
+        code: 'USER_ALREADY_EXISTS',
+        message: 'This email is already registered. Please log in to your account.'
+      });
+    }
+  }
+
+  // If purpose is login (or default/no purpose), verify account exists before sending OTP
+  // Prevents OTP being sent to unregistered emails during login flow
+  if (!purpose || purpose === 'login') {
+    // Skip this check for superadmin and demo accounts
+    if (normalizedEmail !== 'quantromind@gmail.com' && !isDemoAccount(normalizedEmail)) {
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          code: 'USER_NOT_FOUND',
+          message: 'No account found with this email. Please create an account first.'
+        });
+      }
     }
   }
 

@@ -44,8 +44,67 @@ function getRecommendedPlan(mandal) {
   return 'Basic';
 }
 
+import { useLanguage } from '../context/LanguageContext';
+
 export default function SubscriptionScreen({ navigation }) {
-  const { user, mandal, updateMandal, logout } = useAuth();
+  const { user, mandal, updateMandal, logout, refreshProfile } = useAuth();
+  const { t } = useLanguage();
+
+  const PLANS = [
+    {
+      id: 'Basic', price: 199, label: '₹199', period: t('subscription.perMonth'), color: '#64748B',
+      tagline: t('subscription.plans.basicTagline'),
+      features: [
+        t('subscription.features.oneMandal'),
+        t('subscription.features.fiveEvents'),
+        t('subscription.features.basicReceipts'),
+        t('subscription.features.tenMembers'),
+        t('subscription.features.dashboardReports')
+      ],
+      cta: t('subscription.choosePlan', { plan: 'Basic' })
+    },
+    {
+      id: 'Pro', price: 499, label: '₹499', period: t('subscription.perMonth'), color: '#FF6B00',
+      badge: t('subscription.mostPopular'),
+      tagline: t('subscription.plans.proTagline'),
+      features: [
+        t('subscription.features.oneMandal'),
+        t('subscription.features.unlimitedEvents'),
+        t('subscription.features.customBranding'),
+        t('subscription.features.twentyFiveMembers'),
+        t('subscription.features.verifiedBadge'),
+        t('subscription.features.prioritySupport')
+      ],
+      cta: t('subscription.choosePlan', { plan: 'Pro' })
+    },
+    {
+      id: 'Premium', price: 999, label: '₹999', period: t('subscription.perMonth'), color: '#6C4DD9',
+      badge: t('subscription.bestValue'),
+      tagline: t('subscription.plans.premiumTagline'),
+      features: [
+        t('subscription.features.threeMandals'),
+        t('subscription.features.unlimitedEvents'),
+        t('subscription.features.fullBranding'),
+        t('subscription.features.unlimitedMembers'),
+        t('subscription.features.verifiedBadge'),
+        t('subscription.features.analyticsExport')
+      ],
+      cta: t('subscription.choosePlan', { plan: 'Premium' })
+    },
+    {
+      id: 'Enterprise', price: null, label: t('subscription.custom'), period: '', color: '#10B981',
+      tagline: t('subscription.plans.enterpriseTagline'),
+      features: [
+        t('subscription.features.unlimitedMandals'),
+        t('subscription.features.everythingPremium'),
+        t('subscription.features.whiteLabel'),
+        t('subscription.features.apiAccess'),
+        t('subscription.features.slaSupport')
+      ],
+      cta: t('subscription.contactSales')
+    }
+  ];
+
   const [selectedPlan, setSelectedPlan] = useState(getRecommendedPlan(mandal));
   const [annual, setAnnual] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -63,18 +122,17 @@ export default function SubscriptionScreen({ navigation }) {
     const plan = PLANS.find(p => p.id === selectedPlan);
 
     if (selectedPlan === 'Enterprise') {
-      Alert.alert('Enterprise Plan', 'Our team will contact you shortly.', [{ text: 'OK' }]);
+      Alert.alert(t('subscription.enterprisePlan'), t('subscription.enterpriseTeamContact'), [{ text: 'OK' }]);
       return;
     }
 
-    // All plans require payment / activation
     Alert.alert(
       `${selectedPlan} Plan`,
-      `Select your payment method for ${effectivePrice(PLANS.find(p => p.id === selectedPlan))}${annual ? '/month (annual)' : '/month'}:`,
+      `${t('subscription.selectPaymentMethod')} ${effectivePrice(PLANS.find(p => p.id === selectedPlan))}${annual ? t('subscription.perMonthAnnual') : t('subscription.perMonth')}:`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '⚡ Instant Test Activate',
+          text: `⚡ ${t('subscription.instantTestActivate')}`,
           onPress: async () => {
             setLoading(true);
             try {
@@ -86,29 +144,31 @@ export default function SubscriptionScreen({ navigation }) {
                 plan: selectedPlan,
                 planStatus: 'Active'
               });
+
+              // Refresh profile so AuthContext and RootNavigator receive latest server state
+              await refreshProfile();
+
               Alert.alert(
-                'Plan Activated 🎉',
-                `Your ${selectedPlan} plan is now active! Welcome to Apla Mandal.`,
-                [
-                  {
-                    text: 'Continue to Dashboard →',
-                    onPress: () => {
-                      if (navigation?.canGoBack && navigation.canGoBack()) {
-                        navigation.goBack();
-                      }
+                t('subscription.planActivated'),
+                t('subscription.planActivatedDesc', { plan: selectedPlan }),
+                [{
+                  text: t('subscription.continueToDashboard'),
+                  onPress: () => {
+                    if (navigation?.canGoBack && navigation.canGoBack()) {
+                      navigation.goBack();
                     }
                   }
-                ]
+                }]
               );
             } catch (e) {
-              Alert.alert('Error', e.response?.data?.message || 'Activation failed');
+              Alert.alert(t('common.error'), e.response?.data?.message || 'Activation failed');
             } finally {
               setLoading(false);
             }
           }
         },
         {
-          text: 'Razorpay Gateway →',
+          text: `${t('subscription.razorpayGateway')} →`,
           onPress: async () => {
             setLoading(true);
             try {
@@ -120,7 +180,7 @@ export default function SubscriptionScreen({ navigation }) {
                 selectedPlan
               });
             } catch (e) {
-              Alert.alert('Error', e.response?.data?.message || 'Payment failed');
+              Alert.alert(t('common.error'), e.response?.data?.message || 'Payment failed');
             } finally {
               setLoading(false);
             }
@@ -170,35 +230,35 @@ export default function SubscriptionScreen({ navigation }) {
                       plan: checkoutConfig.selectedPlan,
                       planStatus: 'Active'
                     });
+                    // Refresh profile so RootNavigator re-evaluates and auto-navigates to Home
+                    await refreshProfile();
                     Alert.alert(
-                      'Payment Successful 🎉',
-                      `Your ${checkoutConfig.selectedPlan} plan is now active! Welcome to Apla Mandal.`,
-                      [
-                        {
-                          text: 'Continue to Dashboard →',
-                          onPress: () => {
-                            if (navigation?.canGoBack && navigation.canGoBack()) {
-                              navigation.goBack();
-                            }
+                      t('subscription.paymentSuccessful'),
+                      t('subscription.planActivatedDesc', { plan: checkoutConfig.selectedPlan }),
+                      [{
+                        text: t('subscription.continueToDashboard'),
+                        onPress: () => {
+                          if (navigation?.canGoBack && navigation.canGoBack()) {
+                            navigation.goBack();
                           }
                         }
-                      ]
+                      }]
                     );
                   } else if (data.type === 'cancel' || data.type === 'modal_dismissed') {
                     // Modal dismissed or closed
                   } else if (data.type === 'error') {
-                    Alert.alert('Payment Failed', data.error?.description || 'Payment was unsuccessful.');
+                    Alert.alert(t('subscription.paymentFailed'), data.error?.description || 'Payment was unsuccessful. Please choose a supported test method (e.g. HDFC/SBI Netbanking or Test Card) or use 1-Click Test Payment.');
                   }
                 } catch (e) {
                   setCheckoutConfig(null);
                   setLoading(false);
-                  Alert.alert('Verification Error', e.response?.data?.message || e.message);
+                  Alert.alert(t('common.error'), e.response?.data?.message || e.message);
                 }
               }}
             />
           )}
           <TouchableOpacity style={{ padding: 16, alignItems: 'center', borderTopWidth: 1, borderColor: '#eee' }} onPress={() => setCheckoutConfig(null)}>
-            <Text style={{ color: '#ef4444', fontWeight: 'bold' }}>Cancel Payment</Text>
+            <Text style={{ color: '#ef4444', fontWeight: 'bold' }}>{t('subscription.cancelPayment')}</Text>
           </TouchableOpacity>
         </SafeAreaView>
       </Modal>
@@ -208,20 +268,20 @@ export default function SubscriptionScreen({ navigation }) {
         {/* Back Button if navigated from Settings/Profile */}
         {navigation.canGoBack() && (
           <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
-            <Text style={s.backBtnText}>← Back to Profile</Text>
+            <Text style={s.backBtnText}>← {t('subscription.backToProfile')}</Text>
           </TouchableOpacity>
         )}
 
         {/* Header */}
         <View style={s.header}>
-          <Text style={s.brand}>🪔 Apla Mandal</Text>
+          <Text style={s.brand}>🪔 {t('nav.appTitle')}</Text>
           <Text style={s.title}>
-            {mandal?.planStatus === 'Expired' ? 'Renew Your Plan' : 'Choose your Plan'}
+            {mandal?.planStatus === 'Expired' ? t('subscription.renewTitle') : t('subscription.title')}
           </Text>
           <Text style={s.sub}>
             {mandal?.planStatus === 'Expired'
-              ? 'Your subscription has expired. Renew your plan below to continue managing donations and receipts.'
-              : 'Unlock the full power of Apla Mandal for your community.'}
+              ? t('subscription.expiredSub')
+              : t('subscription.subtitle')}
           </Text>
         </View>
 
@@ -230,9 +290,9 @@ export default function SubscriptionScreen({ navigation }) {
           <View style={s.expiredBanner}>
             <Text style={s.expiredIcon}>⚠️</Text>
             <View style={{ flex: 1 }}>
-              <Text style={s.expiredTitle}>Subscription Expired</Text>
+              <Text style={s.expiredTitle}>{t('subscription.subscriptionExpired')}</Text>
               <Text style={s.expiredSub}>
-                Please select a plan below to activate your account and continue using all features.
+                {t('subscription.expiredSub')}
               </Text>
             </View>
           </View>
@@ -243,9 +303,9 @@ export default function SubscriptionScreen({ navigation }) {
           <View style={s.recBanner}>
             <Text style={s.recIcon}>🎯</Text>
             <View style={{ flex: 1 }}>
-              <Text style={s.recTitle}>Recommended for you</Text>
+              <Text style={s.recTitle}>{t('subscription.recommendedForYou')}</Text>
               <Text style={s.recSub}>
-                You selected {mandal.eventTypes.length} event type{mandal.eventTypes.length !== 1 ? 's' : ''}. We suggest the <Text style={{ fontWeight: '800' }}>{recommended}</Text> plan.
+                {t('subscription.recReason', { count: mandal.eventTypes.length, plan: recommended })}
               </Text>
             </View>
           </View>
@@ -253,7 +313,7 @@ export default function SubscriptionScreen({ navigation }) {
 
         {/* Billing Toggle */}
         <View style={s.billingRow}>
-          <Text style={[s.billingLabel, !annual && s.billingActive]}>Monthly</Text>
+          <Text style={[s.billingLabel, !annual && s.billingActive]}>{t('subscription.monthly')}</Text>
           <Switch
             value={annual}
             onValueChange={setAnnual}
@@ -261,7 +321,7 @@ export default function SubscriptionScreen({ navigation }) {
             thumbColor={'#fff'}
           />
           <Text style={[s.billingLabel, annual && s.billingActive]}>
-            Annual <Text style={s.saveBadge}> Save 20%</Text>
+            {t('subscription.annual')} <Text style={s.saveBadge}>{t('subscription.save20')}</Text>
           </Text>
         </View>
 
@@ -278,12 +338,12 @@ export default function SubscriptionScreen({ navigation }) {
             >
               {(plan.badge || isRec) && !isSelected && (
                 <View style={[s.badge, { backgroundColor: plan.color }]}>
-                  <Text style={s.badgeText}>{plan.badge || '⭐ Recommended'}</Text>
+                  <Text style={s.badgeText}>{plan.badge || `⭐ ${t('subscription.recommended')}`}</Text>
                 </View>
               )}
               {isSelected && (
                 <View style={[s.badge, { backgroundColor: plan.color }]}>
-                  <Text style={s.badgeText}>✓ Selected</Text>
+                  <Text style={s.badgeText}>✓ {t('subscription.selected')}</Text>
                 </View>
               )}
 
@@ -295,7 +355,7 @@ export default function SubscriptionScreen({ navigation }) {
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={s.planPrice}>{effectivePrice(plan)}</Text>
                   {plan.price !== null && plan.price > 0 && (
-                    <Text style={s.planPeriod}>{annual ? '/mo (annual)' : '/month'}</Text>
+                    <Text style={s.planPeriod}>{annual ? t('subscription.perMonthAnnual') : t('subscription.perMonth')}</Text>
                   )}
                 </View>
               </View>
@@ -323,15 +383,15 @@ export default function SubscriptionScreen({ navigation }) {
           {loading
             ? <ActivityIndicator color="#fff" />
             : <Text style={s.ctaText}>
-              {selectedPlan === 'Enterprise' ? 'Contact Sales →' : `Choose ${selectedPlan} →`}
+              {selectedPlan === 'Enterprise' ? `${t('subscription.contactSales')} →` : `${t('subscription.choosePlan', { plan: selectedPlan })} →`}
             </Text>
           }
         </TouchableOpacity>
 
-        <Text style={s.footer}>🔒 Secure payments via Razorpay · Cancel anytime</Text>
+        <Text style={s.footer}>🔒 {t('subscription.securePayments')}</Text>
 
         <TouchableOpacity style={s.logoutLink} onPress={logout}>
-          <Text style={s.logoutText}>Cancel & Sign Out</Text>
+          <Text style={s.logoutText}>{t('common.logout')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

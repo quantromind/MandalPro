@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import client from '../api/client';
 
 const EVENT_TYPES = [
@@ -19,6 +20,7 @@ const EVENT_TYPES = [
 
 export default function OnboardingScreen() {
   const { user, mandal, refreshProfile, logout } = useAuth();
+  const { t } = useLanguage();
 
   // Form State
   const [presidentName, setPresidentName] = useState(user?.name || '');
@@ -37,13 +39,13 @@ export default function OnboardingScreen() {
   const toggleType = (id) => {
     if (selectedTypes.includes(id)) {
       if (selectedTypes.length === 1) {
-        Alert.alert('Selection required', 'Please keep at least one festival/event type selected.');
+        Alert.alert(t('register.selectionRequired'), t('register.keepOneEvent'));
         return;
       }
       setSelectedTypes(selectedTypes.filter(t => t !== id));
     } else {
       if (selectedTypes.length >= 3) {
-        Alert.alert('Limit Reached', 'You can select up to 3 event types for your Mandal in this plan.');
+        Alert.alert(t('register.limitReached'), t('register.maxThreeEvents'));
         return;
       }
       setSelectedTypes([...selectedTypes, id]);
@@ -54,7 +56,7 @@ export default function OnboardingScreen() {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('Permission Denied', 'Camera roll permission is required to choose a logo.');
+        Alert.alert(t('common.error'), t('profile.permissionDenied'));
         return;
       }
 
@@ -74,21 +76,21 @@ export default function OnboardingScreen() {
         setLogoBase64(base64Uri);
       }
     } catch (err) {
-      Alert.alert('Error', 'Could not open image picker.');
+      Alert.alert(t('common.error'), 'Could not open image picker.');
     }
   };
 
   const handleSubmit = async () => {
     if (!presidentName.trim()) {
-      Alert.alert('Missing Name', 'Please enter the President / Your full name.');
+      Alert.alert(t('common.error'), t('register.errors.nameRequired'));
       return;
     }
     if (!mobile.trim() || mobile.trim().length < 10) {
-      Alert.alert('Invalid Mobile', 'Please enter a valid 10-digit mobile number.');
+      Alert.alert(t('common.error'), t('register.errors.mobileInvalid'));
       return;
     }
     if (!mandalName.trim()) {
-      Alert.alert('Missing Mandal Name', 'Please enter the official name of your Mandal.');
+      Alert.alert(t('common.error'), t('register.errors.mandalRequired'));
       return;
     }
 
@@ -107,7 +109,7 @@ export default function OnboardingScreen() {
       // Refresh auth context so RootNavigator immediately evaluates the completed profile
       await refreshProfile();
     } catch (err) {
-      Alert.alert('Setup Error', err.response?.data?.message || 'Failed to save Mandal details.');
+      Alert.alert(t('common.error'), err.response?.data?.message || 'Failed to save Mandal details.');
     } finally {
       setSaving(false);
     }
@@ -123,19 +125,19 @@ export default function OnboardingScreen() {
           {/* Header Banner */}
           <View style={styles.header}>
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>👑 PRESIDENT & MANDAL SETUP</Text>
+              <Text style={styles.badgeText}>👑 {t('onboarding.setupBadge')}</Text>
             </View>
-            <Text style={styles.title}>Complete Your Mandal Setup</Text>
+            <Text style={styles.title}>{t('onboarding.title')}</Text>
             <Text style={styles.subtitle}>
-              Fill in your details and Mandal information to start managing donations, issuing digital receipts, and adding team members.
+              {t('onboarding.subtitle')}
             </Text>
           </View>
 
           {/* Section 1: President Personal Info */}
           <View style={styles.card}>
-            <Text style={styles.cardHeading}>👤 President Details</Text>
+            <Text style={styles.cardHeading}>👤 {t('onboarding.presidentDetails')}</Text>
 
-            <Text style={styles.label}>President Full Name *</Text>
+            <Text style={styles.label}>{t('onboarding.presidentName')} *</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. Rahul Patil"
@@ -144,7 +146,7 @@ export default function OnboardingScreen() {
               onChangeText={setPresidentName}
             />
 
-            <Text style={styles.label}>Mobile / Phone Number *</Text>
+            <Text style={styles.label}>{t('onboarding.mobileNumber')} *</Text>
             <TextInput
               style={styles.input}
               placeholder="10-digit mobile number"
@@ -155,7 +157,7 @@ export default function OnboardingScreen() {
               onChangeText={t => setMobile(t.replace(/[^0-9]/g, ''))}
             />
 
-            <Text style={styles.label}>Email Address</Text>
+            <Text style={styles.label}>{t('auth.emailLabel')}</Text>
             <TextInput
               style={[styles.input, styles.inputDisabled]}
               value={user?.email}
@@ -165,9 +167,9 @@ export default function OnboardingScreen() {
 
           {/* Section 2: Mandal Details & Branding */}
           <View style={styles.card}>
-            <Text style={styles.cardHeading}>🚩 Mandal Information</Text>
+            <Text style={styles.cardHeading}>🚩 {t('onboarding.mandalInfo')}</Text>
 
-            <Text style={styles.label}>Mandal Official Name *</Text>
+            <Text style={styles.label}>{t('onboarding.mandalOfficialName')} *</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. सखी मित्र मंडळ (Sakhee Mitra Mandal)"
@@ -177,7 +179,7 @@ export default function OnboardingScreen() {
             />
 
             {/* Logo Upload */}
-            <Text style={styles.label}>Mandal Logo / Image (Optional)</Text>
+            <Text style={styles.label}>{t('onboarding.mandalLogo')}</Text>
             <View style={styles.logoRow}>
               {logoBase64 ? (
                 <Image source={{ uri: logoBase64 }} style={styles.logoPreview} resizeMode="contain" />
@@ -189,22 +191,22 @@ export default function OnboardingScreen() {
               <View style={{ flex: 1, marginLeft: 14 }}>
                 <TouchableOpacity style={styles.uploadBtn} onPress={pickLogo} activeOpacity={0.85}>
                   <Text style={styles.uploadBtnText}>
-                    {logoBase64 ? '📷 Change Photo' : '📷 Upload Logo'}
+                    {logoBase64 ? t('profile.changeLogo') : t('profile.addLogo')}
                   </Text>
                 </TouchableOpacity>
-                <Text style={styles.logoNote}>Printed on all digital WhatsApp receipts</Text>
+                <Text style={styles.logoNote}>{t('profile.logoHint')}</Text>
               </View>
             </View>
 
             {/* Festival / Event Types */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 4 }}>
-              <Text style={styles.label}>Festivals & Events Managed</Text>
+              <Text style={styles.label}>{t('dashboard.festivalsAndEvents')}</Text>
               <Text style={{ fontSize: 12, fontWeight: '700', color: selectedTypes.length === 3 ? '#FF6B00' : '#6B7280' }}>
-                {selectedTypes.length}/3 selected
+                {t('register.selectedCount', { count: selectedTypes.length })}
               </Text>
             </View>
             <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 10 }}>
-              Select up to 3 event types allowed for this Mandal plan.
+              {t('register.selectUpToThree')}
             </Text>
             <View style={styles.chipsRow}>
               {EVENT_TYPES.map(e => {
@@ -217,13 +219,15 @@ export default function OnboardingScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={styles.chipIcon}>{e.icon}</Text>
-                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{e.id}</Text>
+                    <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                      {t(`events.types.${e.id}`) || e.id}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            <Text style={styles.label}>Mandal Area / Address (Optional)</Text>
+            <Text style={styles.label}>{t('profile.address')} (Optional)</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. Sadashiv Peth, Pune"
@@ -232,7 +236,7 @@ export default function OnboardingScreen() {
               onChangeText={setAddress}
             />
 
-            <Text style={styles.label}>Mandal UPI ID for QR / Online Payments (Optional)</Text>
+            <Text style={styles.label}>{t('profile.upiId')} (Optional)</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. sakheemandal@upi"
@@ -253,12 +257,12 @@ export default function OnboardingScreen() {
             {saving ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.submitButtonText}>Complete Setup & Continue →</Text>
+              <Text style={styles.submitButtonText}>{t('onboarding.completeSetup')}</Text>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.logoutLink} onPress={logout}>
-            <Text style={styles.logoutText}>Cancel & Sign Out</Text>
+            <Text style={styles.logoutLinkText}>{t('common.logout')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

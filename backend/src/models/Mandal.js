@@ -15,8 +15,8 @@ const mandalSchema = new mongoose.Schema(
       bankName: String
     },
     eventTypes: [{ type: String, enum: ['Ganesh Utsav', 'Navratri', 'Jayanti', 'Diwali', 'Wedding/Hall', 'Custom'] }],
-    plan: { type: String, enum: ['Basic', 'Pro', 'Premium', 'Enterprise'], default: 'Basic' },
-    planStatus: { type: String, enum: ['Active', 'GracePeriod', 'Expired'], default: 'Active' },
+    plan: { type: String, enum: ['None', 'Basic', 'Pro', 'Premium', 'Enterprise'], default: 'None' },
+    planStatus: { type: String, enum: ['Inactive', 'Active', 'GracePeriod', 'Expired'], default: 'Inactive' },
     planRenewsAt: { type: Date },
     verified: { type: Boolean, default: false },
     verificationDocs: [{ type: String }],    // base64 encoded docs

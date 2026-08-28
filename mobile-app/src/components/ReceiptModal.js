@@ -8,9 +8,12 @@ import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { numberToWordsEn } from '../utils/numberToWords';
 
+import { useLanguage } from '../context/LanguageContext';
+
 export default function ReceiptModal({ visible, receipt, mandal, collectorName, onClose }) {
   if (!receipt) return null;
 
+  const { t } = useLanguage();
   const receiptRef = useRef();
   const [sharingImage, setSharingImage] = useState(false);
 
@@ -44,10 +47,10 @@ export default function ReceiptModal({ visible, receipt, mandal, collectorName, 
           UTI: 'public.png'
         });
       } else {
-        Alert.alert('Sharing Unavailable', 'Image sharing is not supported on this device.');
+        Alert.alert(t('common.error'), 'Image sharing is not supported on this device.');
       }
     } catch (err) {
-      Alert.alert('Error', 'Could not generate receipt image: ' + err.message);
+      Alert.alert(t('common.error'), 'Could not generate receipt image: ' + err.message);
     } finally {
       setSharingImage(false);
     }
@@ -56,7 +59,7 @@ export default function ReceiptModal({ visible, receipt, mandal, collectorName, 
   // ── Direct WhatsApp Message ──
   const handleDirectWhatsApp = async () => {
     if (!donorMobile) {
-      Alert.alert('No Mobile Number', 'No phone number is attached to this receipt.');
+      Alert.alert(t('common.error'), 'No phone number is attached to this receipt.');
       return;
     }
 
@@ -94,7 +97,7 @@ ${collectorName ? `✍️ *Issued By:* ${collectorName}\n` : ''}━━━━━�
       }
     } catch (err) {
       Linking.openURL(webUrl).catch(() => {
-        Alert.alert('Error', 'Unable to open WhatsApp.');
+        Alert.alert(t('common.error'), 'Unable to open WhatsApp.');
       });
     }
   };
@@ -108,7 +111,7 @@ ${collectorName ? `✍️ *Issued By:* ${collectorName}\n` : ''}━━━━━�
             {/* Status Pill */}
             <View style={styles.topSuccess}>
               <Text style={styles.successIcon}>✅</Text>
-              <Text style={styles.successText}>Receipt Generated Successfully</Text>
+              <Text style={styles.successText}>{t('receipts.receiptGeneratedSuccess')}</Text>
             </View>
 
             {/* ════════ RECEIPT VIEW (CAPTURED AS HIGH-RES IMAGE) ════════ */}
@@ -267,7 +270,7 @@ ${collectorName ? `✍️ *Issued By:* ${collectorName}\n` : ''}━━━━━�
                 ) : (
                   <>
                     <Text style={styles.btnIcon}>🖼️</Text>
-                    <Text style={styles.imageShareBtnText}>Share Receipt Image (WhatsApp)</Text>
+                    <Text style={styles.imageShareBtnText}>{t('receipts.shareImageWhatsApp')}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -279,12 +282,12 @@ ${collectorName ? `✍️ *Issued By:* ${collectorName}\n` : ''}━━━━━�
                   activeOpacity={0.85}
                 >
                   <Text style={styles.btnIcon}>📲</Text>
-                  <Text style={styles.whatsappDirectBtnText}>Send Message to WhatsApp (+91 {donorMobile})</Text>
+                  <Text style={styles.whatsappDirectBtnText}>{t('receipts.sendDirectWhatsApp', { mobile: donorMobile })}</Text>
                 </TouchableOpacity>
               ) : null}
 
               <TouchableOpacity style={styles.doneBtn} onPress={onClose} activeOpacity={0.85}>
-                <Text style={styles.doneBtnText}>Done / New Collection ✓</Text>
+                <Text style={styles.doneBtnText}>{t('receipts.doneNewCollection')}</Text>
               </TouchableOpacity>
             </View>
 

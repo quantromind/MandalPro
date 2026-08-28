@@ -5,6 +5,9 @@ const { requireMandal } = require('../middleware/tenant');
 const { allowRoles } = require('../middleware/rbac');
 const {
   createExpense,
+  getExpense,
+  updateExpense,
+  deleteExpense,
   submitExpense,
   listExpenses,
   approveExpense,
@@ -17,6 +20,10 @@ router.use(protect, requireMandal);
 
 router.post('/', allowRoles('president', 'treasurer', 'secretary', 'volunteer'), createExpense);
 router.get('/', listExpenses);
+router.get('/:id', getExpense);
+router.put('/:id', allowRoles('president', 'treasurer'), updateExpense);
+router.patch('/:id', allowRoles('president', 'treasurer'), updateExpense);
+router.delete('/:id', allowRoles('president', 'treasurer'), deleteExpense);
 router.patch('/:id/submit', submitExpense);
 router.patch('/:id/approve', allowRoles('president', 'treasurer'), approveExpense);
 router.patch('/:id/reject', allowRoles('president', 'treasurer'), rejectExpense);

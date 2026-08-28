@@ -76,6 +76,22 @@ export function ChatIcon({ color = '#64748B', size = 20, isFocused = false }) {
   );
 }
 
+export function CollectionsIcon({ color = '#64748B', size = 20, isFocused = false }) {
+  return (
+    <View style={styles.iconContainer}>
+      <Text style={[styles.emojiIcon, isFocused && styles.emojiIconFocused]}>💰</Text>
+    </View>
+  );
+}
+
+export function ExpensesIcon({ color = '#64748B', size = 20, isFocused = false }) {
+  return (
+    <View style={styles.iconContainer}>
+      <Text style={[styles.emojiIcon, isFocused && styles.emojiIconFocused]}>💸</Text>
+    </View>
+  );
+}
+
 export function MandalIcon({ color = '#64748B', size = 20, isFocused = false }) {
   return (
     <View style={styles.iconContainer}>
@@ -102,6 +118,12 @@ const styles = StyleSheet.create({
     height: 22,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  emojiIcon: {
+    fontSize: 16,
+  },
+  emojiIconFocused: {
+    fontSize: 17,
   },
   
   /* Home */

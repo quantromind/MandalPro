@@ -118,6 +118,7 @@ const upgradePlan = asyncHandler(async (req, res) => {
       plan,
       planStatus: 'Active',
       planRenewsAt: renewsAt,
+      onboardingComplete: true,
       'checklist.planSelected': true,
       // Store payment ref if provided
       ...(razorpayPaymentId && { lastPaymentId: razorpayPaymentId })

@@ -6,12 +6,15 @@ import { getQueue, syncQueue } from '../utils/offlineQueue';
 import { useAuth } from '../context/AuthContext';
 import ReceiptModal from '../components/ReceiptModal';
 
+import { useLanguage } from '../context/LanguageContext';
+
 export default function ReceiptsScreen() {
   const [receipts, setReceipts] = useState([]);
   const [pending, setPending] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const { mandal, user } = useAuth();
+  const { t } = useLanguage();
 
   const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
@@ -33,7 +36,7 @@ export default function ReceiptsScreen() {
   };
 
   const combined = [
-    ...pending.map((p) => ({ ...p, _id: p.tempId, receiptNumber: 'Pending sync', status: 'Pending' })),
+    ...pending.map((p) => ({ ...p, _id: p.tempId, receiptNumber: t('receipts.pendingSync'), status: 'Pending' })),
     ...receipts
   ];
 
@@ -56,13 +59,13 @@ export default function ReceiptsScreen() {
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={styles.donor}>{item.donorName}</Text>
-                <Text style={styles.receiptNo}>Receipt #{item.receiptNumber}</Text>
+                <Text style={styles.receiptNo}>{t('receipts.receiptNo', { number: item.receiptNumber })}</Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={styles.amount}>{inr(item.amount)}</Text>
                 <View style={[styles.statusBadge, item.status === 'Pending' && styles.statusPending]}>
                   <Text style={[styles.statusText, item.status === 'Pending' && styles.statusTextPending]}>
-                    {item.status === 'Pending' ? '⏳ Pending' : '✓ Issued'}
+                    {item.status === 'Pending' ? `⏳ ${t('common.pending')}` : `✓ ${t('receipts.issued')}`}
                   </Text>
                 </View>
               </View>
@@ -75,7 +78,7 @@ export default function ReceiptsScreen() {
                 {item.purpose ? `· 🎯 ${item.purpose}` : ''}
               </Text>
               <View style={styles.sharePill}>
-                <Text style={styles.viewText}>Share 📲</Text>
+                <Text style={styles.viewText}>{t('receipts.shareWhatsApp')} 📲</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -85,8 +88,8 @@ export default function ReceiptsScreen() {
             <View style={styles.emptyIconCircle}>
               <Text style={styles.emptyIcon}>🧾</Text>
             </View>
-            <Text style={styles.emptyTitle}>No receipts issued yet</Text>
-            <Text style={styles.emptySubtitle}>All issued donation receipts and offline entries will appear here.</Text>
+            <Text style={styles.emptyTitle}>{t('receipts.noReceiptsYet')}</Text>
+            <Text style={styles.emptySubtitle}>{t('receipts.noReceiptsSubtitle')}</Text>
           </View>
         }
       />

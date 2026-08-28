@@ -7,10 +7,11 @@ const APPROVAL_THRESHOLD = 5000; // configurable per mandal in a future settings
 // @desc Create an expense (auto-approved if created by President)
 // @route POST /api/expenses
 const createExpense = asyncHandler(async (req, res) => {
-  const { category, amount, vendor, description, billImageUrl, ocrData, eventId, status } = req.body;
-  if (!category || !amount) {
+  const { title, category, amount, vendor, date, description, billImageUrl, ocrData, eventId, status } = req.body;
+  const numAmount = Number(amount);
+  if (!category || isNaN(numAmount) || numAmount <= 0) {
     res.status(400);
-    throw new Error('category and amount are required');
+    throw new Error('Valid category and positive amount are required');
   }
 
   const isPresident = req.user.role === 'president' || req.user.role === 'superadmin';
@@ -19,9 +20,11 @@ const createExpense = asyncHandler(async (req, res) => {
   const expense = await Expense.create({
     mandalId: req.mandalId,
     eventId,
-    category,
-    amount,
+    title: title || category,
+    category: category || 'Misc / Other',
+    amount: numAmount,
     vendor,
+    date: date ? new Date(date) : new Date(),
     description,
     billImageUrl,
     ocrData,
@@ -30,6 +33,68 @@ const createExpense = asyncHandler(async (req, res) => {
     approvedBy: isPresident ? req.user._id : undefined
   });
   res.status(201).json(expense);
+});
+
+// @desc Get single expense
+// @route GET /api/expenses/:id
+const getExpense = asyncHandler(async (req, res) => {
+  const expense = await Expense.findOne({ _id: req.params.id, mandalId: req.mandalId });
+  if (!expense) {
+    res.status(404);
+    throw new Error('Expense not found');
+  }
+  res.json(expense);
+});
+
+// @desc Update expense
+// @route PUT/PATCH /api/expenses/:id
+const updateExpense = asyncHandler(async (req, res) => {
+  const expense = await Expense.findOne({ _id: req.params.id, mandalId: req.mandalId });
+  if (!expense) {
+    res.status(404);
+    throw new Error('Expense not found');
+  }
+
+  const { title, category, amount, vendor, date, description, billImageUrl } = req.body;
+  if (title !== undefined) expense.title = title;
+  if (category !== undefined) expense.category = category;
+  if (amount !== undefined) {
+    const numAmount = Number(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      res.status(400);
+      throw new Error('Amount must be a positive number');
+    }
+    expense.amount = numAmount;
+  }
+  if (vendor !== undefined) expense.vendor = vendor;
+  if (date !== undefined) expense.date = new Date(date);
+  if (description !== undefined) expense.description = description;
+  if (billImageUrl !== undefined) expense.billImageUrl = billImageUrl;
+
+  await expense.save();
+  res.json(expense);
+});
+
+// @desc Delete expense
+// @route DELETE /api/expenses/:id
+const deleteExpense = asyncHandler(async (req, res) => {
+  const expense = await Expense.findOne({ _id: req.params.id, mandalId: req.mandalId });
+  if (!expense) {
+    res.status(404);
+    throw new Error('Expense not found');
+  }
+
+  await Expense.deleteOne({ _id: req.params.id, mandalId: req.mandalId });
+
+  await AuditLog.create({
+    mandalId: req.mandalId,
+    action: 'expense.delete',
+    entity: 'Expense',
+    entityId: expense._id,
+    performedBy: req.user._id
+  });
+
+  res.json({ message: 'Expense deleted successfully', id: req.params.id });
 });
 
 // @desc Submit a draft for approval
@@ -50,7 +115,7 @@ const listExpenses = asyncHandler(async (req, res) => {
   const filter = { mandalId: req.mandalId };
   if (status) filter.status = status;
   if (eventId) filter.eventId = eventId;
-  const expenses = await Expense.find(filter).sort({ createdAt: -1 }).limit(500);
+  const expenses = await Expense.find(filter).sort({ date: -1, createdAt: -1 }).limit(500);
   res.json(expenses);
 });
 
@@ -133,6 +198,9 @@ const reconcileExpense = asyncHandler(async (req, res) => {
 
 module.exports = {
   createExpense,
+  getExpense,
+  updateExpense,
+  deleteExpense,
   submitExpense,
   listExpenses,
   approveExpense,
