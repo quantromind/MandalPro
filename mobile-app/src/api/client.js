@@ -2,11 +2,11 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 
-// Production backend URL on Hostinger VPS (works on all devices & 4G/5G mobile data)
-const PROD_API_URL = 'https://mandalpro.quantromind.tech/api';
+// Production backend URL on Render (used for standalone production/preview APK)
+const PROD_API_URL = 'https://mandalpro.onrender.com/api';
 
-// Set to true only if you want to force Expo Go to use your local machine's backend (port 5000)
-const USE_LOCAL_BACKEND = true;
+// Set to true only if you want Expo Go development client to point to local PC (port 5000)
+const USE_LOCAL_BACKEND = false;
 
 let LOCAL_API_URL = 'http://192.168.1.13:5000/api';
 try {
@@ -17,19 +17,17 @@ try {
   // Safe fallback
 }
 
-// Detect if running in Expo Go (Development) or Standalone APK (Production)
+// Strictly detect Expo Go app client (StoreClient) vs installed Standalone APK
 const isExpoGo =
   Constants?.executionEnvironment === ExecutionEnvironment?.StoreClient ||
-  Constants?.appOwnership === 'expo' ||
-  (typeof __DEV__ !== 'undefined' && __DEV__ && Constants?.appOwnership !== 'standalone');
+  Constants?.appOwnership === 'expo';
 
+// Standalone APKs (production & preview builds) ALWAYS use PROD_API_URL
 export const API_URL = (USE_LOCAL_BACKEND && isExpoGo) ? LOCAL_API_URL : PROD_API_URL;
-
-console.log(`[Apla Mandal API] Mode: ${isExpoGo ? 'Expo Go' : 'Standalone APK'} | Target: ${API_URL}`);
 
 const client = axios.create({
   baseURL: API_URL,
-  timeout: 15000,
+  timeout: 45000, // 45s to accommodate Render free-tier cold starts
 });
 
 client.interceptors.request.use(async (config) => {

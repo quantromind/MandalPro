@@ -31,6 +31,7 @@ const getTransporter = async () => {
     cachedTransporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: port,
+      family: 4, // Force IPv4 to prevent ENETUNREACH on cloud environments like Render
       secure: isSecure, // false for 587 (STARTTLS), true for 465
       requireTLS: !isSecure,
       auth: {
@@ -40,9 +41,9 @@ const getTransporter = async () => {
       tls: {
         rejectUnauthorized: false
       },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
+      connectionTimeout: 12000,
+      greetingTimeout: 12000,
+      socketTimeout: 20000,
     });
     return cachedTransporter;
   }
@@ -50,6 +51,7 @@ const getTransporter = async () => {
   cachedTransporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT) || 587,
+    family: 4, // Force IPv4
     secure: Number(process.env.SMTP_PORT) === 465,
     auth: {
       user: process.env.SMTP_USER,
@@ -58,9 +60,9 @@ const getTransporter = async () => {
     tls: {
       rejectUnauthorized: false
     },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
+    connectionTimeout: 12000,
+    greetingTimeout: 12000,
+    socketTimeout: 20000,
   });
   return cachedTransporter;
 };
@@ -70,6 +72,7 @@ const createGmailTransporter = (port) => {
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: port,
+    family: 4, // Force IPv4 to avoid ENETUNREACH on Render Linux containers
     secure: is465,
     requireTLS: !is465,
     auth: {
@@ -79,9 +82,26 @@ const createGmailTransporter = (port) => {
     tls: {
       rejectUnauthorized: false,
     },
-    connectionTimeout: 8000,
-    greetingTimeout: 8000,
-    socketTimeout: 12000,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 18000,
+  });
+};
+
+const createGmailServiceTransporter = () => {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    family: 4,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 18000,
   });
 };
 
@@ -164,14 +184,14 @@ const sendEmail = async ({ to, subject, text, html }) => {
     process.env.SMTP_HOST === 'smtp.gmail.com' || 
     (process.env.SMTP_USER && process.env.SMTP_USER.endsWith('@gmail.com'));
 
-  // If using Gmail on cloud hosting (Render), try port 587 (STARTTLS) first, then port 465
+  // If using Gmail on cloud hosting (Render), try port 587 (STARTTLS) first, then port 465, then service: 'gmail'
   if (isGmail && process.env.SMTP_USER) {
     const portsToTry = [587, 465];
     let lastError = null;
 
     for (const port of portsToTry) {
       try {
-        console.log(`[Email] Attempting Gmail SMTP on port ${port}...`);
+        console.log(`[Email] Attempting Gmail SMTP on port ${port} (IPv4)...`);
         const transporter = createGmailTransporter(port);
         const info = await transporter.sendMail({
           from: `"${process.env.SMTP_FROM_NAME || 'Apla Mandal'}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
@@ -187,6 +207,24 @@ const sendEmail = async ({ to, subject, text, html }) => {
         lastError = err;
       }
     }
+
+    try {
+      console.log(`[Email] Attempting Gmail Service Transporter (IPv4)...`);
+      const serviceTransporter = createGmailServiceTransporter();
+      const info = await serviceTransporter.sendMail({
+        from: `"${process.env.SMTP_FROM_NAME || 'Apla Mandal'}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+        to,
+        subject,
+        text,
+        html,
+      });
+      console.log(`[Email Sent] Message sent via Gmail Service: ${info.messageId}`);
+      return info;
+    } catch (err) {
+      console.warn(`[Email Warning] Gmail Service failed (${err.message})`);
+      lastError = err;
+    }
+
     throw lastError;
   }
 
