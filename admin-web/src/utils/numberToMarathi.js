@@ -1,33 +1,4 @@
-// Convert numbers to Indian English & Marathi words for traditional receipts
-const ONES_EN = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-const TENS_EN = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-
-export function numberToWordsEn(num) {
-  const n = parseInt(num, 10);
-  if (isNaN(n) || n === 0) return 'Zero Rupees Only';
-  if (n < 0) return 'Invalid Amount';
-
-  function convertLessThanThousand(val) {
-    if (val === 0) return '';
-    if (val < 20) return ONES_EN[val] + ' ';
-    if (val < 100) return TENS_EN[Math.floor(val / 10)] + ' ' + ONES_EN[val % 10] + (val % 10 ? ' ' : '');
-    return ONES_EN[Math.floor(val / 100)] + ' Hundred ' + convertLessThanThousand(val % 100);
-  }
-
-  let result = '';
-  let crore = Math.floor(n / 10000000);
-  let lakh = Math.floor((n % 10000000) / 100000);
-  let thousand = Math.floor((n % 100000) / 1000);
-  let remainder = n % 1000;
-
-  if (crore) result += convertLessThanThousand(crore) + 'Crore ';
-  if (lakh) result += convertLessThanThousand(lakh) + 'Lakh ';
-  if (thousand) result += convertLessThanThousand(thousand) + 'Thousand ';
-  if (remainder) result += convertLessThanThousand(remainder);
-
-  return result.trim() + ' Rupees Only';
-}
-
+// Marathi Number to Words Converter & Marathi Digits Formatter
 const MARATHI_NUMBERS = {
   0: 'शून्य', 1: 'एक', 2: 'दोन', 3: 'तीन', 4: 'चार', 5: 'पाच', 6: 'सहा', 7: 'सात', 8: 'आठ', 9: 'नऊ', 10: 'दहा',
   11: 'अकरा', 12: 'बारा', 13: 'तेरा', 14: 'चौदा', 15: 'पंधरा', 16: 'सोळा', 17: 'सतरा', 18: 'अठरा', 19: 'एकोणीस', 20: 'वीस',
@@ -75,15 +46,24 @@ export function numberToWordsMr(num) {
   if (n < 0) return 'अवैध रक्कम';
 
   let result = '';
+
   const crore = Math.floor(n / 10000000);
   const lakh = Math.floor((n % 10000000) / 100000);
   const thousand = Math.floor((n % 100000) / 1000);
   const remainder = n % 1000;
 
-  if (crore > 0) result += (convertTwoDigits(crore) || `${crore}`) + ' कोटी ';
-  if (lakh > 0) result += (convertTwoDigits(lakh) || `${lakh}`) + ' लाख ';
-  if (thousand > 0) result += (convertTwoDigits(thousand) || `${thousand}`) + ' हजार ';
-  if (remainder > 0) result += convertThreeDigits(remainder) + ' ';
+  if (crore > 0) {
+    result += (convertTwoDigits(crore) || `${crore}`) + ' कोटी ';
+  }
+  if (lakh > 0) {
+    result += (convertTwoDigits(lakh) || `${lakh}`) + ' लाख ';
+  }
+  if (thousand > 0) {
+    result += (convertTwoDigits(thousand) || `${thousand}`) + ' हजार ';
+  }
+  if (remainder > 0) {
+    result += convertThreeDigits(remainder) + ' ';
+  }
 
   return result.trim() + ' रुपये फक्त';
 }

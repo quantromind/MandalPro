@@ -4,7 +4,7 @@ import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
-const EXPENSE_CATEGORIES = [
+const DEFAULT_CATEGORIES = [
   'Pooja & Aarti',
   'Decoration',
   'Sound & Lights',
@@ -20,11 +20,13 @@ export default function Expenses() {
   const { t, language } = useLanguage();
 
   const [expenses, setExpenses] = useState([]);
+  const [budgetCategories, setBudgetCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     title: '',
     category: 'Pooja & Aarti',
+    customCategory: '',
     amount: '',
     vendor: '',
     description: '',
@@ -37,9 +39,15 @@ export default function Expenses() {
   const load = async () => {
     try {
       setLoading(true);
-      const { data } = await client.get('/expenses');
-      if (Array.isArray(data)) {
-        setExpenses(data);
+      const [expRes, budRes] = await Promise.all([
+        client.get('/expenses'),
+        client.get('/budgets').catch(() => ({ data: [] }))
+      ]);
+      if (Array.isArray(expRes.data)) {
+        setExpenses(expRes.data);
+      }
+      if (Array.isArray(budRes.data)) {
+        setBudgetCategories(budRes.data.map((b) => b.category).filter(Boolean));
       }
     } catch (err) {
       setError(t('expenses.unableToLoad'));
@@ -55,19 +63,36 @@ export default function Expenses() {
   const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
   const canApprove = user?.role === 'president' || user?.role === 'treasurer' || user?.role === 'superadmin';
 
+  // Merge default categories + budget categories + any categories from recorded expenses
+  const allCategories = Array.from(
+    new Set([
+      ...DEFAULT_CATEGORIES,
+      ...budgetCategories,
+      ...expenses.map((e) => e.category).filter(Boolean)
+    ])
+  );
+
   const handleCreate = async (e) => {
     e.preventDefault();
     setError('');
     try {
+      const selectedCategory = form.category === 'CUSTOM' ? form.customCategory.trim() : form.category;
+      if (!selectedCategory) {
+        setError(language === 'mr' ? 'कृपया वर्गवारी निवडा किंवा प्रविष्ट करा' : 'Please select or enter a category');
+        return;
+      }
+
       await client.post('/expenses', {
         ...form,
-        title: form.title || form.category,
+        category: selectedCategory,
+        title: form.title || selectedCategory,
         amount: Number(form.amount)
       });
       setShowForm(false);
       setForm({
         title: '',
         category: 'Pooja & Aarti',
+        customCategory: '',
         amount: '',
         vendor: '',
         description: '',
@@ -261,12 +286,27 @@ export default function Expenses() {
                     onChange={(e) => setForm({ ...form, category: e.target.value })}
                     required
                   >
-                    {EXPENSE_CATEGORIES.map((cat) => (
+                    {allCategories.map((cat) => (
                       <option key={cat} value={cat}>
-                        {t(`expenses.categories.${cat}`) || cat}
+                        {t(`expenses.categories.${cat}`) || cat} {budgetCategories.includes(cat) && !DEFAULT_CATEGORIES.includes(cat) ? ' 🎯' : ''}
                       </option>
                     ))}
+                    <option value="CUSTOM">✏️ {language === 'mr' ? 'इतर कस्टम वर्गवारी (Custom)...' : 'Custom Category...'}</option>
                   </select>
+
+                  {form.category === 'CUSTOM' && (
+                    <div style={{ marginTop: 8 }}>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder={language === 'mr' ? 'उदा. बॅनर खर्च, बक्षीस वितरण' : 'e.g. Banner Expense, Prize Distribution'}
+                        value={form.customCategory}
+                        onChange={(e) => setForm({ ...form, customCategory: e.target.value })}
+                        required
+                        autoFocus
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group">

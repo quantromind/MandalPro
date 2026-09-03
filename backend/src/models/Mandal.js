@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const mandalSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
+    establishedYear: { type: String, default: '2023' },
     logoBase64: { type: String },            // base64 encoded logo
     address: { type: String },
     contactPhone: { type: String },

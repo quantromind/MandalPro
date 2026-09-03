@@ -15,6 +15,7 @@ export default function Profile() {
 
   // Form State for updating mandal
   const [mandalName, setMandalName] = useState('');
+  const [establishedYear, setEstablishedYear] = useState('2023');
   const [address, setAddress] = useState('');
   const [upiId, setUpiId] = useState('');
   const [logoPreview, setLogoPreview] = useState('');
@@ -50,6 +51,7 @@ export default function Profile() {
   useEffect(() => {
     if (mandal) {
       setMandalName(mandal.name || '');
+      setEstablishedYear(mandal.establishedYear || '2023');
       setAddress(mandal.address || '');
       setUpiId(mandal.upiId || '');
       setLogoPreview(mandal.logoBase64 || mandal.logoUrl || '');
@@ -93,12 +95,13 @@ export default function Profile() {
       setSaving(true);
       const { data } = await client.patch('/mandal', {
         name: mandalName,
+        establishedYear,
         address,
         upiId,
         logoBase64
       });
       if (setMandal) setMandal(data);
-      alert(language === 'mr' ? 'मंडळ माहिती व लोगो अद्ययावत केला! ✅' : 'Profile & logo updated successfully! ✅');
+      alert(language === 'mr' ? 'मंडळ माहिती, स्थापना वर्ष व लोगो अद्ययावत केला! ✅' : 'Profile, establishment year & logo updated successfully! ✅');
     } catch (err) {
       alert(err.response?.data?.message || 'Error updating profile');
     } finally {
@@ -275,15 +278,30 @@ export default function Profile() {
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">{t('profile.mandalName')}</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={mandalName}
-                  onChange={(e) => setMandalName(e.target.value)}
-                  required
-                />
+              <div className="grid-2">
+                <div className="form-group">
+                  <label className="form-label">{t('profile.mandalName')}</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={mandalName}
+                    onChange={(e) => setMandalName(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">
+                    🚩 {language === 'mr' ? 'स्थापना वर्ष (Sthapana Year)' : 'Established Year'}
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="उदा. 1995, 2012, 2023"
+                    value={establishedYear}
+                    onChange={(e) => setEstablishedYear(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="form-group">
