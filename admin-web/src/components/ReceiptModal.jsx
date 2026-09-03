@@ -59,7 +59,117 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
   };
 
   const handlePrint = () => {
-    window.print();
+    const card = document.getElementById('printable-receipt-card');
+    if (!card) {
+      window.print();
+      return;
+    }
+
+    const printWindow = window.open('', '_blank', 'width=750,height=850');
+    if (!printWindow) {
+      // Fallback if popup blocker is active
+      window.print();
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>&nbsp;</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+        <style>
+          @page {
+            size: portrait;
+            margin: 0; /* Removes browser default headers (date, title) and footers (URL, page numbers) */
+          }
+          * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+          html, body {
+            margin: 0;
+            padding: 0;
+            background: #FFFFFF;
+            font-family: 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          }
+          body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 16px;
+          }
+          .receipt-print-wrapper {
+            width: 100%;
+            max-width: 560px;
+            margin: 0 auto;
+          }
+          .print-toolbar {
+            width: 100%;
+            max-width: 560px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-bottom: 16px;
+          }
+          .btn-print {
+            background: #2563EB;
+            color: #FFF;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+          }
+          .btn-close {
+            background: #F1F5F9;
+            color: #334155;
+            border: 1px solid #CBD5E1;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13.5px;
+            cursor: pointer;
+          }
+          @media print {
+            .no-print {
+              display: none !important;
+            }
+            body {
+              padding: 0 !important;
+              margin: 0 !important;
+            }
+            .receipt-print-wrapper {
+              padding: 12mm 10mm !important;
+              max-width: 100% !important;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="print-toolbar no-print">
+          <button class="btn-print" onclick="window.print()">🖨️ ${language === 'mr' ? 'प्रिंट करा / PDF सेव्ह करा' : 'Print / Save PDF'}</button>
+          <button class="btn-close" onclick="window.close()">✕ ${language === 'mr' ? 'बंद करा' : 'Close'}</button>
+        </div>
+        <div class="receipt-print-wrapper">
+          ${card.outerHTML}
+        </div>
+        <script>
+          setTimeout(function() {
+            window.focus();
+            window.print();
+          }, 350);
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const handleCopy = () => {
@@ -70,6 +180,7 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
 
   return (
     <div
+      className="receipt-modal-backdrop"
       style={{
         position: 'fixed',
         top: 0,
@@ -88,6 +199,7 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
       onClick={onClose}
     >
       <div
+        className="receipt-modal-box"
         style={{
           background: '#FFFFFF',
           borderRadius: 20,
@@ -103,6 +215,7 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
       >
         {/* Top Header Bar */}
         <div
+          className="receipt-modal-header no-print"
           style={{
             padding: '14px 20px',
             borderBottom: '1px solid #E2E8F0',
@@ -132,7 +245,7 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
         </div>
 
         {/* Scrollable Receipt Container */}
-        <div style={{ padding: '20px', overflowY: 'auto', flex: 1, background: '#F1F5F9' }}>
+        <div className="receipt-modal-scroll" style={{ padding: '20px', overflowY: 'auto', flex: 1, background: '#F1F5F9' }}>
           
           {/* ════════════ AUTHENTIC MARATHI RECEIPT PAPER ════════════ */}
           <div
@@ -445,6 +558,7 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
 
         {/* Action Buttons Footer */}
         <div
+          className="receipt-modal-actions no-print"
           style={{
             padding: '16px 20px',
             borderTop: '1px solid #E2E8F0',
