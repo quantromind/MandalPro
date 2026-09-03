@@ -5,14 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import Layout from '../components/Layout';
 import ReceiptModal from '../components/ReceiptModal';
-
-const QUICK_AMOUNTS = [101, 251, 501, 1001, 2100, 5100];
-const MODES = [
-  { key: 'cash', labelEn: 'Cash', labelMr: 'रोख (Cash)', icon: '💵' },
-  { key: 'upi', labelEn: 'UPI / QR', labelMr: 'युपीआय (UPI)', icon: '📱' },
-  { key: 'card', labelEn: 'Card / Cheque', labelMr: 'कार्ड / चेक', icon: '💳' },
-  { key: 'netbanking', labelEn: 'Net Banking', labelMr: 'नेट बँकिंग', icon: '🏦' }
-];
+import DonationModal from '../components/DonationModal';
 
 export default function Collections() {
   const [collections, setCollections] = useState([]);
@@ -29,18 +22,6 @@ export default function Collections() {
   const [showModal, setShowModal] = useState(false);
   const [editingCollection, setEditingCollection] = useState(null);
   const [receiptToShow, setReceiptToShow] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  // Form states
-  const [contributor, setContributor] = useState('');
-  const [title, setTitle] = useState('');
-  const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState('Donation');
-  const [paymentMode, setPaymentMode] = useState('cash');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [mobile, setMobile] = useState('');
-  const [description, setDescription] = useState('');
-  const [formErrors, setFormErrors] = useState({});
 
   const { mandal, user } = useAuth();
   const { t, language } = useLanguage();
@@ -74,90 +55,12 @@ export default function Collections() {
 
   const openAddModal = () => {
     setEditingCollection(null);
-    setContributor('');
-    setTitle('');
-    setAmount('');
-    setCategory('Donation');
-    setPaymentMode('cash');
-    setDate(new Date().toISOString().split('T')[0]);
-    setMobile('');
-    setDescription('');
-    setFormErrors({});
     setShowModal(true);
   };
 
   const openEditModal = (col) => {
     setEditingCollection(col);
-    setContributor(col.contributor || col.donorName || '');
-    setTitle(col.title || col.purpose || '');
-    setAmount(String(col.amount || ''));
-    setCategory(col.category || 'Donation');
-    setPaymentMode(col.paymentMode || 'cash');
-    setDate(col.date ? new Date(col.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
-    setMobile(col.mobile || col.donorMobile || '');
-    setDescription(col.description || '');
-    setFormErrors({});
     setShowModal(true);
-  };
-
-  const validate = () => {
-    const errs = {};
-    if (!contributor.trim()) errs.contributor = t('collection.donorNameRequired');
-    if (!amount || Number(amount) <= 0) errs.amount = t('collection.amountGreaterThanZero');
-    if (mobile.trim() && !/^\d{10}$/.test(mobile.trim().replace(/[^0-9]/g, ''))) {
-      errs.mobile = t('collection.mobileExact10');
-    }
-    setFormErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    setSubmitting(true);
-    try {
-      const payload = {
-        contributor: contributor.trim(),
-        donorName: contributor.trim(),
-        donorMobile: mobile.trim(),
-        title: title.trim() || 'Ganpati Vargani',
-        purpose: title.trim() || 'Ganpati Vargani',
-        amount: Number(amount),
-        category: category || 'Donation',
-        paymentMode,
-        date,
-        mobile: mobile.trim(),
-        description: description.trim(),
-        idempotencyKey: editingCollection ? undefined : `web-col-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
-      };
-
-      let savedRecord;
-      if (editingCollection) {
-        const { data } = await client.patch(`/donations/${editingCollection._id}`, payload);
-        savedRecord = data;
-      } else {
-        const { data } = await client.post('/donations', payload);
-        savedRecord = data;
-      }
-
-      setShowModal(false);
-      await load();
-
-      // Show receipt popup on creation
-      if (!editingCollection && savedRecord) {
-        setReceiptToShow(savedRecord);
-      }
-    } catch (err) {
-      const msg = err.response?.data?.message || err.message || 'Error saving collection';
-      if (msg.includes('E11000') || msg.includes('duplicate key')) {
-        alert(language === 'mr' ? 'नोंद आधीच झालेली दिसते किंवा डुप्लिकेट की आढळली. कृपया पुन्हा प्रयत्न करा.' : 'Duplicate entry detected. Please try again.');
-      } else {
-        alert(msg);
-      }
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   const handleDelete = async (id) => {
