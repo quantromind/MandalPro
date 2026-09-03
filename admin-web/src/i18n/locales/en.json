@@ -24,8 +24,9 @@
     "approved": "Approved",
     "rejected": "Rejected",
     "status": "Status",
-    "inflow": "Inflow",
-    "outflow": "Outflow",
+    "inflow": "Inflow - Collections",
+    "outflow": "Outflow - Expenses",
+    "netBalance": "Net Balance - Remaining",
     "total": "Total",
     "error": "Error",
     "success": "Success"
