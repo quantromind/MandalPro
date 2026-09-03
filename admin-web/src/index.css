@@ -2151,16 +2151,89 @@ tbody tr:hover {
    PRINT MEDIA
    ═══════════════════════════════════════════════════ */
 @media print {
-  body * { visibility: hidden; }
-  #printable-receipt, #printable-receipt *,
-  #printable-id-card, #printable-id-card * { visibility: visible; }
-  #printable-receipt, #printable-id-card {
-    position: absolute;
-    left: 0; top: 0;
-    width: 100%;
-    margin: 0;
-    box-shadow: none;
-    border: none;
+  @page {
+    size: portrait;
+    margin: 0; /* Removes browser default header (timestamp, title) and footer (URL, page number) */
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  body {
+    background: #FFFFFF !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .desktop-sidebar,
+  .mobile-top-header,
+  .mobile-nav-bar,
+  .top-navbar,
+  .sheet-backdrop,
+  .btn,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Support for Receipt Modal in direct page print */
+  .receipt-modal-backdrop {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    display: block !important;
+    backdrop-filter: none !important;
+    z-index: auto !important;
+  }
+
+  .receipt-modal-box {
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .receipt-modal-scroll {
+    overflow: visible !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .receipt-modal-header,
+  .receipt-modal-actions {
+    display: none !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #printable-receipt,
+  #printable-receipt *,
+  #printable-receipt-card,
+  #printable-receipt-card *,
+  #printable-id-card,
+  #printable-id-card * {
+    visibility: visible !important;
+  }
+
+  #printable-receipt,
+  #printable-receipt-card,
+  #printable-id-card {
+    position: absolute !important;
+    left: 50% !important;
+    top: 20px !important;
+    transform: translateX(-50%) !important;
+    width: 95% !important;
+    max-width: 580px !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
   }
 }
 
