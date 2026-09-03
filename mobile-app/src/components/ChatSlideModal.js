@@ -160,7 +160,9 @@ export default function ChatSlideModal({ visible, onClose }) {
     }
   };
 
+  // Guard must be after all hook calls (React Rules of Hooks)
   if (!visible) return null;
+
 
   return (
     <Modal

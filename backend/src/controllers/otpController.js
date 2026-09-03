@@ -250,6 +250,10 @@ module.exports = {
   testEmail,
   validateAndConsumeOtp,
   memoryOtpStore,
-  otpStore: memoryOtpStore
+  otpStore: memoryOtpStore,
+  isDemoAccount,
+  DEMO_EMAILS,
+  DEMO_OTP
 };
+
 

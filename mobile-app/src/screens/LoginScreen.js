@@ -171,7 +171,8 @@ export default function LoginScreen({ navigation, route }) {
                     ref={r => inputRefs.current[i] = r}
                     style={[styles.otpBox, digit ? styles.otpBoxFilled : null]}
                     value={digit}
-                    onChangeText={t => handleOtpChange(t, i)}
+                    onChangeText={val => handleOtpChange(val, i)}
+
                     onKeyPress={e => handleOtpKeyPress(e, i)}
                     keyboardType="number-pad"
                     maxLength={1}

@@ -14,7 +14,8 @@ const Counter = require('../models/Counter');
 const Otp = require('../models/Otp');
 const sendEmail = require('../utils/sendEmail');
 const { generateToken } = require('../utils/jwt');
-const { validateAndConsumeOtp, memoryOtpStore } = require('./otpController');
+const { validateAndConsumeOtp, memoryOtpStore, isDemoAccount } = require('./otpController');
+
 
 // @desc Register: creates a Mandal + first President user together (onboarding step 1-2)
 // @route POST /api/auth/register
@@ -287,6 +288,40 @@ const loginWithOtp = asyncHandler(async (req, res) => {
   // Regular user lookup
   let user = await User.findOne({ email: normalizedEmail });
 
+  // Auto-create demo/reviewer accounts on the fly if not yet present in database
+  if (!user && isDemoAccount(normalizedEmail)) {
+    let mandal = await Mandal.create({
+      name: 'Shree Ganesh Utsav Mandal (Demo)',
+      eventTypes: ['Ganesh Utsav', 'Navratri', 'Jayanti'],
+      plan: 'Pro',
+      planStatus: 'Active',
+      receiptPrefix: 'SGUM',
+      onboardingComplete: true,
+      checklist: {
+        eventTypesSelected: true,
+        planSelected: true,
+        profileComplete: true,
+        firstEvent: true,
+        firstDonation: true
+      }
+    });
+
+    const passwordHash = await User.hashPassword('DemoMandal@2026');
+    user = await User.create({
+      name: 'Demo President',
+      email: normalizedEmail,
+      mobile: '9876543210',
+      passwordHash,
+      role: 'president',
+      mandalId: mandal._id,
+      mandalIds: [mandal._id],
+      status: 'active'
+    });
+
+    mandal.createdBy = user._id;
+    await mandal.save();
+  }
+
   // If the email is not registered, return 404 so the frontend can redirect to Register
   if (!user) {
     return res.status(404).json({
@@ -295,6 +330,7 @@ const loginWithOtp = asyncHandler(async (req, res) => {
       message: 'No account found with this email. Please create an account first.'
     });
   }
+
 
   if (user.status !== 'active') {
     res.status(403);

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Apla Mandal",
     "slug": "mandalpro",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/logo.png",
@@ -13,13 +13,25 @@
     },
     "android": {
       "package": "com.mandalpro.app",
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#F8F8F6"
-      }
+      },
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.CAMERA"
+      ]
     },
     "ios": {
-      "bundleIdentifier": "com.mandalpro.app"
+      "bundleIdentifier": "com.mandalpro.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Apla Mandal needs access to your photos to upload your Mandal logo.",
+        "NSCameraUsageDescription": "Apla Mandal needs camera access to capture your Mandal logo."
+      }
     },
     "extra": {
       "eas": {
@@ -28,3 +40,4 @@
     }
   }
 }
+

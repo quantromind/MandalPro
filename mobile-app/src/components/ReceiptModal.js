@@ -11,11 +11,12 @@ import { numberToWordsEn } from '../utils/numberToWords';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function ReceiptModal({ visible, receipt, mandal, collectorName, onClose }) {
-  if (!receipt) return null;
-
   const { t } = useLanguage();
   const receiptRef = useRef();
   const [sharingImage, setSharingImage] = useState(false);
+
+  // Guard: must be after hooks to satisfy React Rules of Hooks
+  if (!receipt) return null;
 
   const mandalName = mandal?.name || (typeof receipt.mandalId === 'object' ? receipt.mandalId?.name : null) || receipt.mandal?.name || 'सखी मित्र मंडळ (Sakhee Mitra Mandal)';
   const logoUri = mandal?.logoBase64 || mandal?.logoUrl || (typeof receipt.mandalId === 'object' ? (receipt.mandalId?.logoBase64 || receipt.mandalId?.logoUrl) : null) || receipt?.mandal?.logoBase64 || receipt?.mandal?.logoUrl || receipt?.mandalLogo;

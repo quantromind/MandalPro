@@ -42,7 +42,7 @@ export default function OnboardingScreen() {
         Alert.alert(t('register.selectionRequired'), t('register.keepOneEvent'));
         return;
       }
-      setSelectedTypes(selectedTypes.filter(t => t !== id));
+      setSelectedTypes(selectedTypes.filter(type => type !== id));
     } else {
       if (selectedTypes.length >= 3) {
         Alert.alert(t('register.limitReached'), t('register.maxThreeEvents'));
@@ -154,7 +154,7 @@ export default function OnboardingScreen() {
               keyboardType="number-pad"
               maxLength={10}
               value={mobile}
-              onChangeText={t => setMobile(t.replace(/[^0-9]/g, ''))}
+              onChangeText={val => setMobile(val.replace(/[^0-9]/g, ''))}
             />
 
             <Text style={styles.label}>{t('auth.emailLabel')}</Text>
@@ -381,5 +381,6 @@ const styles = StyleSheet.create({
   },
   submitButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
   logoutLink: { alignItems: 'center', marginTop: 14 },
+  logoutLinkText: { color: '#EF4444', fontSize: 13.5, fontWeight: '700' },
   logoutText: { color: '#EF4444', fontSize: 13.5, fontWeight: '700' }
 });
