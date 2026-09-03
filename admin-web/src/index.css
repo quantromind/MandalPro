@@ -2014,3 +2014,203 @@ tbody tr:hover {
     border: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════
+   ONBOARDING PAGE (Fully Responsive for Mobile, Tablet, Desktop)
+   ═══════════════════════════════════════════════════ */
+.onboarding-page {
+  min-height: 100vh;
+  display: flex;
+  background: #F8F8F6;
+  font-family: 'Inter', 'Poppins', sans-serif;
+  width: 100%;
+}
+
+.onboarding-sidebar {
+  width: 270px;
+  background: #17233C;
+  display: flex;
+  flex-direction: column;
+  padding: 36px 24px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.onboarding-mobile-header {
+  display: none;
+}
+
+.onboarding-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  overflow-y: auto;
+  min-width: 0;
+  width: 100%;
+}
+
+.onboarding-card {
+  width: 100%;
+  max-width: 620px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  border: 1px solid #F0F0EE;
+  box-sizing: border-box;
+}
+
+.onboarding-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.onboarding-event-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.onboarding-plan-features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.onboarding-verify-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.onboarding-checklist-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  transition: all 0.2s;
+}
+
+.onboarding-btn-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* ── Mobile & Small Tablet Adjustments (< 860px) ── */
+@media (max-width: 860px) {
+  .onboarding-page {
+    flex-direction: column;
+  }
+  .onboarding-sidebar {
+    display: none !important;
+  }
+  .onboarding-mobile-header {
+    display: flex;
+    flex-direction: column;
+    background: #17233C;
+    color: #FFFFFF;
+    padding: 14px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .onboarding-mobile-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .onboarding-mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 800;
+    color: #FF6B00;
+  }
+  .onboarding-mobile-step-tag {
+    font-size: 11.5px;
+    font-weight: 700;
+    background: rgba(255, 107, 0, 0.2);
+    color: #FF8A33;
+    padding: 3px 10px;
+    border-radius: 99px;
+  }
+  .onboarding-mobile-step-title {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 4px;
+  }
+
+  .onboarding-main {
+    padding: 16px 12px 48px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .onboarding-card {
+    padding: 24px 18px;
+    border-radius: 16px;
+    max-width: 100%;
+  }
+
+  .onboarding-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .onboarding-plan-features {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .onboarding-verify-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .onboarding-btn-row {
+    flex-direction: column-reverse;
+  }
+  .onboarding-btn-row button {
+    width: 100% !important;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+/* ── Very Small Mobile (< 480px) ── */
+@media (max-width: 480px) {
+  .onboarding-card {
+    padding: 20px 14px;
+  }
+  .onboarding-event-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .onboarding-checklist-row {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 14px;
+    gap: 10px;
+  }
+  .onboarding-checklist-row a {
+    width: 100%;
+    text-align: center;
+  }
+}
+
