@@ -128,7 +128,8 @@ export default function Collections() {
         paymentMode,
         date,
         mobile: mobile.trim(),
-        description: description.trim()
+        description: description.trim(),
+        idempotencyKey: editingCollection ? undefined : `web-col-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
       };
 
       let savedRecord;
@@ -148,7 +149,12 @@ export default function Collections() {
         setReceiptToShow(savedRecord);
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Error saving collection');
+      const msg = err.response?.data?.message || err.message || 'Error saving collection';
+      if (msg.includes('E11000') || msg.includes('duplicate key')) {
+        alert(language === 'mr' ? 'नोंद आधीच झालेली दिसते किंवा डुप्लिकेट की आढळली. कृपया पुन्हा प्रयत्न करा.' : 'Duplicate entry detected. Please try again.');
+      } else {
+        alert(msg);
+      }
     } finally {
       setSubmitting(false);
     }

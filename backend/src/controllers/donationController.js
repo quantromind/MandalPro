@@ -45,6 +45,10 @@ const createDonation = asyncHandler(async (req, res) => {
   const qrPayload = `${receiptNumber}|${numAmount}|${req.mandalId}`;
   const qrCodeDataUrl = await QRCode.toDataURL(qrPayload);
 
+  const effectiveIdempotencyKey = (typeof idempotencyKey === 'string' && idempotencyKey.trim())
+    ? idempotencyKey.trim()
+    : `srv-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
   const donation = await Donation.create({
     mandalId: req.mandalId,
     eventId: eventId || undefined,
@@ -61,7 +65,7 @@ const createDonation = asyncHandler(async (req, res) => {
     receiptNumber,
     qrCodeDataUrl,
     collectedBy: req.user._id,
-    idempotencyKey,
+    idempotencyKey: effectiveIdempotencyKey,
     syncStatus: 'Synced'
   });
 

@@ -17,7 +17,10 @@ export default function Profile() {
   const [mandalName, setMandalName] = useState('');
   const [address, setAddress] = useState('');
   const [upiId, setUpiId] = useState('');
+  const [logoPreview, setLogoPreview] = useState('');
+  const [logoBase64, setLogoBase64] = useState('');
   const [saving, setSaving] = useState(false);
+  const logoInputRef = React.useRef(null);
 
   // Add member modal state
   const [showAddMember, setShowAddMember] = useState(false);
@@ -31,6 +34,8 @@ export default function Profile() {
       setMandalName(mandal.name || '');
       setAddress(mandal.address || '');
       setUpiId(mandal.upiId || '');
+      setLogoPreview(mandal.logoBase64 || mandal.logoUrl || '');
+      setLogoBase64(mandal.logoBase64 || '');
     }
     loadMembers();
   }, [mandal]);
@@ -49,6 +54,21 @@ export default function Profile() {
     }
   };
 
+  const handleLogoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert(language === 'mr' ? 'कृपया २MB पेक्षा लहान फोटो निवडा' : 'Please select an image smaller than 2MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setLogoBase64(reader.result);
+      setLogoPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     try {
@@ -56,10 +76,11 @@ export default function Profile() {
       const { data } = await client.patch('/mandal', {
         name: mandalName,
         address,
-        upiId
+        upiId,
+        logoBase64
       });
       if (setMandal) setMandal(data);
-      alert(language === 'mr' ? 'मंडळ माहिती अद्ययावत केली! ✅' : 'Profile updated successfully! ✅');
+      alert(language === 'mr' ? 'मंडळ माहिती व लोगो अद्ययावत केला! ✅' : 'Profile & logo updated successfully! ✅');
     } catch (err) {
       alert(err.response?.data?.message || 'Error updating profile');
     } finally {
@@ -121,6 +142,72 @@ export default function Profile() {
             </h3>
 
             <form onSubmit={handleUpdateProfile}>
+              {/* Mandal Official Logo Upload */}
+              <div className="form-group" style={{ marginBottom: 20 }}>
+                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>🚩 {language === 'mr' ? 'मंडळ अधिकृत लोगो (पावतीवर दिसेल)' : 'Official Mandal Logo (Printed on receipts)'}</span>
+                  {logoPreview && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      style={{ color: 'var(--danger)', fontSize: 11, padding: '2px 6px' }}
+                      onClick={() => { setLogoPreview(''); setLogoBase64(''); }}
+                    >
+                      ✕ Remove
+                    </button>
+                  )}
+                </label>
+                <div
+                  className="logo-upload-box"
+                  onClick={() => logoInputRef.current?.click()}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 16,
+                    padding: '12px 16px',
+                    border: '2px dashed var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--bg-subtle)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <img
+                    src={logoPreview || '/logo.png'}
+                    alt="Mandal Logo"
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '50%',
+                      objectFit: 'contain',
+                      background: '#fff',
+                      padding: 4,
+                      border: '2px solid var(--primary)',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}
+                    onError={(e) => { e.target.src = '/logo.png'; }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-main)' }}>
+                      {logoPreview ? (language === 'mr' ? 'लोगो निवडला आहे ✓' : 'Custom logo selected ✓') : (language === 'mr' ? 'लोगो अपलोड करा' : 'Upload custom logo')}
+                    </div>
+                    <div className="text-muted" style={{ fontSize: 11.5, marginTop: 2 }}>
+                      {language === 'mr' ? 'PNG, JPG किंवा WEBP निवडा (क्लिक करा)' : 'Click to select PNG, JPG or WEBP'}
+                    </div>
+                  </div>
+                  <button type="button" className="btn btn-sm btn-outline" style={{ pointerEvents: 'none' }}>
+                    📁 {language === 'mr' ? 'बदला' : 'Browse'}
+                  </button>
+                </div>
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                  style={{ display: 'none' }}
+                />
+              </div>
+
               <div className="form-group">
                 <label className="form-label">{t('profile.mandalName')}</label>
                 <input

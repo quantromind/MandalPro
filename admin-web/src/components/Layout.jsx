@@ -92,9 +92,10 @@ export default function Layout({ children }) {
       <aside className="desktop-sidebar">
         <div className="brand" onClick={() => navigate('/')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
           <img
-            src="/logo.png"
+            src={mandal?.logoBase64 || mandal?.logoUrl || '/logo.png'}
             alt="Apla Mandal Logo"
             style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'contain', background: '#FFFFFF', padding: 2, flexShrink: 0 }}
+            onError={(e) => { e.target.src = '/logo.png'; }}
           />
           <div className="brand-text">
             Apla<span>Mandal</span>
@@ -137,9 +138,23 @@ export default function Layout({ children }) {
       </aside>
 
       <div className="main-area">
-        {/* ── Desktop Topbar ── */}
+        {/* ── Topbar (Responsive for Mobile, Tablet & Desktop) ── */}
         <header className="topbar">
           <div className="topbar-left">
+            {/* Mobile Brand Logo & Name */}
+            <div className="topbar-brand-mobile" onClick={() => navigate('/')}>
+              <img
+                src={mandal?.logoBase64 || mandal?.logoUrl || '/logo.png'}
+                alt="Logo"
+                className="topbar-brand-logo"
+                onError={(e) => { e.target.src = '/logo.png'; }}
+              />
+              <span className="topbar-brand-title">
+                {mandal?.name || 'Apla Mandal'}
+              </span>
+            </div>
+
+            {/* Desktop Mandal Badge */}
             <span className="topbar-mandal-badge">
               🚩 {mandal?.name || 'श्री गणेश मित्र मंडळ'}
             </span>
@@ -168,7 +183,7 @@ export default function Layout({ children }) {
               </div>
             </div>
 
-            <button className="btn btn-ghost btn-sm" onClick={handleLogout} title={t('common.logout')} style={{ fontSize: 16 }}>
+            <button className="btn btn-ghost btn-sm topbar-logout-btn" onClick={handleLogout} title={t('common.logout')} style={{ fontSize: 16 }}>
               🚪
             </button>
           </div>

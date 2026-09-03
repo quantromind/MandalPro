@@ -24,6 +24,9 @@ const donationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-donationSchema.index({ mandalId: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
+donationSchema.index(
+  { mandalId: 1, idempotencyKey: 1 },
+  { unique: true, partialFilterExpression: { idempotencyKey: { $type: 'string' } } }
+);
 
 module.exports = mongoose.model('Donation', donationSchema);

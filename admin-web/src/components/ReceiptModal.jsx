@@ -73,9 +73,21 @@ ${collectorName ? `✍️ *संकलक (Issued By):* ${collectorName}\n` : '
 
         {/* Printable Receipt Paper */}
         <div className="printable-receipt-paper" id="printable-receipt">
-          {/* Top border decoration */}
+          {/* Top border decoration & Mandal Custom Logo */}
           <div className="receipt-ornament-header">
             <div className="receipt-om">॥ श्री गणेशाय नमः ॥</div>
+            <div className="receipt-logo-wrapper">
+              <img
+                src={logoUri || '/logo.png'}
+                alt={mandalName}
+                className="receipt-mandal-logo"
+                onError={(e) => {
+                  if (e.target.src !== window.location.origin + '/logo.png') {
+                    e.target.src = '/logo.png';
+                  }
+                }}
+              />
+            </div>
             <div className="receipt-mandal-title">{mandalName}</div>
             <div className="receipt-tagline">॥ देणगी व वर्गणी अधिकृत डिजिटल पावती ॥</div>
           </div>
@@ -142,13 +154,13 @@ ${collectorName ? `✍️ *संकलक (Issued By):* ${collectorName}\n` : '
         {/* Action Buttons */}
         <div className="receipt-modal-actions">
           <button className="btn btn-whatsapp" onClick={handleWhatsApp}>
-            <span>📲</span> {t('receipts.sendWhatsApp')}
+            <span>📲</span> {t('receipts.sendWhatsApp') || 'WhatsApp'}
           </button>
           <button className="btn btn-primary" onClick={handlePrint}>
-            <span>🖨️</span> {t('receipts.printReceipt')}
+            <span>🖨️</span> {t('receipts.printReceipt') || 'Print / PDF'}
           </button>
-          <button className="btn btn-outline" onClick={handleCopy}>
-            <span>📋</span> {copied ? '✓ ' + t('common.success') : 'Copy Text'}
+          <button className="btn btn-done" onClick={onClose}>
+            <span>✓</span> {language === 'mr' ? 'पूर्ण झाले (Done)' : 'Done'}
           </button>
         </div>
       </div>
