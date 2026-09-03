@@ -59,6 +59,9 @@ const listBudgets = asyncHandler(async (req, res) => {
     })
   );
 
+  res.json(results);
+});
+
 // @desc Delete a category budget
 // @route DELETE /api/budgets/:id
 const deleteBudget = asyncHandler(async (req, res) => {
