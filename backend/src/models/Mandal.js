@@ -15,7 +15,7 @@ const mandalSchema = new mongoose.Schema(
       bankName: String
     },
     eventTypes: [{ type: String, enum: ['Ganesh Utsav', 'Navratri', 'Jayanti', 'Diwali', 'Wedding/Hall', 'Custom'] }],
-    plan: { type: String, enum: ['None', 'Basic', 'Pro', 'Premium', 'Enterprise'], default: 'None' },
+    plan: { type: String, enum: ['None', 'Basic', 'Silver', 'Gold', 'Platinum', 'Pro', 'Premium', 'Enterprise', 'free', 'silver', 'gold', 'platinum'], default: 'None' },
     planStatus: { type: String, enum: ['Inactive', 'Active', 'GracePeriod', 'Expired'], default: 'Inactive' },
     planRenewsAt: { type: Date },
     verified: { type: Boolean, default: false },

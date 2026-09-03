@@ -23,9 +23,9 @@ export default function Landing() {
   const isMr = language === 'mr';
 
   const stats = [
-    { num: '५००+', numEn: '500+', labelMr: 'नोंदणीकृत मंडळे व समित्या', labelEn: 'Registered Mandals & Trusts', icon: '🏛️' },
-    { num: '५०,०००+', numEn: '50,000+', labelMr: 'WhatsApp डिजिटल पावत्या', labelEn: 'WhatsApp Digital Receipts', icon: '🧾' },
-    { num: '₹१० कोटी+', numEn: '₹10 Cr+', labelMr: 'सुरक्षित जमा-खर्च हिशोब', labelEn: 'Transparent Managed Funds', icon: '💰' },
+    { num: '१००+', numEn: '100+', labelMr: 'नोंदणीकृत मंडळे व समित्या', labelEn: 'Registered Mandals & Trusts', icon: '🏛️' },
+    { num: '२,०००+', numEn: '2,000+', labelMr: 'WhatsApp डिजिटल पावत्या', labelEn: 'WhatsApp Digital Receipts', icon: '🧾' },
+    { num: '₹१ कोटी+', numEn: '₹1 Cr+', labelMr: 'सुरक्षित जमा-खर्च हिशोब', labelEn: 'Transparent Managed Funds', icon: '💰' },
     { num: '१००%', numEn: '100%', labelMr: 'पारदर्शक व ऑडिट-रेडी', labelEn: 'Transparent & Audit-Ready', icon: '🛡️' }
   ];
 
@@ -91,87 +91,72 @@ export default function Landing() {
 
   const plans = [
     {
-      id: 'free',
-      nameMr: 'मोफत / ट्रायल (Free)',
-      nameEn: 'Free / Trial',
-      priceAnnual: '₹०',
-      priceMonthly: '₹०',
-      periodMr: '/कायमस्वरूपी',
-      periodEn: '/forever',
-      color: '#64748B',
-      popular: false,
-      featuresMr: ['१ मंडळ व्यवस्थापन', '१ उत्सव कार्यक्रम', 'मूलभूत देणगी पावत्या', '५ समिती सदस्य', 'मूलभूत डॅशबोर्ड'],
-      featuresEn: ['1 Mandal Management', '1 Festival / Event per year', 'Basic Donation Receipts', 'Up to 5 Members', 'Standard Dashboard'],
-      ctaMr: 'मोफत सुरू करा',
-      ctaEn: 'Start Free'
-    },
-    {
       id: 'silver',
-      nameMr: 'सिल्व्हर प्रो (Silver Pro)',
-      nameEn: 'Silver Pro',
-      badgeMr: '🔥 सर्वाधिक पसंती',
-      badgeEn: '🔥 MOST POPULAR',
-      priceAnnual: '₹४९९',
-      priceMonthly: '₹७९',
-      periodMr: billingCycle === 'annual' ? '/वर्ष' : '/महिना',
-      periodEn: billingCycle === 'annual' ? '/year' : '/month',
-      color: '#F97316',
-      popular: true,
+      nameMr: 'सिल्व्हर योजना (Silver Plan)',
+      nameEn: 'Silver Plan',
+      badgeMr: '⚡ परवडणारी योजना',
+      badgeEn: '⚡ AFFORDABLE',
+      priceAnnual: '₹१९९',
+      priceMonthly: '₹१९९',
+      periodMr: '/महिना',
+      periodEn: '/month',
+      color: '#0EA5E9',
+      popular: false,
       featuresMr: [
         '१ मंडळ संपूर्ण व्यवस्थापन',
-        '५ उत्सव व वर्षभरातील कार्यक्रम',
+        '१५ समिती सदस्य व स्वयंसेवक (Member Limit)',
         'अमर्यादित WhatsApp डिजिटल पावत्या',
-        'मंडळ लोगो व अधिकृत ब्रँडिंग',
-        '२५ समिती सदस्य व स्वयंसेवक',
-        'खर्च व डिजिटल मंजुरी वर्कफ्लो',
+        'खर्च आणि अंदाजपत्रक (Budget) ट्रॅकिंग',
         'समिती लाइव्ह ग्रुप चॅट',
-        'डिजिटल सदस्य ओळखपत्रे'
+        'डिजिटल सदस्य ओळखपत्रे (ID Cards)',
+        'उत्सव ताळेबंद अहवाल'
       ],
       featuresEn: [
         '1 Complete Mandal Management',
-        'Up to 5 Festival Events per year',
+        'Up to 15 Committee Members & Volunteers',
         'Unlimited WhatsApp Digital Receipts',
-        'Custom Logo & Header Branding',
-        'Up to 25 Committee Members',
-        'Expense & Digital Approvals',
+        'Expense & Budget Tracking',
         'Committee Live Chatroom',
-        'Digital Member ID Card Generator'
+        'Digital Member ID Card Generator',
+        'Festival Balance Sheet'
       ],
-      ctaMr: 'सिल्व्हर प्रो निवडा',
-      ctaEn: 'Choose Silver Pro'
+      ctaMr: 'सिल्व्हर योजना निवडा (₹199)',
+      ctaEn: 'Choose Silver Plan (₹199)'
     },
     {
       id: 'gold',
-      nameMr: 'गोल्ड उत्सव स्पेशल (Gold Utsav)',
-      nameEn: 'Gold Utsav Special',
-      badgeMr: '⭐ सर्वोत्तम मूल्य',
-      badgeEn: '⭐ BEST VALUE',
-      priceAnnual: '₹९९९',
-      priceMonthly: '₹१४९',
-      periodMr: billingCycle === 'annual' ? '/वर्ष' : '/महिना',
-      periodEn: billingCycle === 'annual' ? '/year' : '/month',
-      color: '#EAB308',
-      popular: false,
+      nameMr: 'गोल्ड मेंबरशिप (Gold Membership)',
+      nameEn: 'Gold Membership',
+      badgeMr: '🔥 सर्वाधिक पसंती',
+      badgeEn: '🔥 MOST POPULAR',
+      priceAnnual: '₹२९९',
+      priceMonthly: '₹२९९',
+      periodMr: '/महिना',
+      periodEn: '/month',
+      color: '#F59E0B',
+      popular: true,
       featuresMr: [
-        '३ मंडळे / शाखा व्यवस्थापन',
-        'अमर्यादित उत्सव आणि कार्यक्रम',
-        'अमर्यादित WhatsApp पावत्या व SMS',
-        'अमर्यादित समिती सदस्य व स्वयंसेवक',
-        'सीए ऑडिट-रेडी Excel व PDF रिपोर्ट्स',
+        '२ मंडळे / शाखा व्यवस्थापन',
+        '२५ समिती सदस्य व स्वयंसेवक (Member Limit)',
+        'अधिकृत शिक्का व लोगो असलेली WhatsApp पावती',
+        'खर्च मंजुरी वर्कफ्लो व बिलांचे फोटो साठवणूक',
+        'सीए ऑडिट-रेडी Excel व PDF ताळेबंद अहवाल',
         'व्हेरिफाइड मंडळ ट्रस्ट बॅज',
-        '२४/७ प्राधान्य ग्राहक सहाय्य'
+        '२४/७ प्राधान्य WhatsApp सहाय्य',
+        'सर्व प्रगत फीचर्स समाविष्ट'
       ],
       featuresEn: [
-        '3 Mandals / Branches',
-        'Unlimited Festivals & Events',
-        'Unlimited WhatsApp Receipts & SMS',
-        'Unlimited Committee Members',
+        '2 Mandals / Branches',
+        'Up to 25 Committee Members & Volunteers',
+        'Official Logo & Seal Branded WhatsApp Receipts',
+        'Expense Approval Workflow with Bill Photos',
         'CA & Audit Ready PDF/Excel Exports',
         'Verified Mandal Trust Badge',
-        '24/7 Priority Support'
+        '24/7 Priority Support',
+        'All Advanced Features Included'
       ],
-      ctaMr: 'गोल्ड स्पेशल निवडा',
-      ctaEn: 'Choose Gold Special'
+      ctaMr: 'गोल्ड मेंबरशिप निवडा (₹299)',
+      ctaEn: 'Choose Gold Membership (₹299)'
     }
   ];
 

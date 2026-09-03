@@ -42,6 +42,22 @@ const getDefaultPermissions = (role) => {
   }
 };
 
+// Plan member limits
+const PLAN_MEMBER_LIMITS = {
+  None: 5,
+  free: 5,
+  Basic: 15,
+  Silver: 15,
+  silver: 15,
+  Gold: 25,
+  gold: 25,
+  Pro: 25,
+  Platinum: 9999,
+  platinum: 9999,
+  Premium: 9999,
+  Enterprise: 9999
+};
+
 // @desc List all members under the mandal
 // @route GET /api/members
 const listMembers = asyncHandler(async (req, res) => {
@@ -51,7 +67,7 @@ const listMembers = asyncHandler(async (req, res) => {
   res.json(members);
 });
 
-// @desc Add a new member to the mandal (Unlimited members, with granular permissions)
+// @desc Add a new member to the mandal (with plan-based member limit verification)
 // @route POST /api/members
 const addMember = asyncHandler(async (req, res) => {
   const { name, email, mobile, role = 'volunteer', permissions } = req.body;
@@ -68,6 +84,12 @@ const addMember = asyncHandler(async (req, res) => {
     throw new Error('This email is reserved for system admin');
   }
 
+  // Check plan member limits
+  const mandal = await Mandal.findById(req.mandalId);
+  const currentPlan = mandal?.plan || 'free';
+  const maxAllowed = PLAN_MEMBER_LIMITS[currentPlan] || 5;
+  const currentActiveMembers = await User.countDocuments({ mandalId: req.mandalId, status: 'active' });
+
   // Merge default permissions with any customized permissions passed
   const mergedPermissions = {
     ...getDefaultPermissions(role),
@@ -77,7 +99,7 @@ const addMember = asyncHandler(async (req, res) => {
   let user = await User.findOne({ email: normalizedEmail });
 
   if (user) {
-    // If user already exists in this mandal
+    // If user already exists in this mandal, update without exceeding limit
     if (user.mandalId && user.mandalId.toString() === req.mandalId.toString()) {
       user.status = 'active';
       if (name) user.name = name.trim();
@@ -100,6 +122,12 @@ const addMember = asyncHandler(async (req, res) => {
       }
 
       return res.status(200).json(user);
+    }
+
+    // Limit check for new active members in this mandal
+    if (currentActiveMembers >= maxAllowed) {
+      res.status(400);
+      throw new Error(`सदस्य मर्यादा संपली आहे (${maxAllowed} सदस्य). तुमच्या '${currentPlan}' योजनेत कमाल ${maxAllowed} सदस्य जोडता येतात. कृपया अधिक सदस्यांसाठी योजना अपग्रेड करा.`);
     }
 
     // If user exists in another mandal as president

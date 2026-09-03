@@ -31,17 +31,7 @@ export default function Layout({ children }) {
         { to: '/budgets', labelMr: 'अंदाजपत्रक', labelEn: 'Budgets', icon: '📈' }
       ]
     },
-    {
-      id: 'operations',
-      titleMr: 'कामकाज',
-      titleEn: 'Operations',
-      items: [
-        { to: '/events', labelMr: 'कार्यक्रम', labelEn: 'Events', icon: '🎪' },
-        { to: '/inventory', labelMr: 'साहित्य', labelEn: 'Inventory', icon: '📦' },
-        { to: '/sponsors', labelMr: 'प्रायोजक', labelEn: 'Sponsors', icon: '🤝' },
-        { to: '/members', labelMr: 'कार्यकारिणी', labelEn: 'Members', icon: '👥' }
-      ]
-    },
+
     {
       id: 'communication',
       titleMr: 'संवाद',
