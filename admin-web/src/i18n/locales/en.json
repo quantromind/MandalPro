@@ -418,7 +418,7 @@
   },
   "subscription": {
     "title": "Subscription",
-    "managePlan": "Manage your Mandal Pro subscription",
+    "managePlan": "Manage your Apla Mandal subscription",
     "expiredNotice": "⚠️ Your subscription has expired. Please choose a plan below to continue using all features.",
     "requiredNotice": "Please select a plan to activate your Mandal account and get started.",
     "monthly": "Monthly",

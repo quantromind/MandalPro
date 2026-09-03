@@ -284,7 +284,7 @@ export default function Reports() {
           </div>
 
           <div class="footer">
-            ${mandalName} • Generated via MandalPro Digital Management System • Verified & Audited
+            ${mandalName} • Generated via Apla Mandal Digital Management System • Verified & Audited
           </div>
         `;
         openPrintWindow(`Financial_Summary_${mandalName}`, html);
@@ -557,7 +557,7 @@ export default function Reports() {
         </div>
 
         <div class="footer">
-          ${mandalName} • Officially Certified Event Closure Report • MandalPro
+          ${mandalName} • Officially Certified Event Closure Report • Apla Mandal
         </div>
       `;
 

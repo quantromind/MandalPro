@@ -174,7 +174,7 @@ export default function Login() {
                 Apla<span style={{ color: '#F97316' }}>Mandal</span>
               </div>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 2 }}>
-                MandalPro Platform
+                Apla Mandal Platform
               </div>
             </div>
           </Link>

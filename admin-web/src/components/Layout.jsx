@@ -89,7 +89,7 @@ export default function Layout({ children }) {
           />
           <div className="brand-text">
             Apla<span>Mandal</span>
-            <span className="brand-sub">{mandal?.name || 'MandalPro'}</span>
+            <span className="brand-sub">{mandal?.name || 'Apla Mandal'}</span>
           </div>
         </div>
 
@@ -260,7 +260,7 @@ export default function Layout({ children }) {
                   {language === 'mr' ? 'सर्व विभाग' : 'All Sections'}
                 </h2>
                 <span className="text-muted" style={{ fontSize: 12.5 }}>
-                  {mandal?.name || 'MandalPro'}
+                  {mandal?.name || 'Apla Mandal'}
                 </span>
               </div>
               <button

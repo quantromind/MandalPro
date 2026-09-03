@@ -166,8 +166,8 @@ export default function Landing() {
       nameEn: 'Sanjay Kadam (President)',
       mandalMr: 'श्री गणेश मित्र मंडळ, पुणे',
       mandalEn: 'Shree Ganesh Mitra Mandal, Pune',
-      textMr: 'पूर्वी वह्यांमध्ये वर्गणी नोंदवणे आणि पावत्या फाडणे खूप त्रासाचे होते. MandalPro मुळे कार्यकर्त्यांनी थेट मोबाईलवरून पावत्या फाडल्या आणि देणगीदारांना लगेच WhatsApp वर पावती मिळाली. जमा-खर्चाचा हिशोब पारदर्शक झाला!',
-      textEn: 'Recording vargani in physical paper books was exhausting. With MandalPro, our volunteers generated receipts from their phones and donors instantly received them on WhatsApp. Total transparency!'
+      textMr: 'पूर्वी वह्यांमध्ये वर्गणी नोंदवणे आणि पावत्या फाडणे खूप त्रासाचे होते. आपला मंडळ (Apla Mandal) मुळे कार्यकर्त्यांनी थेट मोबाईलवरून पावत्या फाडल्या आणि देणगीदारांना लगेच WhatsApp वर पावती मिळाली. जमा-खर्चाचा हिशोब पारदर्शक झाला!',
+      textEn: 'Recording vargani in physical paper books was exhausting. With Apla Mandal, our volunteers generated receipts from their phones and donors instantly received them on WhatsApp. Total transparency!'
     },
     {
       name: 'अमोल पाटील (खजिनदार)',
@@ -189,8 +189,8 @@ export default function Landing() {
 
   const faqs = [
     {
-      qMr: 'MandalPro अ‍ॅप वापरणे किती सोपे आहे?',
-      qEn: 'How easy is it to use MandalPro?',
+      qMr: 'Apla Mandal अ‍ॅप वापरणे किती सोपे आहे?',
+      qEn: 'How easy is it to use Apla Mandal?',
       aMr: 'अतिशय सोपे! हे संपूर्ण अ‍ॅप मराठी व इंग्रजी दोन्ही भाषांमध्ये उपलब्ध आहे. स्मार्टफोन वापरणारा कोणताही कार्यकर्ता किंवा पदाधिकारी अवघ्या २ मिनिटांत हे अ‍ॅप वापरू शकतो.',
       aEn: 'Extremely easy! The platform is available in both Marathi and English. Any committee member with a smartphone can start issuing receipts and managing accounts within 2 minutes.'
     },
@@ -234,7 +234,7 @@ export default function Landing() {
                 Apla<span>Mandal</span>
               </div>
               <div className="landing-logo-subtitle">
-                MandalPro Platform
+                Apla Mandal Platform
               </div>
             </div>
           </div>
@@ -530,7 +530,7 @@ export default function Landing() {
           <div className="landing-hero-banner-wrap">
             <img
               src="/hero-banner.jpg"
-              alt="MandalPro Digital Platform Dashboard Preview"
+              alt="Apla Mandal Digital Platform Dashboard Preview"
               className="landing-hero-banner-img"
             />
           </div>
@@ -603,7 +603,7 @@ export default function Landing() {
               </h2>
               <p style={{ color: '#94A3B8', fontSize: 15, lineHeight: 1.6, marginBottom: 24 }}>
                 {isMr
-                  ? 'MandalPro मुळे देणगीदार आणि मंडळ यांच्यातील विश्वास दृढ होतो. प्रत्येक वर्गणीदाराला अधिकृत डिजिटल पावती त्वरित मिळते, ज्यामुळे हिशोबात १००% पारदर्शकता राहते.'
+                  ? 'Apla Mandal मुळे देणगीदार आणि मंडळ यांच्यातील विश्वास दृढ होतो. प्रत्येक वर्गणीदाराला अधिकृत डिजिटल पावती त्वरित मिळते, ज्यामुळे हिशोबात १००% पारदर्शकता राहते.'
                   : 'Build total trust with your donors and community. Instant receipts sent directly to donor phones ensure every single rupee is accounted for accurately.'}
               </p>
 
@@ -640,7 +640,7 @@ export default function Landing() {
             <div className="landing-showcase-img-wrap">
               <img
                 src="/features-banner.jpg"
-                alt="MandalPro WhatsApp Receipt & Finance Features"
+                alt="Apla Mandal WhatsApp Receipt & Finance Features"
                 className="landing-showcase-img"
               />
             </div>
@@ -927,7 +927,7 @@ export default function Landing() {
         </div>
 
         <div className="landing-footer-bottom">
-          <div>© {new Date().getFullYear()} MandalPro (Apla Mandal). All Rights Reserved.</div>
+          <div>© {new Date().getFullYear()} Apla Mandal. All Rights Reserved.</div>
           <div>Made with ❤️ for Mandals in Maharashtra, India 🇮🇳</div>
         </div>
       </footer>

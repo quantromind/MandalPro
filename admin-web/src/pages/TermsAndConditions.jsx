@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 /*
  * =========================================================================
- * MANDALPRO - TERMS & CONDITIONS
+ * APLA MANDAL - TERMS & CONDITIONS
  * Public route: /terms-and-conditions (Zero auth, zero tenant context required)
  * Entity: Quantromind Pvt. Ltd.
  * Address: Wakad, Pimpri-Chinchwad, Maharashtra 411057

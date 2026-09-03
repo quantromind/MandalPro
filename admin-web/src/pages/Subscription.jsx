@@ -126,7 +126,7 @@ export default function Subscription() {
               marginBottom: 12
             }}
           >
-            💎 MANDALPRO MEMBERSHIP PLANS
+            💎 APLA MANDAL MEMBERSHIP PLANS
           </div>
 
           <h1
