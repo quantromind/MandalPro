@@ -13,6 +13,13 @@ const userSchema = new mongoose.Schema(
       enum: ['superadmin', 'president', 'treasurer', 'secretary', 'volunteer'],
       default: 'volunteer'
     },
+    permissions: {
+      canCollect: { type: Boolean, default: true },
+      canManageExpenses: { type: Boolean, default: false },
+      canAddMembers: { type: Boolean, default: false },
+      canChat: { type: Boolean, default: true },
+      canViewReports: { type: Boolean, default: false }
+    },
     mandalId: { type: mongoose.Schema.Types.ObjectId, ref: 'Mandal' },      // primary / active mandal
     mandalIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Mandal' }],   // all owned mandals
     status: { type: String, enum: ['active', 'invited', 'disabled'], default: 'active' }

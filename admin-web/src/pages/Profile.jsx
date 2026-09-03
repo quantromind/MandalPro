@@ -22,12 +22,30 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const logoInputRef = React.useRef(null);
 
+  // Default permission presets
+  const ROLE_DEFAULTS = {
+    volunteer: { canCollect: true, canManageExpenses: false, canAddMembers: false, canChat: true, canViewReports: false },
+    treasurer: { canCollect: true, canManageExpenses: true, canAddMembers: false, canChat: true, canViewReports: true },
+    secretary: { canCollect: true, canManageExpenses: true, canAddMembers: true, canChat: true, canViewReports: true },
+    president: { canCollect: true, canManageExpenses: true, canAddMembers: true, canChat: true, canViewReports: true }
+  };
+
   // Add member modal state
   const [showAddMember, setShowAddMember] = useState(false);
   const [memberName, setMemberName] = useState('');
   const [memberEmail, setMemberEmail] = useState('');
+  const [memberMobile, setMemberMobile] = useState('');
   const [memberRole, setMemberRole] = useState('volunteer');
+  const [memberPermissions, setMemberPermissions] = useState(ROLE_DEFAULTS.volunteer);
   const [addingMember, setAddingMember] = useState(false);
+
+  // Edit member modal state
+  const [editingMember, setEditingMember] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editMobile, setEditMobile] = useState('');
+  const [editRole, setEditRole] = useState('volunteer');
+  const [editPermissions, setEditPermissions] = useState(ROLE_DEFAULTS.volunteer);
+  const [updatingMember, setUpdatingMember] = useState(false);
 
   useEffect(() => {
     if (mandal) {
@@ -99,17 +117,66 @@ export default function Profile() {
       await client.post('/members', {
         name: memberName.trim(),
         email: memberEmail.trim(),
-        role: memberRole
+        mobile: memberMobile.trim(),
+        role: memberRole,
+        permissions: memberPermissions
       });
       setShowAddMember(false);
       setMemberName('');
       setMemberEmail('');
+      setMemberMobile('');
+      setMemberRole('volunteer');
+      setMemberPermissions(ROLE_DEFAULTS.volunteer);
       await loadMembers();
       alert(t('profile.memberAdded'));
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to add member');
     } finally {
       setAddingMember(false);
+    }
+  };
+
+  const handleOpenEditMember = (member) => {
+    setEditingMember(member);
+    setEditName(member.name || '');
+    setEditMobile(member.mobile || '');
+    setEditRole(member.role || 'volunteer');
+    setEditPermissions(member.permissions || ROLE_DEFAULTS[member.role] || ROLE_DEFAULTS.volunteer);
+  };
+
+  const handleSaveEditMember = async (e) => {
+    e.preventDefault();
+    if (!editingMember) return;
+    try {
+      setUpdatingMember(true);
+      await client.patch(`/members/${editingMember._id}`, {
+        name: editName.trim(),
+        mobile: editMobile.trim(),
+        role: editRole,
+        permissions: editPermissions
+      });
+      setEditingMember(null);
+      await loadMembers();
+      alert(language === 'mr' ? 'सदस्य माहिती व परवानग्या अद्ययावत झाल्या! ✅' : 'Member updated successfully! ✅');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update member');
+    } finally {
+      setUpdatingMember(false);
+    }
+  };
+
+  const handleRemoveMember = async (id, name) => {
+    const confirmMsg = language === 'mr'
+      ? `तुम्हाला खात्री आहे का की तुम्ही ${name} यांना मंडळातून काढू इच्छिता?`
+      : `Are you sure you want to remove ${name} from this Mandal?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      await client.delete(`/members/${id}`);
+      await loadMembers();
+      alert(language === 'mr' ? 'सदस्य काढण्यात आला. ✓' : 'Member removed successfully. ✓');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to remove member');
     }
   };
 
@@ -301,12 +368,23 @@ export default function Profile() {
 
           {/* Committee Members & ID Cards */}
           <div className="card" style={{ marginTop: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 className="text-h3" style={{ margin: 0 }}>
-                👥 {t('profile.teamMembers')}
-              </h3>
-              <button className="btn btn-sm btn-outline" onClick={() => setShowAddMember(true)}>
-                {t('profile.addMember')}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+              <div>
+                <h3 className="text-h3" style={{ margin: 0 }}>
+                  👥 {t('profile.teamMembers')}
+                </h3>
+                <span className="badge badge-success" style={{ marginTop: 6, fontSize: 11, display: 'inline-block' }}>
+                  {t('profile.unlimitedMembersBadge')}
+                </span>
+              </div>
+              <button
+                className="btn btn-sm btn-primary"
+                onClick={() => {
+                  setMemberPermissions(ROLE_DEFAULTS.volunteer);
+                  setShowAddMember(true);
+                }}
+              >
+                + {t('profile.addMember')}
               </button>
             </div>
 
@@ -319,34 +397,93 @@ export default function Profile() {
                 {t('profile.noMembersYet')}
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {members.map((m) => (
-                  <div
-                    key={m._id || m.email}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '12px 14px',
-                      background: 'var(--bg-subtle, #f8f9fa)',
-                      borderRadius: 10
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>{m.name}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                        {m.email} • <span className="badge badge-light" style={{ textTransform: 'capitalize' }}>{m.role || 'Volunteer'}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {members.map((m) => {
+                  const perms = m.permissions || ROLE_DEFAULTS[m.role] || ROLE_DEFAULTS.volunteer;
+                  return (
+                    <div
+                      key={m._id || m.email}
+                      style={{
+                        padding: '12px 14px',
+                        background: 'var(--bg-subtle, #f8f9fa)',
+                        borderRadius: 12,
+                        border: '1px solid var(--border)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontWeight: 700, fontSize: 14.5, color: 'var(--text-main)' }}>{m.name}</span>
+                            <span className="badge badge-light" style={{ textTransform: 'capitalize', fontSize: 11, fontWeight: 600 }}>
+                              {m.role === 'president' ? '👑 President' : m.role === 'secretary' ? '📝 Secretary' : m.role === 'treasurer' ? '💰 Treasurer' : '🛡️ Volunteer'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                            {m.email} {m.mobile ? `• 📞 ${m.mobile}` : ''}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <button
+                            className="btn btn-sm btn-primary"
+                            onClick={() => openCardGenerator(m)}
+                            title="Generate Official Member ID Card"
+                            style={{ padding: '4px 10px', fontSize: 12 }}
+                          >
+                            🪪 ID Card
+                          </button>
+                          <button
+                            className="btn btn-sm btn-outline"
+                            onClick={() => handleOpenEditMember(m)}
+                            title="Edit Role & Permissions"
+                            style={{ padding: '4px 8px', fontSize: 12 }}
+                          >
+                            ✏️
+                          </button>
+                          {m.role !== 'president' && (
+                            <button
+                              className="btn btn-sm btn-ghost"
+                              onClick={() => handleRemoveMember(m._id, m.name)}
+                              title="Remove Member"
+                              style={{ color: 'var(--danger)', padding: '4px 8px', fontSize: 12 }}
+                            >
+                              🗑️
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Permissions Pills */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                        {perms.canCollect && (
+                          <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 6, background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE' }}>
+                            🪙 {language === 'mr' ? 'पावती कापणे' : 'Receipts'}
+                          </span>
+                        )}
+                        {perms.canManageExpenses && (
+                          <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 6, background: '#FEF3C7', color: '#B45309', border: '1px solid #FDE68A' }}>
+                            💸 {language === 'mr' ? 'खर्च' : 'Expenses'}
+                          </span>
+                        )}
+                        {perms.canAddMembers && (
+                          <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 6, background: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0' }}>
+                            👥 {language === 'mr' ? 'सदस्य जोडणे' : 'Add Members'}
+                          </span>
+                        )}
+                        {perms.canChat && (
+                          <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 6, background: '#F5F3FF', color: '#6D28D9', border: '1px solid #DDD6FE' }}>
+                            💬 {language === 'mr' ? 'चॅट' : 'Chat'}
+                          </span>
+                        )}
+                        {perms.canViewReports && (
+                          <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 6, background: '#FFF1F2', color: '#BE123C', border: '1px solid #FECDD3' }}>
+                            📊 {language === 'mr' ? 'हिशोब' : 'Reports'}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <button
-                      className="btn btn-sm btn-primary"
-                      onClick={() => openCardGenerator(m)}
-                      title="Generate Official Member ID Card"
-                    >
-                      🪪 ID Card
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -356,52 +493,413 @@ export default function Profile() {
       {/* Add Member Modal */}
       {showAddMember && (
         <div className="modal-backdrop" onClick={() => setShowAddMember(false)}>
-          <div className="modal-content modal-sm" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content modal-md modal-flex" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="text-h3" style={{ margin: 0 }}>{t('profile.addTeamMember')}</h3>
+              <div>
+                <h3 className="text-h3" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>👥</span> {t('profile.addTeamMember')}
+                </h3>
+                <div style={{ marginTop: 4 }}>
+                  <span className="badge badge-success" style={{ fontSize: 11, padding: '3px 8px' }}>
+                    {t('profile.unlimitedMembersBadge')}
+                  </span>
+                </div>
+              </div>
               <button className="btn-close" onClick={() => setShowAddMember(false)}>✕</button>
             </div>
-            <form onSubmit={handleAddMember} className="modal-body">
-              <div className="form-group">
-                <label className="form-label">{t('profile.memberFullName')}</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="e.g. Rahul Shinde"
-                  value={memberName}
-                  onChange={(e) => setMemberName(e.target.value)}
-                  required
-                />
+
+            <form onSubmit={handleAddMember} id="add-member-form" style={{ display: 'contents' }}>
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {/* Name */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 600 }}>{t('profile.memberFullName')}</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. Rahul Shinde"
+                    value={memberName}
+                    onChange={(e) => setMemberName(e.target.value)}
+                    required
+                    style={{ height: 42 }}
+                  />
+                </div>
+
+                {/* Email & Mobile */}
+                <div className="grid-2" style={{ gap: 12 }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 600 }}>{t('profile.memberEmailForOtp')}</label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      placeholder="member@gmail.com"
+                      value={memberEmail}
+                      onChange={(e) => setMemberEmail(e.target.value)}
+                      required
+                      style={{ height: 42 }}
+                    />
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 600 }}>{language === 'mr' ? 'मोबाईल क्रमांक (पर्यायी)' : 'Mobile (Optional)'}</label>
+                    <input
+                      type="tel"
+                      className="form-control"
+                      placeholder="9876543210"
+                      value={memberMobile}
+                      onChange={(e) => setMemberMobile(e.target.value)}
+                      style={{ height: 42 }}
+                    />
+                  </div>
+                </div>
+
+                {/* Role */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 600 }}>{t('profile.role')}</label>
+                  <select
+                    className="form-control"
+                    value={memberRole}
+                    onChange={(e) => {
+                      const r = e.target.value;
+                      setMemberRole(r);
+                      setMemberPermissions(ROLE_DEFAULTS[r] || ROLE_DEFAULTS.volunteer);
+                    }}
+                    style={{ height: 42 }}
+                  >
+                    <option value="volunteer">🛡️ {t('profile.roles.volunteer')}</option>
+                    <option value="treasurer">💰 {t('profile.roles.treasurer')}</option>
+                    <option value="secretary">📝 {t('profile.roles.secretary')}</option>
+                  </select>
+                </div>
+
+                {/* Granular Permissions Section */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-main)' }}>
+                      🔒 {t('profile.permissionsTitle')}
+                    </span>
+                    <span className="text-muted" style={{ fontSize: 11 }}>
+                      {language === 'mr' ? 'क्लिक करून ऑन/ऑफ करा' : 'Click to toggle'}
+                    </span>
+                  </div>
+
+                  {/* Permission Cards List */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {/* 1. Collect */}
+                    <div
+                      className={`permission-card ${memberPermissions.canCollect ? 'active' : ''}`}
+                      onClick={() => setMemberPermissions({ ...memberPermissions, canCollect: !memberPermissions.canCollect })}
+                    >
+                      <div className="permission-card-left">
+                        <div className="permission-card-icon">🪙</div>
+                        <div>
+                          <div className="permission-card-title">
+                            {language === 'mr' ? 'देणगी संकलन व डिजिटल पावती' : 'Collect Donations & Receipts'}
+                          </div>
+                          <div className="permission-card-desc">
+                            {language === 'mr' ? 'रोकड / UPI द्वारे देणगी स्वीकारणे व डिजिटल पावती तयार करणे' : 'Accept donations and generate official digital receipts'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`switch-toggle ${memberPermissions.canCollect ? 'checked' : ''}`}>
+                        <div className="switch-toggle-thumb"></div>
+                      </div>
+                    </div>
+
+                    {/* 2. Expenses */}
+                    <div
+                      className={`permission-card ${memberPermissions.canManageExpenses ? 'active' : ''}`}
+                      onClick={() => setMemberPermissions({ ...memberPermissions, canManageExpenses: !memberPermissions.canManageExpenses })}
+                    >
+                      <div className="permission-card-left">
+                        <div className="permission-card-icon">💸</div>
+                        <div>
+                          <div className="permission-card-title">
+                            {language === 'mr' ? 'मंडळ खर्च नोंदवणे व व्यवस्थापन' : 'Record & Manage Expenses'}
+                          </div>
+                          <div className="permission-card-desc">
+                            {language === 'mr' ? 'खर्च व्हाउचर नोंदवणे व बिलांचे व्यवस्थापन करणे' : 'Add expense vouchers and track vendor bills'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`switch-toggle ${memberPermissions.canManageExpenses ? 'checked' : ''}`}>
+                        <div className="switch-toggle-thumb"></div>
+                      </div>
+                    </div>
+
+                    {/* 3. Add Members */}
+                    <div
+                      className={`permission-card ${memberPermissions.canAddMembers ? 'active' : ''}`}
+                      onClick={() => setMemberPermissions({ ...memberPermissions, canAddMembers: !memberPermissions.canAddMembers })}
+                    >
+                      <div className="permission-card-left">
+                        <div className="permission-card-icon">👥</div>
+                        <div>
+                          <div className="permission-card-title">
+                            {language === 'mr' ? 'नवीन समिती सदस्य जोडणे' : 'Add & Invite Members'}
+                          </div>
+                          <div className="permission-card-desc">
+                            {language === 'mr' ? 'मंडळात इतर कार्यकर्त्यांना जोडण्याची परवानगी' : 'Permission to register new members to the Mandal'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`switch-toggle ${memberPermissions.canAddMembers ? 'checked' : ''}`}>
+                        <div className="switch-toggle-thumb"></div>
+                      </div>
+                    </div>
+
+                    {/* 4. Chat */}
+                    <div
+                      className={`permission-card ${memberPermissions.canChat ? 'active' : ''}`}
+                      onClick={() => setMemberPermissions({ ...memberPermissions, canChat: !memberPermissions.canChat })}
+                    >
+                      <div className="permission-card-left">
+                        <div className="permission-card-icon">💬</div>
+                        <div>
+                          <div className="permission-card-title">
+                            {language === 'mr' ? 'कमिटी चॅटमध्ये सहभागी होणे' : 'Committee Chat Access'}
+                          </div>
+                          <div className="permission-card-desc">
+                            {language === 'mr' ? 'मंडळाच्या अधिकृत ग्रुप चॅटमध्ये संदेश पाठवणे' : 'Send messages and discuss in the committee chat'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`switch-toggle ${memberPermissions.canChat ? 'checked' : ''}`}>
+                        <div className="switch-toggle-thumb"></div>
+                      </div>
+                    </div>
+
+                    {/* 5. Reports */}
+                    <div
+                      className={`permission-card ${memberPermissions.canViewReports ? 'active' : ''}`}
+                      onClick={() => setMemberPermissions({ ...memberPermissions, canViewReports: !memberPermissions.canViewReports })}
+                    >
+                      <div className="permission-card-left">
+                        <div className="permission-card-icon">📊</div>
+                        <div>
+                          <div className="permission-card-title">
+                            {language === 'mr' ? 'हिशोब व आर्थिक अहवाल पाहणे' : 'View Financial Reports'}
+                          </div>
+                          <div className="permission-card-desc">
+                            {language === 'mr' ? 'जमा-खर्च ताळेबंद व अहवाल पाहण्याची सुविधा' : 'Access collection summaries and financial sheets'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`switch-toggle ${memberPermissions.canViewReports ? 'checked' : ''}`}>
+                        <div className="switch-toggle-thumb"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">{t('profile.memberEmailForOtp')}</label>
-                <input
-                  type="email"
-                  className="form-control"
-                  placeholder="member@gmail.com"
-                  value={memberEmail}
-                  onChange={(e) => setMemberEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">{t('profile.role')}</label>
-                <select
-                  className="form-control"
-                  value={memberRole}
-                  onChange={(e) => setMemberRole(e.target.value)}
-                >
-                  <option value="volunteer">{t('profile.roles.volunteer')}</option>
-                  <option value="treasurer">{t('profile.roles.treasurer')}</option>
-                  <option value="secretary">{t('profile.roles.secretary')}</option>
-                </select>
-              </div>
+
+              {/* Sticky Footer */}
               <div className="modal-footer">
                 <button type="button" className="btn btn-outline" onClick={() => setShowAddMember(false)}>
                   {t('common.cancel')}
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={addingMember}>
-                  {addingMember ? t('common.loading') : t('profile.addMemberToMandal')}
+                <button type="submit" className="btn btn-primary" disabled={addingMember} style={{ padding: '8px 18px', fontWeight: 600 }}>
+                  {addingMember ? t('common.loading') : `${t('profile.addMemberToMandal')}`}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Member Modal */}
+      {editingMember && (
+        <div className="modal-backdrop" onClick={() => setEditingMember(null)}>
+          <div className="modal-content modal-md modal-flex" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="text-h3" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>✏️</span> {t('profile.editMember')}
+              </h3>
+              <button className="btn-close" onClick={() => setEditingMember(null)}>✕</button>
+            </div>
+
+            <form onSubmit={handleSaveEditMember} id="edit-member-form" style={{ display: 'contents' }}>
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 600 }}>{t('profile.memberFullName')}</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    required
+                    style={{ height: 42 }}
+                  />
+                </div>
+
+                <div className="grid-2" style={{ gap: 12 }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 600 }}>Email Address</label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      value={editingMember.email}
+                      disabled
+                      style={{ background: 'var(--bg-subtle)', height: 42, color: 'var(--text-muted)' }}
+                    />
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 600 }}>{language === 'mr' ? 'मोबाईल क्रमांक' : 'Mobile'}</label>
+                    <input
+                      type="tel"
+                      className="form-control"
+                      value={editMobile}
+                      onChange={(e) => setEditMobile(e.target.value)}
+                      style={{ height: 42 }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 600 }}>{t('profile.role')}</label>
+                  <select
+                    className="form-control"
+                    value={editRole}
+                    onChange={(e) => {
+                      const r = e.target.value;
+                      setEditRole(r);
+                      setEditPermissions(ROLE_DEFAULTS[r] || ROLE_DEFAULTS.volunteer);
+                    }}
+                    style={{ height: 42 }}
+                  >
+                    <option value="volunteer">🛡️ {t('profile.roles.volunteer')}</option>
+                    <option value="treasurer">💰 {t('profile.roles.treasurer')}</option>
+                    <option value="secretary">📝 {t('profile.roles.secretary')}</option>
+                    <option value="president">👑 {t('profile.roles.president')}</option>
+                  </select>
+                </div>
+
+                {/* Granular Permissions Section */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-main)' }}>
+                      🔒 {t('profile.permissionsTitle')}
+                    </span>
+                    <span className="text-muted" style={{ fontSize: 11 }}>
+                      {language === 'mr' ? 'क्लिक करून ऑन/ऑफ करा' : 'Click to toggle'}
+                    </span>
+                  </div>
+
+                  {/* Permission Cards List */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {/* 1. Collect */}
+                    <div
+                      className={`permission-card ${editPermissions.canCollect ? 'active' : ''}`}
+                      onClick={() => setEditPermissions({ ...editPermissions, canCollect: !editPermissions.canCollect })}
+                    >
+                      <div className="permission-card-left">
+                        <div className="permission-card-icon">🪙</div>
+                        <div>
+                          <div className="permission-card-title">
+                            {language === 'mr' ? 'देणगी संकलन व डिजिटल पावती' : 'Collect Donations & Receipts'}
+                          </div>
+                          <div className="permission-card-desc">
+                            {language === 'mr' ? 'रोकड / UPI द्वारे देणगी स्वीकारणे व डिजिटल पावती तयार करणे' : 'Accept donations and generate official digital receipts'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`switch-toggle ${editPermissions.canCollect ? 'checked' : ''}`}>
+                        <div className="switch-toggle-thumb"></div>
+                      </div>
+                    </div>
+
+                    {/* 2. Expenses */}
+                    <div
+                      className={`permission-card ${editPermissions.canManageExpenses ? 'active' : ''}`}
+                      onClick={() => setEditPermissions({ ...editPermissions, canManageExpenses: !editPermissions.canManageExpenses })}
+                    >
+                      <div className="permission-card-left">
+                        <div className="permission-card-icon">💸</div>
+                        <div>
+                          <div className="permission-card-title">
+                            {language === 'mr' ? 'मंडळ खर्च नोंदवणे व व्यवस्थापन' : 'Record & Manage Expenses'}
+                          </div>
+                          <div className="permission-card-desc">
+                            {language === 'mr' ? 'खर्च व्हाउचर नोंदवणे व बिलांचे व्यवस्थापन करणे' : 'Add expense vouchers and track vendor bills'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`switch-toggle ${editPermissions.canManageExpenses ? 'checked' : ''}`}>
+                        <div className="switch-toggle-thumb"></div>
+                      </div>
+                    </div>
+
+                    {/* 3. Add Members */}
+                    <div
+                      className={`permission-card ${editPermissions.canAddMembers ? 'active' : ''}`}
+                      onClick={() => setEditPermissions({ ...editPermissions, canAddMembers: !editPermissions.canAddMembers })}
+                    >
+                      <div className="permission-card-left">
+                        <div className="permission-card-icon">👥</div>
+                        <div>
+                          <div className="permission-card-title">
+                            {language === 'mr' ? 'नवीन समिती सदस्य जोडणे' : 'Add & Invite Members'}
+                          </div>
+                          <div className="permission-card-desc">
+                            {language === 'mr' ? 'मंडळात इतर कार्यकर्त्यांना जोडण्याची परवानगी' : 'Permission to register new members to the Mandal'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`switch-toggle ${editPermissions.canAddMembers ? 'checked' : ''}`}>
+                        <div className="switch-toggle-thumb"></div>
+                      </div>
+                    </div>
+
+                    {/* 4. Chat */}
+                    <div
+                      className={`permission-card ${editPermissions.canChat ? 'active' : ''}`}
+                      onClick={() => setEditPermissions({ ...editPermissions, canChat: !editPermissions.canChat })}
+                    >
+                      <div className="permission-card-left">
+                        <div className="permission-card-icon">💬</div>
+                        <div>
+                          <div className="permission-card-title">
+                            {language === 'mr' ? 'कमिटी चॅटमध्ये सहभागी होणे' : 'Committee Chat Access'}
+                          </div>
+                          <div className="permission-card-desc">
+                            {language === 'mr' ? 'मंडळाच्या अधिकृत ग्रुप चॅटमध्ये संदेश पाठवणे' : 'Send messages and discuss in the committee chat'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`switch-toggle ${editPermissions.canChat ? 'checked' : ''}`}>
+                        <div className="switch-toggle-thumb"></div>
+                      </div>
+                    </div>
+
+                    {/* 5. Reports */}
+                    <div
+                      className={`permission-card ${editPermissions.canViewReports ? 'active' : ''}`}
+                      onClick={() => setEditPermissions({ ...editPermissions, canViewReports: !editPermissions.canViewReports })}
+                    >
+                      <div className="permission-card-left">
+                        <div className="permission-card-icon">📊</div>
+                        <div>
+                          <div className="permission-card-title">
+                            {language === 'mr' ? 'हिशोब व आर्थिक अहवाल पाहणे' : 'View Financial Reports'}
+                          </div>
+                          <div className="permission-card-desc">
+                            {language === 'mr' ? 'जमा-खर्च ताळेबंद व अहवाल पाहण्याची सुविधा' : 'Access collection summaries and financial sheets'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`switch-toggle ${editPermissions.canViewReports ? 'checked' : ''}`}>
+                        <div className="switch-toggle-thumb"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sticky Footer */}
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={() => setEditingMember(null)}>
+                  {t('common.cancel')}
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={updatingMember} style={{ padding: '8px 18px', fontWeight: 600 }}>
+                  {updatingMember ? t('common.loading') : `💾 ${t('common.save')}`}
                 </button>
               </div>
             </form>

@@ -369,12 +369,43 @@
     "enterSixDigitOtpSentTo": "{{email}} वर पाठवलेला ६ अंकी कोड प्रविष्ट करा:",
     "logoUpdated": "मंडळ लोगो अद्ययावत झाला! आता तो सर्व डिजिटल पावत्यांवर दिसेल.",
     "memberAdded": "सदस्य जोडला गेला! 🎉",
-    "memberAddedDesc": "{{name}} आता अ‍ॅप डाउनलोड करून विनामूल्य {{email}} वर पाठवलेल्या OTP द्वारे साइन इन करू शकतात.",
+    "unlimitedMembersBadge": "✨ अमर्याद समिती सदस्य जोडण्याची सुविधा",
+    "editMember": "सदस्य व परवानग्या बदला",
+    "permissionsTitle": "सदस्य परवानग्या (Permissions)",
+    "permissions": {
+      "canCollect": "🪙 देणगी संकलन व डिजिटल पावती कापणे",
+      "canManageExpenses": "💸 मंडळ खर्च नोंदवणे व व्यवस्थापन",
+      "canAddMembers": "👥 नवीन समिती सदस्य जोडणे",
+      "canChat": "💬 कमिटी चॅटमध्ये सहभागी होणे",
+      "canViewReports": "📊 हिशोब व आर्थिक अहवाल पाहणे"
+    },
     "roles": {
+      "president": "अध्यक्ष (President)",
       "volunteer": "स्वयंसेवक / संकलक",
       "treasurer": "खजिनदार",
-      "secretary": "सचिव"
+      "secretary": "सचिव / कार्यवाह"
     }
+  },
+  "chat": {
+    "title": "कमिटी चॅट (Committee Chat)",
+    "groupSubtitle": "मंडळ अधिकृत संवाद वाहिनी",
+    "committeeMembers": "कमिटी सदस्य",
+    "membersCount": "{{count}} सदस्य",
+    "addMember": "+ सदस्य जोडा",
+    "leaveGroup": "🚪 कमिटी चॅट सोडा",
+    "leaveConfirm": "तुम्हाला खरंच या मंडळ कमिटी चॅटमधून बाहेर पडायचे आहे का? पुन्हा जोडल्याशिवाय तुम्हाला यात सहभागी होता येणार नाही.",
+    "removeMember": "काढा",
+    "removeConfirm": "{{name}} यांना कमिटी चॅटमधून काढायचे आहे का?",
+    "emptyChat": "अजून कोणतेही मेसेज नाहीत",
+    "typeMessage": "कमिटी सदस्यांसाठी मेसेज टाईप करा...",
+    "send": "पाठवा",
+    "president": "अध्यक्ष",
+    "secretary": "कार्यवाह",
+    "treasurer": "खजिनदार",
+    "volunteer": "कार्यकर्ता",
+    "online": "सक्रिय",
+    "active": "सक्रिय",
+    "noChatPermission": "तुम्हाला कमिटी चॅटमध्ये मेसेज पाठवण्याची परवानगी नाही."
   },
   "idCard": {
     "title": "डिजिटल ओळखपत्रे",

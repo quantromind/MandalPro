@@ -369,12 +369,43 @@
     "enterSixDigitOtpSentTo": "Enter the 6-digit code sent to {{email}}:",
     "logoUpdated": "Mandal logo updated! It will now be printed on all digital receipts.",
     "memberAdded": "Member Added! 🎉",
-    "memberAddedDesc": "{{name}} can now download the app and sign in using OTP sent to {{email}} for free without paying.",
+    "unlimitedMembersBadge": "✨ Unlimited Committee Members Supported",
+    "editMember": "Edit Member & Permissions",
+    "permissionsTitle": "Member Permissions",
+    "permissions": {
+      "canCollect": "🪙 Collect Donations & Issue Receipts",
+      "canManageExpenses": "💸 Record & Manage Expenses",
+      "canAddMembers": "👥 Add & Invite Members",
+      "canChat": "💬 Committee Chat Access",
+      "canViewReports": "📊 View Financial Reports"
+    },
     "roles": {
+      "president": "President",
       "volunteer": "Volunteer / Collector",
       "treasurer": "Treasurer",
       "secretary": "Secretary"
     }
+  },
+  "chat": {
+    "title": "Committee Chat",
+    "groupSubtitle": "Official Committee Channel",
+    "committeeMembers": "Committee Members",
+    "membersCount": "{{count}} Members",
+    "addMember": "+ Add Member",
+    "leaveGroup": "🚪 Leave Committee",
+    "leaveConfirm": "Are you sure you want to leave this Mandal committee? You will lose access until re-added.",
+    "removeMember": "Remove",
+    "removeConfirm": "Are you sure you want to remove {{name}} from the committee?",
+    "emptyChat": "No messages yet",
+    "typeMessage": "Type your message to committee...",
+    "send": "Send",
+    "president": "President",
+    "secretary": "Secretary",
+    "treasurer": "Treasurer",
+    "volunteer": "Volunteer",
+    "online": "Online",
+    "active": "Active",
+    "noChatPermission": "You do not have permission to send messages in this chat."
   },
   "idCard": {
     "title": "Digital ID Cards",

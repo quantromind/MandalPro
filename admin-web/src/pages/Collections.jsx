@@ -339,144 +339,23 @@ export default function Collections() {
         </div>
       )}
 
-      {/* Add / Edit Collection Modal */}
-      {showModal && (
-        <div className="modal-backdrop" onClick={() => setShowModal(false)}>
-          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 className="text-h2" style={{ margin: 0 }}>
-                {editingCollection ? `✏️ ${t('collections.editCollection')}` : `✨ ${t('collection.recordNewDonation')}`}
-              </h2>
-              <button className="btn-close" onClick={() => setShowModal(false)}>✕</button>
-            </div>
-
-            <form onSubmit={handleSave} className="modal-body">
-              {/* Quick Amount Selector */}
-              <div className="form-group">
-                <label className="form-label">{t('collection.quickSelect')}</label>
-                <div className="quick-amount-chips">
-                  {QUICK_AMOUNTS.map((amt) => (
-                    <button
-                      key={amt}
-                      type="button"
-                      className={`chip-btn ${Number(amount) === amt ? 'chip-active' : ''}`}
-                      onClick={() => setAmount(String(amt))}
-                    >
-                      ₹{amt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Amount input */}
-              <div className="form-group">
-                <label className="form-label">{t('collection.donationAmount')}</label>
-                <input
-                  type="number"
-                  className={`form-control form-control-lg ${formErrors.amount ? 'is-invalid' : ''}`}
-                  placeholder="₹ 501"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  autoFocus
-                />
-                {formErrors.amount && <div className="form-error">{formErrors.amount}</div>}
-              </div>
-
-              {/* Contributor Name */}
-              <div className="form-group">
-                <label className="form-label">{t('collection.donorFullName')}</label>
-                <input
-                  type="text"
-                  className={`form-control ${formErrors.contributor ? 'is-invalid' : ''}`}
-                  placeholder={t('collection.donorPlaceholder')}
-                  value={contributor}
-                  onChange={(e) => setContributor(e.target.value)}
-                />
-                {formErrors.contributor && <div className="form-error">{formErrors.contributor}</div>}
-              </div>
-
-              {/* WhatsApp Mobile */}
-              <div className="form-group">
-                <label className="form-label">{t('collection.whatsappMobile')}</label>
-                <div className="input-group">
-                  <span className="input-prefix">+91</span>
-                  <input
-                    type="tel"
-                    className={`form-control ${formErrors.mobile ? 'is-invalid' : ''}`}
-                    placeholder="9876543210"
-                    maxLength={10}
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value)}
-                  />
-                </div>
-                {formErrors.mobile && <div className="form-error">{formErrors.mobile}</div>}
-              </div>
-
-              {/* Purpose & Date Grid */}
-              <div className="grid-2">
-                <div className="form-group">
-                  <label className="form-label">{t('collection.purposeCategory')}</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder={t('collection.purposePlaceholder')}
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">{t('receipts.date')}</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Payment Mode Selector */}
-              <div className="form-group">
-                <label className="form-label">{t('collection.paymentMode')}</label>
-                <div className="payment-modes-grid">
-                  {MODES.map((m) => (
-                    <div
-                      key={m.key}
-                      className={`payment-mode-card ${paymentMode === m.key ? 'mode-active' : ''}`}
-                      onClick={() => setPaymentMode(m.key)}
-                    >
-                      <span className="mode-icon">{m.icon}</span>
-                      <span className="mode-name">{language === 'mr' ? m.labelMr : m.labelEn}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="form-group">
-                <label className="form-label">{t('collections.description')}</label>
-                <textarea
-                  className="form-control"
-                  rows={2}
-                  placeholder={t('collections.descriptionPlaceholder')}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-
-              <div className="modal-footer" style={{ padding: '16px 0 0', margin: 0, border: 'none' }}>
-                <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>
-                  {t('common.cancel')}
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? t('common.loading') : (editingCollection ? t('common.save') : t('collection.generateReceipt'))}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Add / Edit Collection Modal using DonationModal component */}
+      <DonationModal
+        visible={showModal}
+        initialData={editingCollection}
+        onClose={() => {
+          setShowModal(false);
+          setEditingCollection(null);
+        }}
+        onSuccess={(savedRecord) => {
+          setShowModal(false);
+          setEditingCollection(null);
+          load();
+          if (savedRecord) {
+            setReceiptToShow(savedRecord);
+          }
+        }}
+      />
 
       {/* Smart Receipt Modal with WhatsApp Sharing */}
       {receiptToShow && (
