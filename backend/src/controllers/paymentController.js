@@ -131,7 +131,7 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MandalPro Secure Checkout</title>
+  <title>Apla Mandal Secure Checkout</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -219,7 +219,7 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
 </head>
 <body>
   <div class="card">
-    <div class="brand">🪔 MandalPro</div>
+    <div class="brand">🪔 Apla Mandal</div>
     <div class="plan-title">Upgrading to <strong>${plan} Plan</strong></div>
     <div class="amount">₹${Number(amount) / 100}</div>
     
@@ -256,7 +256,7 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
       "key": "${keyId || process.env.RAZORPAY_KEY_ID}",
       "amount": "${amount}",
       "currency": "${currency}",
-      "name": "MandalPro",
+      "name": "Apla Mandal",
       "description": "${plan} Plan Subscription",
       "order_id": "${orderId}",
       "handler": function (response) {
