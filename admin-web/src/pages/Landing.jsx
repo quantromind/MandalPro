@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import './Landing.css';
 
 export default function Landing() {
   const { user } = useAuth();
@@ -9,6 +10,7 @@ export default function Landing() {
   const navigate = useNavigate();
   const [billingCycle, setBillingCycle] = useState('annual');
   const [openFaq, setOpenFaq] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const toggleLanguage = () => {
     setLanguage(language === 'mr' ? 'en' : 'mr');
@@ -228,174 +230,269 @@ export default function Landing() {
   ];
 
   return (
-    <div className="landing-page-root" style={{ background: '#0B1120', color: '#F8FAFC', minHeight: '100vh', fontFamily: "'Inter', sans-serif" }}>
+    <div className="landing-page-root">
       {/* ── 1. Top Navigation Bar ── */}
-      <header style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        background: 'rgba(11, 17, 32, 0.85)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-        padding: '14px 24px'
-      }}>
-        <div style={{ maxWidth: 1240, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <header className="landing-header">
+        <div className="landing-header-container">
           {/* Logo */}
           <div
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+            className="landing-logo"
           >
             <img
               src="/logo.png"
               alt="Apla Mandal Logo"
-              style={{ width: 44, height: 44, borderRadius: 12, objectFit: 'contain', background: '#FFFFFF', padding: 2 }}
+              className="landing-logo-img"
             />
             <div>
-              <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em', color: '#FFFFFF' }}>
-                Apla<span style={{ color: '#F97316' }}>Mandal</span>
+              <div className="landing-logo-title">
+                Apla<span>Mandal</span>
               </div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              <div className="landing-logo-subtitle">
                 MandalPro Platform
               </div>
             </div>
           </div>
 
           {/* Nav Links (Desktop) */}
-          <nav className="desktop-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-            <a href="#features" style={{ color: '#CBD5E1', fontSize: 14, fontWeight: 500, transition: 'color 0.2s' }}>
+          <nav className="landing-desktop-nav">
+            <a href="#features" className="landing-nav-link">
               {isMr ? 'वैशिष्ट्ये' : 'Features'}
             </a>
-            <a href="#festivals" style={{ color: '#CBD5E1', fontSize: 14, fontWeight: 500, transition: 'color 0.2s' }}>
+            <a href="#festivals" className="landing-nav-link">
               {isMr ? 'मंडळे' : 'Communities'}
             </a>
-            <a href="#pricing" style={{ color: '#CBD5E1', fontSize: 14, fontWeight: 500, transition: 'color 0.2s' }}>
+            <a href="#pricing" className="landing-nav-link">
               {isMr ? 'योजना' : 'Pricing'}
             </a>
-            <a href="#reviews" style={{ color: '#CBD5E1', fontSize: 14, fontWeight: 500, transition: 'color 0.2s' }}>
+            <a href="#reviews" className="landing-nav-link">
               {isMr ? 'विश्वास' : 'Reviews'}
             </a>
-            <a href="#faq" style={{ color: '#CBD5E1', fontSize: 14, fontWeight: 500, transition: 'color 0.2s' }}>
+            <a href="#faq" className="landing-nav-link">
               {isMr ? 'प्रश्नोत्तरे' : 'FAQ'}
             </a>
           </nav>
 
           {/* Action Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="landing-header-actions">
             {/* Language Switch */}
             <button
               onClick={toggleLanguage}
-              style={{
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#FFFFFF',
-                borderRadius: 999,
-                padding: '6px 14px',
-                fontSize: 13,
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                cursor: 'pointer'
-              }}
+              className="landing-lang-btn"
+              title={isMr ? 'Switch to English' : 'मराठीत बदला'}
             >
               <span>🌐</span>
-              <span>{isMr ? 'English' : 'मराठी'}</span>
+              <span>{isMr ? 'EN' : 'मराठी'}</span>
             </button>
 
             {user ? (
               <button
-                className="btn btn-primary"
+                className="landing-cta-btn"
                 onClick={() => navigate('/')}
-                style={{ padding: '8px 18px', fontSize: 13.5 }}
               >
-                📊 {isMr ? 'डॅशबोर्डवर जा' : 'Go to Dashboard'}
+                📊 {isMr ? 'डॅशबोर्ड' : 'Dashboard'}
               </button>
             ) : (
               <>
                 <Link
                   to="/login"
-                  style={{
-                    color: '#FFFFFF',
-                    fontSize: 14,
-                    fontWeight: 600,
-                    padding: '8px 16px',
-                    borderRadius: 12,
-                    background: 'transparent',
-                    border: '1px solid rgba(255, 255, 255, 0.15)'
-                  }}
+                  className="landing-login-btn"
                 >
                   {isMr ? 'लॉगिन' : 'Login'}
                 </Link>
 
                 <Link
                   to="/register"
-                  className="btn btn-primary"
-                  style={{ padding: '8px 18px', fontSize: 13.5 }}
+                  className="landing-cta-btn"
                 >
                   🚀 {isMr ? 'नोंदणी करा' : 'Get Started'}
                 </Link>
               </>
             )}
+
+            {/* Mobile Hamburger Toggle Button */}
+            <button
+              className="landing-mobile-toggle"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle Navigation Menu"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                {mobileMenuOpen ? (
+                  <>
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </>
+                ) : (
+                  <>
+                    <line x1="4" y1="7" x2="20" y2="7"></line>
+                    <line x1="4" y1="12" x2="20" y2="12"></line>
+                    <line x1="4" y1="17" x2="20" y2="17"></line>
+                  </>
+                )}
+              </svg>
+            </button>
           </div>
         </div>
       </header>
 
+      {/* ── Mobile Navigation Drawer ── */}
+      {mobileMenuOpen && (
+        <div
+          className="landing-mobile-drawer-overlay"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <div
+            className="landing-mobile-drawer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="landing-drawer-header">
+              <div className="landing-logo">
+                <img
+                  src="/logo.png"
+                  alt="Apla Mandal Logo"
+                  className="landing-logo-img"
+                />
+                <div className="landing-logo-title">
+                  Apla<span>Mandal</span>
+                </div>
+              </div>
+              <button
+                className="landing-drawer-close"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Close Menu"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="landing-drawer-nav">
+              <a
+                href="#features"
+                className="landing-drawer-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span>⚡</span>
+                <span>{isMr ? 'प्रमुख वैशिष्ट्ये' : 'Features'}</span>
+              </a>
+              <a
+                href="#festivals"
+                className="landing-drawer-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span>🚩</span>
+                <span>{isMr ? 'मंडळे व समित्या' : 'Communities'}</span>
+              </a>
+              <a
+                href="#pricing"
+                className="landing-drawer-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span>💎</span>
+                <span>{isMr ? 'सदस्यत्व योजना' : 'Pricing Plans'}</span>
+              </a>
+              <a
+                href="#reviews"
+                className="landing-drawer-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span>❤️</span>
+                <span>{isMr ? 'मंडळांचा विश्वास' : 'Customer Reviews'}</span>
+              </a>
+              <a
+                href="#faq"
+                className="landing-drawer-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span>❓</span>
+                <span>{isMr ? 'प्रश्नोत्तरे (FAQ)' : 'Frequently Asked'}</span>
+              </a>
+            </div>
+
+            <div className="landing-drawer-actions">
+              {user ? (
+                <button
+                  className="landing-cta-btn"
+                  style={{ width: '100%', padding: '13px', fontSize: 15, justifyContent: 'center' }}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    navigate('/');
+                  }}
+                >
+                  📊 {isMr ? 'डॅशबोर्डवर जा' : 'Go to Dashboard'}
+                </button>
+              ) : (
+                <>
+                  <Link
+                    to="/register"
+                    className="landing-cta-btn"
+                    style={{ width: '100%', padding: '13px', fontSize: 15, justifyContent: 'center' }}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    🚀 {isMr ? 'मोफत नोंदणी करा' : 'Get Started Free'}
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="landing-login-btn"
+                    style={{ width: '100%', padding: '12px', fontSize: 14.5, justifyContent: 'center' }}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    🔑 {isMr ? 'मंडळ लॉगिन' : 'Mandal Login'}
+                  </Link>
+                </>
+              )}
+
+              <button
+                onClick={() => {
+                  toggleLanguage();
+                  setMobileMenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#CBD5E1',
+                  background: 'transparent',
+                  border: '1px dashed rgba(255, 255, 255, 0.2)',
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  marginTop: 4
+                }}
+              >
+                <span>🌐</span>
+                <span>{isMr ? 'Switch to English' : 'मराठी भाषेत वापरा'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── 2. Hero Section ── */}
-      <section style={{
-        position: 'relative',
-        padding: '70px 24px 80px',
-        overflow: 'hidden',
-        background: 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(249, 115, 22, 0.25), transparent 70%)'
-      }}>
+      <section className="landing-hero">
         <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center' }}>
           {/* Saffron Trust Badge */}
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            background: 'rgba(249, 115, 22, 0.12)',
-            border: '1px solid rgba(249, 115, 22, 0.35)',
-            color: '#F97316',
-            borderRadius: 999,
-            padding: '6px 18px',
-            fontSize: 13,
-            fontWeight: 700,
-            marginBottom: 24,
-            boxShadow: '0 4px 20px rgba(249, 115, 22, 0.15)'
-          }}>
+          <div className="landing-hero-badge">
             <span>🚩</span>
             <span>{isMr ? 'महाराष्ट्रातील गणेशोत्सव व सार्वजनिक मंडळांचे #१ डिजिटल प्लॅटफॉर्म' : 'Maharashtra’s #1 Digital Platform for Festival & Mandal Management'}</span>
           </div>
 
           {/* Main Hero Headline */}
-          <h1 style={{
-            fontSize: 'clamp(28px, 5vw, 54px)',
-            fontWeight: 900,
-            lineHeight: 1.2,
-            color: '#FFFFFF',
-            margin: '0 auto 20px',
-            maxWidth: 960,
-            fontFamily: "'Poppins', sans-serif"
-          }}>
+          <h1 className="landing-hero-h1">
             {isMr ? (
               <>
                 गणेशोत्सव व सार्वजनिक मंडळांचे <br />
-                <span style={{
-                  background: 'linear-gradient(135deg, #FF6B00 0%, #FBBF24 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent'
-                }}>
+                <span className="landing-gradient-text">
                   पारदर्शक, डिजिटल व आधुनिक
                 </span> व्यवस्थापन
               </>
             ) : (
               <>
                 Modern, Transparent & Digital <br />
-                <span style={{
-                  background: 'linear-gradient(135deg, #FF6B00 0%, #FBBF24 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent'
-                }}>
+                <span className="landing-gradient-text">
                   Management for Community Festivals & Mandals
                 </span>
               </>
@@ -403,73 +500,41 @@ export default function Landing() {
           </h1>
 
           {/* Subheading */}
-          <p style={{
-            fontSize: 'clamp(15px, 2vw, 18px)',
-            color: '#94A3B8',
-            maxWidth: 800,
-            margin: '0 auto 36px',
-            lineHeight: 1.6
-          }}>
+          <p className="landing-hero-p">
             {isMr
               ? 'पारंपरिक वह्या-खात्यांना द्या निरोप! आता थेट WhatsApp वर डिजिटल पावत्या, पारदर्शक जमा-खर्च हिशोब, ऑनलाइन मंजुऱ्या, कार्यकारिणी ओळखपत्रे आणि सीए ऑडिट-रेडी अहवाल — सर्वकाही एकाच अ‍ॅपमध्ये.'
               : 'Say goodbye to tedious manual receipt books! Issue branded WhatsApp receipts, track live inflows & expenses, generate member ID cards, and export CA audit-ready reports in one tap.'}
           </p>
 
           {/* CTA Buttons */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 50 }}>
+          <div className="landing-hero-buttons">
             <Link
               to="/register"
-              className="btn btn-primary"
-              style={{ padding: '16px 36px', fontSize: 16, borderRadius: 14, boxShadow: '0 8px 24px rgba(249, 115, 22, 0.4)' }}
+              className="landing-hero-btn-primary"
             >
               🚀 {isMr ? 'मंडळाची मोफत नोंदणी करा' : 'Register Your Mandal Free'}
             </Link>
 
             <Link
               to="/login"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '16px 28px',
-                fontSize: 16,
-                fontWeight: 600,
-                color: '#FFFFFF',
-                borderRadius: 14,
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                transition: 'all 0.2s'
-              }}
+              className="landing-hero-btn-secondary"
             >
               🔑 {isMr ? 'थेट लॉगिन करा' : 'Mandal Login →'}
             </Link>
           </div>
 
           {/* ── Live Stats Row ── */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: 16,
-            maxWidth: 1060,
-            margin: '0 auto 50px'
-          }}>
+          <div className="landing-stats-grid">
             {stats.map((st, i) => (
               <div
                 key={i}
-                style={{
-                  background: 'rgba(30, 41, 59, 0.6)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: 18,
-                  padding: '20px 16px',
-                  backdropFilter: 'blur(8px)',
-                  textAlign: 'center'
-                }}
+                className="landing-stat-card"
               >
-                <div style={{ fontSize: 24, marginBottom: 6 }}>{st.icon}</div>
-                <div style={{ fontSize: 26, fontWeight: 900, color: '#F97316', marginBottom: 4 }}>
+                <div style={{ fontSize: 24, marginBottom: 4 }}>{st.icon}</div>
+                <div className="landing-stat-num">
                   {isMr ? st.num : st.numEn}
                 </div>
-                <div style={{ fontSize: 12.5, color: '#94A3B8', fontWeight: 600 }}>
+                <div className="landing-stat-label">
                   {isMr ? st.labelMr : st.labelEn}
                 </div>
               </div>
@@ -477,51 +542,27 @@ export default function Landing() {
           </div>
 
           {/* ── Hero Visual Banner with Glow Border ── */}
-          <div style={{
-            position: 'relative',
-            maxWidth: 1080,
-            margin: '0 auto',
-            borderRadius: 24,
-            padding: 6,
-            background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.6), rgba(99, 102, 241, 0.3), rgba(249, 115, 22, 0.6))',
-            boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5)'
-          }}>
+          <div className="landing-hero-banner-wrap">
             <img
               src="/hero-banner.jpg"
               alt="MandalPro Digital Platform Dashboard Preview"
-              style={{
-                width: '100%',
-                height: 'auto',
-                display: 'block',
-                borderRadius: 20,
-                objectFit: 'cover'
-              }}
+              className="landing-hero-banner-img"
             />
           </div>
         </div>
       </section>
 
       {/* ── 3. Features Section ── */}
-      <section id="features" style={{ padding: '80px 24px', background: '#0F172A' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 54 }}>
-            <span style={{
-              background: 'rgba(59, 130, 246, 0.12)',
-              border: '1px solid rgba(59, 130, 246, 0.3)',
-              color: '#38BDF8',
-              borderRadius: 999,
-              padding: '6px 16px',
-              fontSize: 12,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em'
-            }}>
+      <section id="features" className="landing-section" style={{ background: '#0F172A' }}>
+        <div className="landing-container">
+          <div className="landing-section-header">
+            <span className="landing-section-badge" style={{ background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.3)', color: '#38BDF8' }}>
               ⚡ {isMr ? 'प्रमुख वैशिष्ट्ये' : 'POWERFUL FEATURES'}
             </span>
-            <h2 style={{ fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: '#FFFFFF', marginTop: 14, marginBottom: 12 }}>
+            <h2 className="landing-section-title">
               {isMr ? 'मंडळ व्यवस्थापनाची सर्व साधने, एकाच ठिकाणी' : 'Everything Your Mandal Needs to Run Professionally'}
             </h2>
-            <p style={{ color: '#94A3B8', maxWidth: 680, margin: '0 auto', fontSize: 16 }}>
+            <p className="landing-section-desc">
               {isMr
                 ? 'वर्गणी नोंदणीपासून ते अंतिम ऑडिट अहवालापर्यंत - सर्व प्रक्रिया आधुनिक आणि सुलभ.'
                 : 'From donation collection to final audit reports — seamless, paperless, and fully digital.'}
@@ -529,44 +570,31 @@ export default function Landing() {
           </div>
 
           {/* Features Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: 24
-          }}>
+          <div className="landing-features-grid">
             {features.map((feat, idx) => (
               <div
                 key={idx}
-                style={{
-                  background: 'rgba(30, 41, 59, 0.7)',
-                  border: '1px solid rgba(255, 255, 255, 0.07)',
-                  borderRadius: 20,
-                  padding: '30px 24px',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 14
-                }}
+                className="landing-feature-card"
               >
                 <div style={{
-                  width: 52,
-                  height: 52,
+                  width: 50,
+                  height: 50,
                   borderRadius: 14,
                   background: `${feat.color}20`,
                   border: `1px solid ${feat.color}40`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 26
+                  fontSize: 24
                 }}>
                   {feat.icon}
                 </div>
 
-                <h3 style={{ fontSize: 19, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
                   {isMr ? feat.titleMr : feat.titleEn}
                 </h3>
 
-                <p style={{ fontSize: 14, color: '#94A3B8', lineHeight: 1.6, margin: 0 }}>
+                <p style={{ fontSize: 13.5, color: '#94A3B8', lineHeight: 1.6, margin: 0 }}>
                   {isMr ? feat.descMr : feat.descEn}
                 </p>
               </div>
@@ -576,101 +604,85 @@ export default function Landing() {
       </section>
 
       {/* ── 4. Showcase Banner Section ── */}
-      <section style={{ padding: '80px 24px', background: '#0B1120' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 40, alignItems: 'center' }}>
-          <div>
-            <span style={{ color: '#F97316', fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              📱 {isMr ? 'डिजिटल क्रांती' : 'SMART FESTIVAL MANAGEMENT'}
-            </span>
-            <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 36px)', fontWeight: 800, color: '#FFFFFF', margin: '12px 0 16px' }}>
-              {isMr
-                ? 'कागदी वह्या आणि पावत्यांना पूर्णविराम, थेट डिजिटल व्हा!'
-                : 'Zero Paperwork, Zero Confusion, Instant WhatsApp Receipts'}
-            </h2>
-            <p style={{ color: '#94A3B8', fontSize: 15.5, lineHeight: 1.6, marginBottom: 24 }}>
-              {isMr
-                ? 'MandalPro मुळे देणगीदार आणि मंडळ यांच्यातील विश्वास दृढ होतो. प्रत्येक वर्गणीदाराला अधिकृत डिजिटल पावती त्वरित मिळते, ज्यामुळे हिशोबात १००% पारदर्शकता राहते.'
-                : 'Build total trust with your donors and community. Instant receipts sent directly to donor phones ensure every single rupee is accounted for accurately.'}
-            </p>
+      <section className="landing-section" style={{ background: '#0B1120' }}>
+        <div className="landing-container">
+          <div className="landing-showcase-grid">
+            <div>
+              <span style={{ color: '#F97316', fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                📱 {isMr ? 'डिजिटल क्रांती' : 'SMART FESTIVAL MANAGEMENT'}
+              </span>
+              <h2 className="landing-section-title" style={{ textAlign: 'left', margin: '12px 0 16px' }}>
+                {isMr
+                  ? 'कागदी वह्या आणि पावत्यांना पूर्णविराम, थेट डिजिटल व्हा!'
+                  : 'Zero Paperwork, Zero Confusion, Instant WhatsApp Receipts'}
+              </h2>
+              <p style={{ color: '#94A3B8', fontSize: 15, lineHeight: 1.6, marginBottom: 24 }}>
+                {isMr
+                  ? 'MandalPro मुळे देणगीदार आणि मंडळ यांच्यातील विश्वास दृढ होतो. प्रत्येक वर्गणीदाराला अधिकृत डिजिटल पावती त्वरित मिळते, ज्यामुळे हिशोबात १००% पारदर्शकता राहते.'
+                  : 'Build total trust with your donors and community. Instant receipts sent directly to donor phones ensure every single rupee is accounted for accurately.'}
+              </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 30 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ color: '#10B981', fontSize: 18, fontWeight: 900 }}>✓</span>
-                <span style={{ color: '#E2E8F0', fontSize: 15 }}>
-                  {isMr ? 'स्मार्टफोनवरून १ सेकंदात पावती निर्मिती' : '1-Second Receipt Generation from Any Phone'}
-                </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ color: '#10B981', fontSize: 17, fontWeight: 900 }}>✓</span>
+                  <span style={{ color: '#E2E8F0', fontSize: 14.5 }}>
+                    {isMr ? 'स्मार्टफोनवरून १ सेकंदात पावती निर्मिती' : '1-Second Receipt Generation from Any Phone'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ color: '#10B981', fontSize: 17, fontWeight: 900 }}>✓</span>
+                  <span style={{ color: '#E2E8F0', fontSize: 14.5 }}>
+                    {isMr ? 'खर्च मंजुरी व पावत्यांचे फोटो क्लाउडवर सुरक्षित' : 'Expense Approvals with Cloud Bill Photos'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ color: '#10B981', fontSize: 17, fontWeight: 900 }}>✓</span>
+                  <span style={{ color: '#E2E8F0', fontSize: 14.5 }}>
+                    {isMr ? 'उत्सवानंतर १ क्लिकमध्ये ऑडिट ताळेबंद तयार' : 'One-Click CA Audit Balance Sheet Download'}
+                  </span>
+                </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ color: '#10B981', fontSize: 18, fontWeight: 900 }}>✓</span>
-                <span style={{ color: '#E2E8F0', fontSize: 15 }}>
-                  {isMr ? 'खर्च मंजुरी व पावत्यांचे फोटो क्लाउडवर सुरक्षित' : 'Expense Approvals with Cloud Bill Photos'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ color: '#10B981', fontSize: 18, fontWeight: 900 }}>✓</span>
-                <span style={{ color: '#E2E8F0', fontSize: 15 }}>
-                  {isMr ? 'उत्सवानंतर १ क्लिकमध्ये ऑडिट ताळेबंद तयार' : 'One-Click CA Audit Balance Sheet Download'}
-                </span>
-              </div>
+
+              <Link
+                to="/register"
+                className="landing-hero-btn-primary"
+                style={{ padding: '13px 26px', fontSize: 14.5 }}
+              >
+                🚩 {isMr ? 'आताच मंडळ जोडा' : 'Start Managing Your Mandal'}
+              </Link>
             </div>
 
-            <Link
-              to="/register"
-              className="btn btn-primary"
-              style={{ padding: '14px 28px', fontSize: 15 }}
-            >
-              🚩 {isMr ? 'आताच मंडळ जोडा' : 'Start Managing Your Mandal'}
-            </Link>
-          </div>
-
-          <div style={{
-            borderRadius: 20,
-            overflow: 'hidden',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)'
-          }}>
-            <img
-              src="/features-banner.jpg"
-              alt="MandalPro WhatsApp Receipt & Finance Features"
-              style={{ width: '100%', height: 'auto', display: 'block' }}
-            />
+            <div className="landing-showcase-img-wrap">
+              <img
+                src="/features-banner.jpg"
+                alt="MandalPro WhatsApp Receipt & Finance Features"
+                className="landing-showcase-img"
+              />
+            </div>
           </div>
         </div>
       </section>
 
       {/* ── 5. Suitable for All Mandals & Communities ── */}
-      <section id="festivals" style={{ padding: '70px 24px', background: '#0F172A' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 34px)', fontWeight: 800, color: '#FFFFFF', marginBottom: 12 }}>
+      <section id="festivals" className="landing-section" style={{ background: '#0F172A' }}>
+        <div className="landing-container" style={{ textAlign: 'center' }}>
+          <h2 className="landing-section-title">
             {isMr ? 'सर्व प्रकारच्या उत्सव व सामाजिक मंडळांसाठी उपयुक्त' : 'Built for All Indian Festivals & Community Groups'}
           </h2>
-          <p style={{ color: '#94A3B8', fontSize: 15, marginBottom: 40 }}>
+          <p className="landing-section-desc" style={{ marginBottom: 36 }}>
             {isMr
               ? 'लहान गल्लीतील मंडळापासून ते मोठ्या नामांकित सार्वजनिक मंडळांपर्यंत सर्वांसाठी परिपूर्ण.'
               : 'From neighborhood gully mandals to large prestigious city trusts.'}
           </p>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: 16
-          }}>
+          <div className="landing-festivals-grid">
             {festivals.map((fest, idx) => (
               <div
                 key={idx}
-                style={{
-                  background: 'rgba(30, 41, 59, 0.5)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: 16,
-                  padding: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 14,
-                  textAlign: 'left'
-                }}
+                className="landing-festival-card"
               >
-                <span style={{ fontSize: 30 }}>{fest.icon}</span>
-                <span style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF' }}>
+                <span style={{ fontSize: 28 }}>{fest.icon}</span>
+                <span style={{ fontSize: 14.5, fontWeight: 700, color: '#FFFFFF' }}>
                   {isMr ? fest.nameMr : fest.nameEn}
                 </span>
               </div>
@@ -680,64 +692,28 @@ export default function Landing() {
       </section>
 
       {/* ── 6. Pricing Section ── */}
-      <section id="pricing" style={{ padding: '80px 24px', background: '#0B1120' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', textAlign: 'center' }}>
-          <span style={{
-            background: 'rgba(234, 179, 8, 0.12)',
-            border: '1px solid rgba(234, 179, 8, 0.3)',
-            color: '#FACC15',
-            borderRadius: 999,
-            padding: '6px 16px',
-            fontSize: 12,
-            fontWeight: 700,
-            textTransform: 'uppercase'
-          }}>
+      <section id="pricing" className="landing-section" style={{ background: '#0B1120' }}>
+        <div className="landing-container" style={{ textAlign: 'center' }}>
+          <span className="landing-section-badge" style={{ background: 'rgba(234, 179, 8, 0.12)', border: '1px solid rgba(234, 179, 8, 0.3)', color: '#FACC15' }}>
             💎 {isMr ? 'किफायतशीर योजना' : 'SIMPLE PRICING'}
           </span>
-          <h2 style={{ fontSize: 'clamp(26px, 4vw, 38px)', fontWeight: 800, color: '#FFFFFF', marginTop: 14, marginBottom: 12 }}>
+          <h2 className="landing-section-title">
             {isMr ? 'पारदर्शक व परवडणारे सदस्यत्व दर' : 'Transparent Plans for Every Size of Mandal'}
           </h2>
-          <p style={{ color: '#94A3B8', fontSize: 15, marginBottom: 28 }}>
+          <p className="landing-section-desc" style={{ marginBottom: 28 }}>
             {isMr ? 'कोणतेही छुपे शुल्क नाही. तुमच्या गरजेनुसार योजना निवडा.' : 'No hidden fees. Pick the plan that suits your festival needs.'}
           </p>
 
           {/* Billing Toggle */}
-          <div style={{
-            display: 'inline-flex',
-            background: 'rgba(30, 41, 59, 0.8)',
-            padding: 4,
-            borderRadius: 999,
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            marginBottom: 44
-          }}>
+          <div className="landing-pricing-toggle-wrap">
             <button
-              style={{
-                border: 'none',
-                background: billingCycle === 'annual' ? '#F97316' : 'transparent',
-                color: '#FFFFFF',
-                padding: '8px 20px',
-                borderRadius: 999,
-                fontSize: 13.5,
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
+              className={`landing-pricing-toggle-btn ${billingCycle === 'annual' ? 'active' : ''}`}
               onClick={() => setBillingCycle('annual')}
             >
-              {isMr ? 'वार्षिक योजना (Annual - २०% सूट)' : 'Annual Plan (Save 20%)'}
+              {isMr ? 'वार्षिक योजना (२०% सूट)' : 'Annual Plan (Save 20%)'}
             </button>
             <button
-              style={{
-                border: 'none',
-                background: billingCycle === 'monthly' ? '#F97316' : 'transparent',
-                color: '#FFFFFF',
-                padding: '8px 20px',
-                borderRadius: 999,
-                fontSize: 13.5,
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
+              className={`landing-pricing-toggle-btn ${billingCycle === 'monthly' ? 'active' : ''}`}
               onClick={() => setBillingCycle('monthly')}
             >
               {isMr ? 'मासिक (Monthly)' : 'Monthly'}
@@ -745,12 +721,7 @@ export default function Landing() {
           </div>
 
           {/* Pricing Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
-            gap: 24,
-            textAlign: 'left'
-          }}>
+          <div className="landing-pricing-grid">
             {plans.map((p) => {
               const price = billingCycle === 'annual' ? p.priceAnnual : p.priceMonthly;
               const period = isMr ? p.periodMr : p.periodEn;
@@ -758,23 +729,13 @@ export default function Landing() {
               return (
                 <div
                   key={p.id}
-                  style={{
-                    background: p.popular ? 'rgba(30, 41, 59, 0.95)' : 'rgba(30, 41, 59, 0.6)',
-                    border: p.popular ? '2px solid #F97316' : '1px solid rgba(255, 255, 255, 0.08)',
-                    borderRadius: 22,
-                    padding: '32px 24px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    position: 'relative',
-                    boxShadow: p.popular ? '0 16px 40px rgba(249, 115, 22, 0.2)' : 'none'
-                  }}
+                  className={`landing-pricing-card ${p.popular ? 'popular' : ''}`}
                 >
                   {(isMr ? p.badgeMr : p.badgeEn) && (
                     <div style={{
                       position: 'absolute',
-                      top: -13,
-                      right: 20,
+                      top: -12,
+                      right: 18,
                       background: '#F97316',
                       color: '#FFFFFF',
                       fontSize: 11,
@@ -788,19 +749,19 @@ export default function Landing() {
                   )}
 
                   <div>
-                    <h3 style={{ fontSize: 20, fontWeight: 800, color: p.color, margin: '0 0 12px' }}>
+                    <h3 style={{ fontSize: 19, fontWeight: 800, color: p.color, margin: '0 0 10px' }}>
                       {isMr ? p.nameMr : p.nameEn}
                     </h3>
 
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 24 }}>
-                      <span style={{ fontSize: 36, fontWeight: 900, color: '#FFFFFF' }}>{price}</span>
-                      <span style={{ fontSize: 14, color: '#94A3B8' }}>{period}</span>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 20 }}>
+                      <span style={{ fontSize: 34, fontWeight: 900, color: '#FFFFFF' }}>{price}</span>
+                      <span style={{ fontSize: 13.5, color: '#94A3B8' }}>{period}</span>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 26 }}>
                       {(isMr ? p.featuresMr : p.featuresEn).map((feat, idx) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, color: '#CBD5E1' }}>
-                          <span style={{ color: '#10B981', fontWeight: 900 }}>✓</span>
+                        <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13.5, color: '#CBD5E1' }}>
+                          <span style={{ color: '#10B981', fontWeight: 900, flexShrink: 0 }}>✓</span>
                           <span>{feat}</span>
                         </div>
                       ))}
@@ -809,8 +770,16 @@ export default function Landing() {
 
                   <Link
                     to="/register"
-                    className={`btn ${p.popular ? 'btn-primary' : 'btn-outline'}`}
-                    style={{ width: '100%', padding: '13px', textAlign: 'center', fontSize: 14.5, color: '#FFFFFF' }}
+                    className={`landing-hero-btn-primary`}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      textAlign: 'center',
+                      fontSize: 14,
+                      background: p.popular ? 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)' : 'rgba(255, 255, 255, 0.08)',
+                      border: p.popular ? 'none' : '1px solid rgba(255, 255, 255, 0.16)',
+                      boxShadow: p.popular ? '0 4px 14px rgba(249, 115, 22, 0.35)' : 'none'
+                    }}
                   >
                     {isMr ? p.ctaMr : p.ctaEn} →
                   </Link>
@@ -822,44 +791,32 @@ export default function Landing() {
       </section>
 
       {/* ── 7. Testimonials / Trust ── */}
-      <section id="reviews" style={{ padding: '80px 24px', background: '#0F172A' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 50 }}>
+      <section id="reviews" className="landing-section" style={{ background: '#0F172A' }}>
+        <div className="landing-container">
+          <div className="landing-section-header">
             <span style={{ color: '#F97316', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               ❤️ {isMr ? 'मंडळांचा विश्वास' : 'TRUSTED BY MANDAL COMMITTEES'}
             </span>
-            <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 36px)', fontWeight: 800, color: '#FFFFFF', marginTop: 10 }}>
+            <h2 className="landing-section-title" style={{ marginTop: 8 }}>
               {isMr ? 'पदाधिकाऱ्यांचे अनुभव व अभिप्राय' : 'What Mandal Leaders Say'}
             </h2>
           </div>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: 24
-          }}>
+          <div className="landing-testimonials-grid">
             {testimonials.map((t, idx) => (
               <div
                 key={idx}
-                style={{
-                  background: 'rgba(30, 41, 59, 0.6)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: 20,
-                  padding: '28px 24px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between'
-                }}
+                className="landing-testimonial-card"
               >
-                <div style={{ fontSize: 14.5, color: '#CBD5E1', lineHeight: 1.6, marginBottom: 20, fontStyle: 'italic' }}>
+                <div style={{ fontSize: 14, color: '#CBD5E1', lineHeight: 1.6, fontStyle: 'italic' }}>
                   “{isMr ? t.textMr : t.textEn}”
                 </div>
 
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF' }}>
+                  <div style={{ fontSize: 14.5, fontWeight: 700, color: '#FFFFFF' }}>
                     {isMr ? t.name : t.nameEn}
                   </div>
-                  <div style={{ fontSize: 13, color: '#F97316', fontWeight: 600 }}>
+                  <div style={{ fontSize: 12.5, color: '#F97316', fontWeight: 600, marginTop: 2 }}>
                     {isMr ? t.mandalMr : t.mandalEn}
                   </div>
                 </div>
@@ -870,50 +827,32 @@ export default function Landing() {
       </section>
 
       {/* ── 8. FAQ Section ── */}
-      <section id="faq" style={{ padding: '80px 24px', background: '#0B1120' }}>
-        <div style={{ maxWidth: 860, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 36px)', fontWeight: 800, color: '#FFFFFF', marginBottom: 12 }}>
+      <section id="faq" className="landing-section" style={{ background: '#0B1120' }}>
+        <div className="landing-container">
+          <div className="landing-section-header">
+            <h2 className="landing-section-title">
               {isMr ? 'नेहमी विचारले जाणारे प्रश्न (FAQ)' : 'Frequently Asked Questions'}
             </h2>
-            <p style={{ color: '#94A3B8', fontSize: 15 }}>
+            <p className="landing-section-desc">
               {isMr ? 'काही शंका आहेत? उत्तरे येथे मिळतील.' : 'Have questions? We have answers.'}
             </p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="landing-faq-container">
             {faqs.map((faq, i) => (
               <div
                 key={i}
-                style={{
-                  background: 'rgba(30, 41, 59, 0.6)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: 16,
-                  overflow: 'hidden'
-                }}
+                className="landing-faq-item"
               >
                 <button
                   onClick={() => toggleFaq(i)}
-                  style={{
-                    width: '100%',
-                    padding: '20px 24px',
-                    textAlign: 'left',
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#FFFFFF',
-                    fontSize: 16,
-                    fontWeight: 700,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    cursor: 'pointer'
-                  }}
+                  className="landing-faq-btn"
                 >
                   <span>{isMr ? faq.qMr : faq.qEn}</span>
-                  <span style={{ fontSize: 20, color: '#F97316' }}>{openFaq === i ? '−' : '+'}</span>
+                  <span style={{ fontSize: 18, color: '#F97316', flexShrink: 0 }}>{openFaq === i ? '−' : '+'}</span>
                 </button>
                 {openFaq === i && (
-                  <div style={{ padding: '0 24px 20px', color: '#94A3B8', fontSize: 14.5, lineHeight: 1.6 }}>
+                  <div className="landing-faq-answer">
                     {isMr ? faq.aMr : faq.aEn}
                   </div>
                 )}
@@ -924,46 +863,36 @@ export default function Landing() {
       </section>
 
       {/* ── 9. Final CTA Banner ── */}
-      <section style={{
-        padding: '80px 24px',
-        background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(99, 102, 241, 0.1) 100%)',
+      <section className="landing-section" style={{
+        background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.22) 0%, rgba(99, 102, 241, 0.12) 100%)',
         textAlign: 'center'
       }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <img
             src="/logo.png"
             alt="Apla Mandal Logo"
-            style={{ width: 64, height: 64, borderRadius: 16, objectFit: 'contain', margin: '0 auto 16px', display: 'block', background: '#FFFFFF', padding: 4 }}
+            style={{ width: 56, height: 56, borderRadius: 14, objectFit: 'contain', margin: '0 auto 16px', display: 'block', background: '#FFFFFF', padding: 3 }}
           />
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 900, color: '#FFFFFF', marginBottom: 16 }}>
+          <h2 className="landing-section-title">
             {isMr ? 'आजच तुमच्या मंडळाला डिजिटल आणि पारदर्शक बनवा!' : 'Ready to Transform Your Mandal Management?'}
           </h2>
-          <p style={{ color: '#CBD5E1', fontSize: 16, marginBottom: 36, lineHeight: 1.6 }}>
+          <p style={{ color: '#CBD5E1', fontSize: 15, marginBottom: 30, lineHeight: 1.6, maxWidth: 640, margin: '0 auto 30px' }}>
             {isMr
               ? 'आता वह्यांचे झंझट सोडा. ५ मिनिटांत मोफत नोंदणी करा आणि डिजिटल पावत्या फाडण्यास सुरुवात करा.'
               : 'Join over 500+ active mandals across Maharashtra. Register in under 2 minutes.'}
           </p>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <div className="landing-hero-buttons" style={{ marginBottom: 0 }}>
             <Link
               to="/register"
-              className="btn btn-primary"
-              style={{ padding: '16px 36px', fontSize: 16, borderRadius: 14 }}
+              className="landing-hero-btn-primary"
             >
               🚀 {isMr ? 'मोफत सुरुवात करा' : 'Register Now (Free)'}
             </Link>
 
             <Link
               to="/login"
-              style={{
-                padding: '16px 28px',
-                fontSize: 16,
-                fontWeight: 600,
-                color: '#FFFFFF',
-                borderRadius: 14,
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.2)'
-              }}
+              className="landing-hero-btn-secondary"
             >
               🔑 {isMr ? 'लॉगिन करा' : 'Login'}
             </Link>
@@ -972,26 +901,20 @@ export default function Landing() {
       </section>
 
       {/* ── 10. Footer ── */}
-      <footer style={{
-        background: '#070C18',
-        borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-        padding: '50px 24px 30px',
-        color: '#64748B',
-        fontSize: 13.5
-      }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 36, marginBottom: 40 }}>
+      <footer className="landing-footer">
+        <div className="landing-footer-grid">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#FFFFFF', fontSize: 18, fontWeight: 800, marginBottom: 12 }}>
+            <div className="landing-logo" style={{ marginBottom: 12, cursor: 'default' }}>
               <img
                 src="/logo.png"
                 alt="Apla Mandal Logo"
-                style={{ width: 34, height: 34, borderRadius: 8, objectFit: 'contain', background: '#FFFFFF', padding: 2 }}
+                style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'contain', background: '#FFFFFF', padding: 2 }}
               />
-              <div>
-                Apla<span style={{ color: '#F97316' }}>Mandal</span>
+              <div className="landing-logo-title" style={{ fontSize: 18 }}>
+                Apla<span>Mandal</span>
               </div>
             </div>
-            <p style={{ lineHeight: 1.6 }}>
+            <p style={{ lineHeight: 1.6, fontSize: 13, color: '#94A3B8' }}>
               {isMr
                 ? 'महाराष्ट्रातील गणेशोत्सव, नवरात्री व सार्वजनिक मंडळांसाठी सर्वोत्कृष्ट डिजिटल व्यवस्थापन प्रणाली.'
                 : 'The premier digital festival, donations, and operations platform for Indian community mandals and trusts.'}
@@ -1001,34 +924,24 @@ export default function Landing() {
           <div>
             <div style={{ color: '#FFFFFF', fontWeight: 700, marginBottom: 12 }}>{isMr ? 'महत्त्वाचे दुवे' : 'Quick Links'}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Link to="/register" style={{ color: '#94A3B8' }}>{isMr ? 'मंडळ नोंदणी' : 'Register Mandal'}</Link>
-              <Link to="/login" style={{ color: '#94A3B8' }}>{isMr ? 'लॉगिन' : 'Login'}</Link>
-              <a href="#pricing" style={{ color: '#94A3B8' }}>{isMr ? 'सदस्यत्व योजना' : 'Subscription Plans'}</a>
-              <a href="#features" style={{ color: '#94A3B8' }}>{isMr ? 'वैशिष्ट्ये' : 'Features'}</a>
+              <Link to="/register" style={{ color: '#94A3B8', fontSize: 13 }}>{isMr ? 'मंडळ नोंदणी' : 'Register Mandal'}</Link>
+              <Link to="/login" style={{ color: '#94A3B8', fontSize: 13 }}>{isMr ? 'लॉगिन' : 'Login'}</Link>
+              <a href="#pricing" style={{ color: '#94A3B8', fontSize: 13 }}>{isMr ? 'सदस्यत्व योजना' : 'Subscription Plans'}</a>
+              <a href="#features" style={{ color: '#94A3B8', fontSize: 13 }}>{isMr ? 'वैशिष्ट्ये' : 'Features'}</a>
             </div>
           </div>
 
           <div>
             <div style={{ color: '#FFFFFF', fontWeight: 700, marginBottom: 12 }}>{isMr ? 'कायदेशीर' : 'Legal & Support'}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Link to="/privacy-policy" style={{ color: '#94A3B8' }}>{isMr ? 'गोपनीयता धोरण (Privacy)' : 'Privacy Policy'}</Link>
-              <Link to="/terms-and-conditions" style={{ color: '#94A3B8' }}>{isMr ? 'नियम व अटी (Terms)' : 'Terms & Conditions'}</Link>
-              <span style={{ color: '#94A3B8' }}>📧 contact@quantromind.com</span>
+              <Link to="/privacy-policy" style={{ color: '#94A3B8', fontSize: 13 }}>{isMr ? 'गोपनीयता धोरण (Privacy)' : 'Privacy Policy'}</Link>
+              <Link to="/terms-and-conditions" style={{ color: '#94A3B8', fontSize: 13 }}>{isMr ? 'नियम व अटी (Terms)' : 'Terms & Conditions'}</Link>
+              <span style={{ color: '#94A3B8', fontSize: 13 }}>📧 contact@quantromind.com</span>
             </div>
           </div>
         </div>
 
-        <div style={{
-          maxWidth: 1200,
-          margin: '0 auto',
-          paddingTop: 24,
-          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 12
-        }}>
+        <div className="landing-footer-bottom">
           <div>© {new Date().getFullYear()} MandalPro (Apla Mandal). All Rights Reserved.</div>
           <div>Made with ❤️ for Mandals in Maharashtra, India 🇮🇳</div>
         </div>
