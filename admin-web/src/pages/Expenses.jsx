@@ -1,36 +1,78 @@
 import { useEffect, useState } from 'react';
-import api from '../api/axios';
+import client from '../api/client';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
-const statusColor = {
-  Draft: 'badge-muted', Submitted: 'badge-warning', Approved: 'badge-success',
-  Rejected: 'badge-danger', Paid: 'badge-success', Reconciled: 'badge-success'
-};
+const EXPENSE_CATEGORIES = [
+  'Pooja & Aarti',
+  'Decoration',
+  'Sound & Lights',
+  'Food & Prasad',
+  'Visarjan / Procession',
+  'Tent & Stage',
+  'Security & Safety',
+  'Misc / Other'
+];
 
-const Expenses = () => {
+export default function Expenses() {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
+
   const [expenses, setExpenses] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ category: '', amount: '', vendor: '', description: '' });
+  const [form, setForm] = useState({
+    title: '',
+    category: 'Pooja & Aarti',
+    amount: '',
+    vendor: '',
+    description: '',
+    date: new Date().toISOString().split('T')[0]
+  });
   const [error, setError] = useState('');
-  
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
 
-  const load = () => api.get('/expenses').then((res) => setExpenses(res.data));
-  useEffect(() => { load(); }, []);
+  const load = async () => {
+    try {
+      setLoading(true);
+      const { data } = await client.get('/expenses');
+      if (Array.isArray(data)) {
+        setExpenses(data);
+      }
+    } catch (err) {
+      setError(t('expenses.unableToLoad'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
 
   const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
-  const canApprove = user?.role === 'president' || user?.role === 'treasurer';
+  const canApprove = user?.role === 'president' || user?.role === 'treasurer' || user?.role === 'superadmin';
 
   const handleCreate = async (e) => {
     e.preventDefault();
     setError('');
     try {
-      await api.post('/expenses', { ...form, amount: Number(form.amount) });
+      await client.post('/expenses', {
+        ...form,
+        title: form.title || form.category,
+        amount: Number(form.amount)
+      });
       setShowForm(false);
-      setForm({ category: '', amount: '', vendor: '', description: '' });
+      setForm({
+        title: '',
+        category: 'Pooja & Aarti',
+        amount: '',
+        vendor: '',
+        description: '',
+        date: new Date().toISOString().split('T')[0]
+      });
       load();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create expense');
@@ -39,7 +81,7 @@ const Expenses = () => {
 
   const act = async (id, action, body = {}) => {
     try {
-      await api.patch(`/expenses/${id}/${action}`, body);
+      await client.patch(`/expenses/${id}/${action}`, body);
       if (action === 'reject') {
         setRejectTarget(null);
         setRejectReason('');
@@ -50,151 +92,281 @@ const Expenses = () => {
     }
   };
 
-  // Mock Budget Stats (Since we're combining budget & expenses visually)
-  const totalBudget = 300000;
-  const spent = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const remaining = totalBudget - spent;
-  
-  // Group by category
-  const categories = expenses.reduce((acc, e) => {
-    acc[e.category] = (acc[e.category] || 0) + e.amount;
-    return acc;
-  }, {});
-
-  const categoryArray = Object.entries(categories).map(([name, amount]) => ({
-    name: name || 'Other',
-    amount,
-    percent: Math.min(100, Math.round((amount / totalBudget) * 100))
-  })).sort((a,b) => b.amount - a.amount);
+  const totalSpent = expenses
+    .filter((e) => e.status !== 'Rejected' && e.status !== 'rejected')
+    .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
   return (
     <Layout>
-      <div className="flex-between mb-3">
-        <h1 className="text-h1" style={{ fontSize: 24 }}>Budget & Expenses</h1>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>+ Add Expense</button>
-      </div>
-      {error && <div className="error-text">{error}</div>}
-
-      {/* ── Financial Dashboard ── */}
-      <div className="grid grid-3 mb-4">
-        <div className="card" style={{ padding: 20 }}>
-          <div className="text-sub" style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase' }}>Total Budget</div>
-          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 8 }}>{inr(totalBudget)}</div>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <h1 className="text-h1" style={{ margin: 0 }}>
+            💸 {t('expenses.title')}
+          </h1>
+          <p className="text-muted" style={{ marginTop: 4, fontSize: 13.5 }}>
+            {t('expenses.recordOrApprove')}
+          </p>
         </div>
-        <div className="card" style={{ padding: 20 }}>
-          <div className="text-sub" style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase' }}>Spent</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--danger)', marginTop: 8 }}>{inr(spent)}</div>
-        </div>
-        <div className="card" style={{ padding: 20 }}>
-          <div className="text-sub" style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase' }}>Remaining</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--success)', marginTop: 8 }}>{inr(remaining)}</div>
-        </div>
+        <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+          {t('expenses.addExpense')}
+        </button>
       </div>
 
-      <div className="grid grid-2">
-        <div className="card">
-          <h2 className="text-h2" style={{ fontSize: 18, marginBottom: 16 }}>Category Breakdown</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {categoryArray.map(c => (
-              <div key={c.name}>
-                <div className="flex-between mb-1">
-                  <span style={{ fontWeight: 600, fontSize: 14 }}>{c.name}</span>
-                  <span style={{ fontWeight: 700, fontSize: 14 }}>{inr(c.amount)}</span>
-                </div>
-                <div style={{ height: 8, background: 'var(--border-light)', borderRadius: 999 }}>
-                  <div style={{ width: `${c.percent}%`, height: '100%', background: 'var(--primary)', borderRadius: 999 }} />
-                </div>
-              </div>
-            ))}
-            {categoryArray.length === 0 && <div className="text-sub text-center py-4">No expenses recorded yet.</div>}
-          </div>
+      {error && <div className="error-banner" style={{ marginTop: 16 }}>{error}</div>}
+
+      {/* Financial Overview Cards */}
+      <div className="grid-3" style={{ marginTop: 20 }}>
+        <div className="card stat-card stat-cash">
+          <div className="stat-label">💸 {t('expenses.totalExpenses')}</div>
+          <div className="stat-val" style={{ color: '#EF4444' }}>{inr(totalSpent)}</div>
+          <div className="stat-sub">{expenses.length} {language === 'mr' ? 'नोंदवलेले व्हाउचर' : 'Recorded vouchers'}</div>
         </div>
 
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: 20, borderBottom: '1px solid var(--border-light)' }}>
-            <h2 className="text-h2" style={{ fontSize: 18, margin: 0 }}>Recent Expenses</h2>
+        <div className="card stat-card stat-primary">
+          <div className="stat-label">⏳ {t('approvals.title')}</div>
+          <div className="stat-val" style={{ color: '#F59E0B' }}>
+            {expenses.filter((e) => e.status === 'Submitted' || e.status === 'pending').length}
           </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {expenses.map((ex, index) => (
-              <div key={ex._id} style={{ padding: 16, borderBottom: index < expenses.length - 1 ? '1px solid var(--border-light)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{ex.vendor || ex.category}</div>
-                  <div className="text-caption">
-                    {ex.category} • <span className={`badge ${statusColor[ex.status] || 'badge-muted'}`} style={{ padding: '2px 6px', fontSize: 10 }}>{ex.status}</span>
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 700, color: 'var(--danger)', fontSize: 16 }}>-{inr(ex.amount)}</div>
-                  {ex.status === 'Submitted' && canApprove && (
-                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                      <button className="btn btn-primary" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => act(ex._id, 'approve')}>Approve</button>
-                      <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => setRejectTarget(ex._id)}>Reject</button>
-                    </div>
-                  )}
-                  {ex.status === 'Approved' && (
-                    <button className="btn btn-success" style={{ padding: '4px 8px', fontSize: 11, marginTop: 8, background: 'var(--success)', color: '#fff', border: 'none', borderRadius: 8 }} onClick={() => act(ex._id, 'pay')}>Mark Paid</button>
-                  )}
-                </div>
-              </div>
-            ))}
-            {expenses.length === 0 && (
-              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>No recent expenses</div>
-            )}
+          <div className="stat-sub">{language === 'mr' ? 'पडताळणी बाकी' : 'Awaiting verification'}</div>
+        </div>
+
+        <div className="card stat-card stat-upi">
+          <div className="stat-label">✅ {t('common.approved')}</div>
+          <div className="stat-val" style={{ color: '#10B981' }}>
+            {expenses.filter((e) => e.status === 'Approved' || e.status === 'Paid').length}
           </div>
+          <div className="stat-sub">{language === 'mr' ? 'मंजूर केलेले' : 'Cleared payments'}</div>
         </div>
       </div>
 
+      {/* Expenses Table */}
+      <div className="card" style={{ marginTop: 24, padding: 0, overflow: 'hidden' }}>
+        {loading ? (
+          <div style={{ padding: 40, textAlign: 'center' }}>
+            <div className="spinner"></div>
+            <p className="text-muted" style={{ marginTop: 10 }}>{t('common.loading')}</p>
+          </div>
+        ) : expenses.length === 0 ? (
+          <div style={{ padding: 60, textAlign: 'center' }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>💸</div>
+            <h3 className="text-h3">{t('expenses.noExpensesYet')}</h3>
+            <p className="text-muted">{t('expenses.noExpensesSub')}</p>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>{t('expenses.date')}</th>
+                  <th>{t('expenses.expenseTitle')}</th>
+                  <th>{t('expenses.category')}</th>
+                  <th>{t('expenses.payeeVendor')}</th>
+                  <th>{t('common.status')}</th>
+                  <th style={{ textAlign: 'right' }}>{t('expenses.expenseAmount')}</th>
+                  <th style={{ textAlign: 'center' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expenses.map((ex) => {
+                  const d = ex.date || ex.createdAt ? new Date(ex.date || ex.createdAt) : new Date();
+                  const dateStr = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+                  const isPending = ex.status === 'Submitted' || ex.status === 'pending';
+                  const isApproved = ex.status === 'Approved' || ex.status === 'Paid';
+                  const isRejected = ex.status === 'Rejected';
+
+                  return (
+                    <tr key={ex._id}>
+                      <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>📅 {dateStr}</td>
+                      <td>
+                        <strong style={{ color: 'var(--text-main)', fontSize: 15 }}>
+                          {ex.title || ex.category}
+                        </strong>
+                        {ex.description && (
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                            "{ex.description}"
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <span className="badge badge-light">
+                          {t(`expenses.categories.${ex.category}`) || ex.category}
+                        </span>
+                      </td>
+                      <td>{ex.vendor || '-'}</td>
+                      <td>
+                        <span className={`badge ${isPending ? 'badge-warning' : isApproved ? 'badge-success' : 'badge-danger'}`}>
+                          {isPending ? '⏳ ' + t('expenses.pendingApproval') : isApproved ? '✓ ' + t('expenses.approved') : '✕ ' + t('expenses.rejected')}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 800, color: '#EF4444', fontSize: 16 }}>
+                        -{inr(ex.amount)}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {isPending && canApprove ? (
+                          <div style={{ display: 'inline-flex', gap: 6 }}>
+                            <button className="btn btn-sm btn-primary" style={{ background: '#10B981', borderColor: '#10B981' }} onClick={() => act(ex._id, 'approve')}>
+                              ✓ Approve
+                            </button>
+                            <button className="btn btn-sm btn-outline btn-danger-outline" onClick={() => setRejectTarget(ex._id)}>
+                              ✕ Reject
+                            </button>
+                          </div>
+                        ) : isApproved && canApprove && ex.status !== 'Paid' ? (
+                          <button className="btn btn-sm btn-outline" onClick={() => act(ex._id, 'mark-paid')}>
+                            💵 Mark Paid
+                          </button>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Add Expense Modal */}
       {showForm && (
-        <div className="sheet-backdrop" onClick={() => setShowForm(false)}>
-          <div className="bottom-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="sheet-handle"></div>
-            <h2 className="text-h2" style={{ marginBottom: 24 }}>New Expense</h2>
-            <form onSubmit={handleCreate}>
-              <div className="field">
-                <label>Category</label>
-                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required>
-                  <option value="">Select Category</option>
-                  <option value="Decoration">Decoration</option>
-                  <option value="Food">Food & Prasad</option>
-                  <option value="Sound">Sound System</option>
-                  <option value="Venue">Venue / Mandap</option>
-                  <option value="Miscellaneous">Miscellaneous</option>
-                </select>
+        <div className="modal-backdrop" onClick={() => setShowForm(false)}>
+          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="text-h2" style={{ margin: 0 }}>
+                💸 {t('expenses.newExpense')}
+              </h2>
+              <button className="btn-close" onClick={() => setShowForm(false)}>✕</button>
+            </div>
+
+            <form onSubmit={handleCreate} className="modal-body">
+              <div className="form-group">
+                <label className="form-label">{t('expenses.expenseTitle')}</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder={t('expenses.titlePlaceholder')}
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  required
+                />
               </div>
-              <div className="field">
-                <label>Vendor / Payee Name</label>
-                <input value={form.vendor} onChange={(e) => setForm({ ...form, vendor: e.target.value })} required />
+
+              <div className="grid-2">
+                <div className="form-group">
+                  <label className="form-label">{t('expenses.category')}</label>
+                  <select
+                    className="form-control"
+                    value={form.category}
+                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                    required
+                  >
+                    {EXPENSE_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {t(`expenses.categories.${cat}`) || cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">{t('expenses.expenseAmount')}</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    placeholder="₹ 1500"
+                    value={form.amount}
+                    onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                    required
+                  />
+                </div>
               </div>
-              <div className="field">
-                <label>Amount (₹)</label>
-                <input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
+
+              <div className="grid-2">
+                <div className="form-group">
+                  <label className="form-label">{t('expenses.payeeVendor')}</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder={t('expenses.vendorPlaceholder')}
+                    value={form.vendor}
+                    onChange={(e) => setForm({ ...form, vendor: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">{t('expenses.date')}</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={form.date}
+                    onChange={(e) => setForm({ ...form, date: e.target.value })}
+                  />
+                </div>
               </div>
-              <div className="field">
-                <label>Description / Notes</label>
-                <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+
+              <div className="form-group">
+                <label className="form-label">{t('expenses.notesDescription')}</label>
+                <textarea
+                  className="form-control"
+                  rows={2}
+                  placeholder={t('expenses.notesPlaceholder')}
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                />
               </div>
-              <button className="btn btn-primary w-full" type="submit" style={{ padding: 16, fontSize: 16, marginTop: 12 }}>Submit Expense</button>
+
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={() => setShowForm(false)}>
+                  {t('common.cancel')}
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  {canApprove ? t('expenses.saveExpense') : t('expenses.submitForApproval')}
+                </button>
+              </div>
             </form>
           </div>
         </div>
       )}
 
+      {/* Reject Reason Modal */}
       {rejectTarget && (
-        <div className="sheet-backdrop" onClick={() => setRejectTarget(null)}>
-          <div className="bottom-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="sheet-handle"></div>
-            <h2 className="text-h2" style={{ marginBottom: 16 }}>Reject Expense</h2>
-            <div className="field">
-              <label>Reason for rejection</label>
-              <textarea rows={3} value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} required />
+        <div className="modal-backdrop" onClick={() => setRejectTarget(null)}>
+          <div className="modal-content modal-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="text-h3" style={{ margin: 0, color: '#EF4444' }}>
+                ✕ {language === 'mr' ? 'खर्च नाकारा' : 'Reject Expense'}
+              </h3>
+              <button className="btn-close" onClick={() => setRejectTarget(null)}>✕</button>
             </div>
-            <button className="btn btn-danger w-full" onClick={() => act(rejectTarget, 'reject', { reason: rejectReason })} disabled={!rejectReason} style={{ padding: 16, fontSize: 16 }}>Confirm Rejection</button>
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">{language === 'mr' ? 'नाकारण्याचे कारण' : 'Reason for Rejection'}</label>
+                <textarea
+                  className="form-control"
+                  rows={3}
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder={t('approvals.remarksPlaceholder')}
+                  required
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={() => setRejectTarget(null)}>
+                {t('common.cancel')}
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={() => act(rejectTarget, 'reject', { reason: rejectReason })}
+                disabled={!rejectReason}
+              >
+                {language === 'mr' ? 'नकार द्या' : 'Reject Expense'}
+              </button>
+            </div>
           </div>
         </div>
       )}
     </Layout>
   );
-};
-
-export default Expenses;
+}

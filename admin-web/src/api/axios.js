@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api')
+  baseURL: import.meta.env.VITE_API_URL || 'https://mandalpro.quantromind.tech/api',
+  timeout: 15000
 });
 
 api.interceptors.request.use((config) => {
@@ -16,7 +17,9 @@ api.interceptors.response.use(
     if (err.response?.status === 401) {
       localStorage.removeItem('mandalpro_token');
       localStorage.removeItem('mandalpro_user');
-      window.location.href = '/login';
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(err);
   }

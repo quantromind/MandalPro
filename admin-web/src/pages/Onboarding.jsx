@@ -283,11 +283,55 @@ export default function Onboarding() {
     setLoading(true); setError('');
     try {
       const docs = Object.values(verifyDocs).filter(Boolean);
-      if (docs.length > 0) await api.post('/onboarding/verification-docs', { docs });
-      await api.patch('/onboarding/checklist/planSelected');
-      next();
-    } catch (e) { setError(e.response?.data?.message || 'Failed'); }
-    finally { setLoading(false); }
+      if (docs.length > 0) {
+        await api.post('/onboarding/verification-docs', { docs }).catch(() => {});
+      }
+      const { data: updatedMandal } = await api.patch('/onboarding/checklist/planSelected').catch(() => ({ data: null }));
+      if (updatedMandal) {
+        setActiveMandal(updatedMandal);
+      } else if (activeMandal) {
+        setActiveMandal({
+          ...activeMandal,
+          checklist: { ...activeMandal.checklist, planSelected: true }
+        });
+      }
+      navigate('/');
+    } catch (e) {
+      if (activeMandal) {
+        setActiveMandal({
+          ...activeMandal,
+          checklist: { ...activeMandal.checklist, planSelected: true }
+        });
+      }
+      navigate('/');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkipToDashboard = async () => {
+    setLoading(true);
+    try {
+      const { data: updatedMandal } = await api.patch('/onboarding/checklist/planSelected').catch(() => ({ data: null }));
+      if (updatedMandal) {
+        setActiveMandal(updatedMandal);
+      } else if (activeMandal) {
+        setActiveMandal({
+          ...activeMandal,
+          checklist: { ...activeMandal.checklist, planSelected: true }
+        });
+      }
+    } catch {
+      if (activeMandal) {
+        setActiveMandal({
+          ...activeMandal,
+          checklist: { ...activeMandal.checklist, planSelected: true }
+        });
+      }
+    } finally {
+      setLoading(false);
+      navigate('/');
+    }
   };
 
   /* ── Pricing calc ── */
@@ -418,8 +462,13 @@ export default function Onboarding() {
 
       {/* ── Left Sidebar (Desktop) ── */}
       <aside style={css.sidebar}>
-        <div style={css.sidebarBrand}>
-          <span>🪔</span> Apla Mandal
+        <div style={{ ...css.sidebarBrand, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <img
+            src="/logo.png"
+            alt="Apla Mandal Logo"
+            style={{ width: 38, height: 38, borderRadius: 10, objectFit: 'contain', background: '#FFFFFF', padding: 2 }}
+          />
+          <span>Apla Mandal</span>
         </div>
 
         {STEPS.map((s, i) => {
@@ -910,11 +959,15 @@ export default function Onboarding() {
                 onClick={handleVerificationSubmit}
                 disabled={loading}
               >
-                {loading ? 'Submitting…' : 'Submit for Review →'}
+                {loading ? 'Submitting…' : 'Submit & Go to Dashboard →'}
               </button>
               <div style={{ textAlign: 'center' }}>
-                <button style={{ background: 'none', border: 'none', color: '#9CA3AF', fontSize: 14, cursor: 'pointer' }} onClick={() => { setStep(6); }}>
-                  Skip for now →
+                <button
+                  style={{ background: 'none', border: 'none', color: '#9CA3AF', fontSize: 14, cursor: 'pointer' }}
+                  onClick={handleSkipToDashboard}
+                  disabled={loading}
+                >
+                  Skip for now & Go to Dashboard →
                 </button>
               </div>
             </div>

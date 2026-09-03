@@ -1,243 +1,268 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../api/axios';
+import client from '../api/client';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
-const CHECKLIST_ITEMS = [
-  { key: 'profileComplete',    label: 'Complete Mandal Profile',    link: '/onboarding',  icon: '🏛' },
-  { key: 'eventTypesSelected', label: 'Select Event Types',         link: '/onboarding',  icon: '🎪' },
-  { key: 'planSelected',       label: 'Choose a Plan',              link: '/onboarding',  icon: '📋' },
-  { key: 'inviteTeam',         label: 'Invite Team Members',        link: '/members',     icon: '👥' },
-  { key: 'firstDonation',      label: 'Add First Donation',         link: '/donations',   icon: '💰' },
-  { key: 'firstEvent',         label: 'Create First Event',         link: '/events',      icon: '🗓' },
-];
-
-const Dashboard = () => {
+export default function Dashboard() {
   const [summary, setSummary] = useState(null);
-  const [checklist, setChecklist] = useState(null);
-  const [onboardDone, setOnboardDone] = useState(true);
+  const [recentDonations, setRecentDonations] = useState([]);
+  const [pendingExpenses, setPendingExpenses] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  const [showSwitcher, setShowSwitcher] = useState(false);
-  
-  const { user, activeMandal } = useAuth();
+
+  const { user, mandal } = useAuth();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
 
   const isSuperAdmin = user?.role === 'superadmin';
+  const isPresident = user?.role === 'president' || user?.role === 'superadmin' || user?.role === 'treasurer';
 
-  useEffect(() => {
-    if (isSuperAdmin) return;
-    api.get('/dashboard/summary')
-      .then((res) => setSummary(res.data))
-      .catch((err) => setError(err.response?.data?.message || 'Failed to load dashboard'));
-  }, [isSuperAdmin]);
-
-  useEffect(() => {
-    if (isSuperAdmin) return;
-    api.get('/mandal')
-      .then((res) => {
-        const m = res.data;
-        setChecklist(m.checklist || {});
-        setOnboardDone(m.onboardingComplete || false);
-      })
-      .catch(() => {});
-  }, [isSuperAdmin]);
-
-  const markChecklist = async (key) => {
-    try {
-      const res = await api.patch(`/onboarding/checklist/${key}`);
-      setChecklist(res.data.checklist);
-      setOnboardDone(res.data.onboardingComplete);
-    } catch (e) { /* silent */ }
-  };
-
-  const completedCount = checklist ? CHECKLIST_ITEMS.filter(i => checklist[i.key]).length : 0;
   const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
-  const greeting = () => {
-    const hr = new Date().getHours();
-    if (hr < 12) return 'Good Morning';
-    if (hr < 18) return 'Good Afternoon';
-    return 'Good Evening';
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [sumRes, donRes, expRes] = await Promise.all([
+        client.get('/dashboard/summary').catch(() => ({ data: {} })),
+        client.get('/donations').catch(() => ({ data: [] })),
+        client.get('/expenses').catch(() => ({ data: [] }))
+      ]);
+
+      setSummary(sumRes.data || {});
+      if (Array.isArray(donRes.data)) {
+        setRecentDonations(donRes.data.slice(0, 5));
+      }
+      if (Array.isArray(expRes.data)) {
+        const pending = expRes.data.filter((e) => e.status === 'Submitted' || e.status === 'pending');
+        setPendingExpenses(pending);
+      }
+    } catch (err) {
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const totalInflow = summary?.totalInflow || recentDonations.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+  const totalOutflow = summary?.totalOutflow || 0;
+  const netBalance = totalInflow - totalOutflow;
 
   return (
     <Layout>
-      {/* Mobile Top Header (Since desktop has its own topbar) */}
-      <div className="flex-between mb-3" style={{ padding: '0 8px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-main)', fontWeight: 700, fontSize: 18 }} onClick={() => setShowSwitcher(true)}>
-            {activeMandal?.name || 'MandalFlow'} <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>▼</span>
+      {/* Top Welcome Banner */}
+      <div className="festival-banner">
+        <div className="festival-banner-content">
+          <div className="badge badge-festive">
+            {isPresident ? t('dashboard.presidentWorkspace') : t('dashboard.committeeMember')}
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Ganesh Utsav 2026</div>
+          <h1 className="banner-greeting">
+            {t('dashboard.greeting', { name: user?.name?.split(' ')[0] || 'Member' })}
+          </h1>
+          <p className="banner-sub">
+            🚩 <strong>{mandal?.name || 'श्री गणेश मित्र मंडळ'}</strong> • {t('dashboard.liveMandalStats')}
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <div style={{ fontSize: 20 }}>🔔</div>
-          <div className="avatar" style={{ width: 32, height: 32, fontSize: 13 }}>{user?.name?.[0]?.toUpperCase()}</div>
+        <div className="festival-banner-actions">
+          <button className="btn btn-primary" onClick={() => navigate('/collections')} style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
+            ✨ {t('collection.recordNewDonation')}
+          </button>
         </div>
       </div>
 
-      <div style={{ padding: '0 8px', marginBottom: 24 }}>
-        <h1 className="text-h1" style={{ fontSize: 24 }}>{greeting()}, {user?.name?.split(' ')[0]} 👋</h1>
+      {error && <div className="error-banner" style={{ marginTop: 16 }}>{error}</div>}
+
+      {/* ── Key Financial Overview Grid ── */}
+      <div className="grid-4" style={{ marginTop: 24 }}>
+        <div className="card stat-card stat-cash" onClick={() => navigate('/collections')} style={{ cursor: 'pointer' }}>
+          <div className="stat-label">💰 {t('common.inflow')}</div>
+          <div className="stat-val" style={{ color: '#10B981' }}>{inr(totalInflow)}</div>
+          <div className="stat-sub">{language === 'mr' ? 'एकूण जमा नोंदी' : 'Total collections recorded'}</div>
+        </div>
+
+        <div className="card stat-card" style={{ borderTop: '3px solid #EF4444' }} onClick={() => navigate('/expenses')} style2={{ cursor: 'pointer' }}>
+          <div className="stat-label">💸 {t('common.outflow')}</div>
+          <div className="stat-val" style={{ color: '#EF4444' }}>{inr(totalOutflow)}</div>
+          <div className="stat-sub">{language === 'mr' ? 'मंजूर खर्च' : 'Approved expenditures'}</div>
+        </div>
+
+        <div className="card stat-card stat-upi" onClick={() => navigate('/reports')} style={{ cursor: 'pointer' }}>
+          <div className="stat-label">⚖️ {language === 'mr' ? 'शिल्लक' : 'Net Balance'}</div>
+          <div className="stat-val" style={{ color: '#6366F1' }}>{inr(netBalance)}</div>
+          <div className="stat-sub">{language === 'mr' ? 'उपलब्ध निधी' : 'Available funds'}</div>
+        </div>
+
+        <div className="card stat-card" onClick={() => navigate('/approvals')} style={{ cursor: 'pointer', borderTop: '3px solid #F59E0B' }}>
+          <div className="stat-label">⏳ {t('dashboard.pendingApprovals')}</div>
+          <div className="stat-val" style={{ color: '#F59E0B' }}>{pendingExpenses.length}</div>
+          <div className="stat-sub">{pendingExpenses.length > 0 ? (language === 'mr' ? 'कृती आवश्यक →' : 'Action required →') : (language === 'mr' ? 'सर्व ठीक ✓' : 'All clear ✓')}</div>
+        </div>
       </div>
 
-      {error && <div className="error-text">{error}</div>}
+      {/* ── Quick Actions Grid ── */}
+      <div style={{ marginTop: 28 }}>
+        <div className="section-header">
+          <h3 className="text-h3" style={{ margin: 0 }}>⚡ {t('dashboard.quickActions')}</h3>
+          <span className="text-muted" style={{ fontSize: 13 }}>{t('dashboard.frequentlyUsedTools')}</span>
+        </div>
 
-      {/* ── Getting Started Checklist ── */}
-      {checklist && !onboardDone && !isSuperAdmin && (
-        <div className="card" style={{ padding: 24, border: '1px solid var(--primary)', background: 'rgba(255,107,0,0.02)' }}>
-          <div className="flex-between" style={{ marginBottom: 16 }}>
-            <div>
-              <h3 className="text-h3" style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 8 }}>🚀 Getting Started</h3>
-              <p className="text-sub">{completedCount} of {CHECKLIST_ITEMS.length} steps complete</p>
-            </div>
-            <div style={{ width: 100, height: 8, background: 'rgba(255,107,0,0.1)', borderRadius: 999 }}>
-              <div style={{ width: `${(completedCount / CHECKLIST_ITEMS.length) * 100}%`, height: '100%', background: 'var(--primary)', borderRadius: 999 }} />
+        <div className="quick-tools-grid" style={{ marginTop: 14 }}>
+          <div className="card tool-card" onClick={() => navigate('/collections')}>
+            <div className="tool-icon" style={{ background: 'rgba(249, 115, 22, 0.1)', color: '#F97316' }}>🚩</div>
+            <div className="tool-body">
+              <div className="tool-title">{t('dashboard.newCollection')}</div>
+              <div className="tool-desc">{t('dashboard.newCollectionSub')}</div>
             </div>
           </div>
-          
-          <div style={{ display: 'grid', gap: 12 }}>
-            {CHECKLIST_ITEMS.map(item => {
-              const isDone = checklist[item.key];
-              return (
-                <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: isDone ? 0.6 : 1, padding: '8px 0' }}>
-                  <div style={{ fontSize: 20, filter: isDone ? 'grayscale(1)' : 'none' }}>{item.icon}</div>
-                  <div style={{ flex: 1, fontSize: 14, fontWeight: 500, textDecoration: isDone ? 'line-through' : 'none' }}>{item.label}</div>
-                  {isDone ? (
-                    <span style={{ fontSize: 13, color: 'var(--success)', fontWeight: 600 }}>✓ Done</span>
-                  ) : (
-                    <Link to={item.link} className="btn btn-primary btn-sm" onClick={() => markChecklist(item.key)}>Do it →</Link>
-                  )}
-                </div>
-              );
-            })}
+
+          <div className="card tool-card" onClick={() => navigate('/collections?tab=receipts')}>
+            <div className="tool-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10B981' }}>🧾</div>
+            <div className="tool-body">
+              <div className="tool-title">{t('dashboard.viewShareReceipts')}</div>
+              <div className="tool-desc">{t('dashboard.viewShareReceiptsSub')}</div>
+            </div>
+          </div>
+
+          <div className="card tool-card" onClick={() => navigate('/chat')}>
+            <div className="tool-icon" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366F1' }}>💬</div>
+            <div className="tool-body">
+              <div className="tool-title">{t('chat.title')}</div>
+              <div className="tool-desc">{t('chat.groupSubtitle')}</div>
+            </div>
+          </div>
+
+          <div className="card tool-card" onClick={() => navigate('/approvals')}>
+            <div className="tool-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B' }}>⏳</div>
+            <div className="tool-body">
+              <div className="tool-title">{t('dashboard.expensesApprovals')}</div>
+              <div className="tool-desc">{t('dashboard.expensesApprovalsSub')}</div>
+            </div>
+          </div>
+
+          <div className="card tool-card" onClick={() => navigate('/profile')}>
+            <div className="tool-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8B5CF6' }}>🪪</div>
+            <div className="tool-body">
+              <div className="tool-title">{t('idCard.title')}</div>
+              <div className="tool-desc">{t('idCard.subtitle')}</div>
+            </div>
+          </div>
+
+          <div className="card tool-card" onClick={() => navigate('/subscription')}>
+            <div className="tool-icon" style={{ background: 'rgba(236, 72, 153, 0.1)', color: '#EC4899' }}>💎</div>
+            <div className="tool-body">
+              <div className="tool-title">{t('subscription.title')}</div>
+              <div className="tool-desc">{t('subscription.managePlan')}</div>
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {isSuperAdmin ? (
-        <div className="card" style={{ padding: 40, textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>👑</div>
-          <h3 className="text-h2">Welcome, Super Admin</h3>
-          <p className="text-sub">You are logged in as the system administrator.</p>
-        </div>
-      ) : !summary ? (
-        <div className="grid grid-2 mt-4">
-          <div className="card skeleton" style={{ height: 120 }}></div>
-          <div className="card skeleton" style={{ height: 120 }}></div>
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-2">
-            <div className="card" style={{ padding: 20 }}>
-              <div className="text-sub" style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>TOTAL DONATIONS</div>
-              <div className="text-h1" style={{ fontSize: 32, margin: '8px 0', color: 'var(--text-main)' }}>{inr(summary.totalCollections)}</div>
-              <div style={{ fontSize: 13, color: 'var(--success)', fontWeight: 600 }}>↑ 12% this month</div>
-            </div>
-            
-            <div className="card" style={{ padding: 20 }}>
-              <div className="text-sub" style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>TOTAL EXPENSES</div>
-              <div className="text-h1" style={{ fontSize: 32, margin: '8px 0', color: 'var(--text-main)' }}>{inr(summary.totalExpenses)}</div>
-              <div style={{ fontSize: 13, color: 'var(--success)', fontWeight: 600 }}>↓ 8% this month</div>
-            </div>
-            
-            <div className="card" style={{ padding: 20 }}>
-              <div className="text-sub" style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>BALANCE</div>
-              <div className="text-h1" style={{ fontSize: 32, margin: '8px 0', color: 'var(--primary)' }}>{inr(summary.balance)}</div>
-            </div>
-            
-            <div className="card" style={{ padding: 20 }}>
-              <div className="text-sub" style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>TEAM MEMBERS</div>
-              <div className="text-h1" style={{ fontSize: 32, margin: '8px 0', color: 'var(--text-main)' }}>42</div>
-            </div>
+      {/* ── Recent Vargani & Activities ── */}
+      <div className="grid-2" style={{ marginTop: 28 }}>
+        {/* Recent Collections */}
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 className="text-h3" style={{ margin: 0 }}>🚩 {language === 'mr' ? 'अलीकडील वर्गणी' : 'Recent Collections'}</h3>
+            <Link to="/collections" className="text-primary" style={{ fontSize: 13, fontWeight: 700 }}>
+              {language === 'mr' ? 'सर्व पहा →' : 'View All →'}
+            </Link>
           </div>
 
-          <div className="mt-4">
-            <h2 className="text-h2" style={{ fontSize: 20, marginBottom: 16 }}>Upcoming Events</h2>
-            <div className="card" style={{ padding: 20, display: 'flex', gap: 16, alignItems: 'center' }}>
-              <div style={{ background: 'rgba(255,107,0,0.1)', color: 'var(--primary)', padding: '12px 16px', borderRadius: 12, textAlign: 'center' }}>
-                <div style={{ fontSize: 24, fontWeight: 800 }}>27</div>
-                <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}>Aug</div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <h3 className="text-h3" style={{ margin: '0 0 4px' }}>Ganesh Utsav 2026</h3>
-                <div className="text-sub" style={{ fontSize: 13, marginBottom: 8 }}>27 Aug – 5 Sep • 10 Days</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ flex: 1, height: 6, background: 'var(--border-light)', borderRadius: 999 }}>
-                    <div style={{ width: '82%', height: '100%', background: 'var(--success)', borderRadius: 999 }} />
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--success)' }}>82% prep</span>
-                </div>
-              </div>
+          {recentDonations.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 28 }} className="text-muted">
+              <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.5 }}>🧾</div>
+              {t('collections.noCollectionsYet')}
             </div>
-          </div>
-
-          <div className="mt-4 mb-4">
-            <h2 className="text-h2" style={{ fontSize: 20, marginBottom: 16 }}>Recent Donations</h2>
-            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              {summary.recentDonations.map((d, index) => (
-                <div key={d._id} style={{ padding: 16, borderBottom: index < summary.recentDonations.length - 1 ? '1px solid var(--border-light)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div className="avatar" style={{ background: 'var(--bg)', color: 'var(--text-main)' }}>{d.donorName[0]}</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {recentDonations.map((d) => (
+                <div key={d._id} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '10px 14px',
+                  background: 'var(--bg-subtle)',
+                  borderRadius: 10,
+                  transition: 'all 0.15s',
+                  cursor: 'pointer'
+                }}
+                  onClick={() => navigate('/collections')}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{
+                      width: 34, height: 34, borderRadius: 8,
+                      background: 'rgba(249, 115, 22, 0.08)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 14, fontWeight: 800, color: 'var(--primary)', flexShrink: 0
+                    }}>
+                      {(d.contributor || d.donorName || '?')[0]?.toUpperCase()}
+                    </div>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 15 }}>{d.donorName}</div>
-                      <div className="text-caption">Today, 10:30 AM • {d.paymentMode?.toUpperCase()}</div>
+                      <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: 13.5 }}>
+                        {d.contributor || d.donorName}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                        {d.title || d.purpose || 'वर्गणी'} • {d.paymentMode || 'Cash'}
+                      </div>
                     </div>
                   </div>
-                  <div style={{ fontWeight: 700, color: 'var(--success)', fontSize: 16 }}>+{inr(d.amount)}</div>
-                </div>
-              ))}
-              {summary.recentDonations.length === 0 && (
-                <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>No recent donations</div>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* ── Multi-Mandal Switcher ── */}
-      {showSwitcher && (
-        <div className="sheet-backdrop" onClick={() => setShowSwitcher(false)}>
-          <div className="bottom-sheet" onClick={e => e.stopPropagation()}>
-            <div className="sheet-handle"></div>
-            <h2 className="text-h2 mb-3">Your Mandals</h2>
-            <p className="text-sub mb-3">One account. Multiple Mandals.</p>
-            
-            <div className="card" style={{ border: '2px solid var(--primary)', padding: 16, cursor: 'pointer' }} onClick={() => setShowSwitcher(false)}>
-              <div className="flex-between">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ fontSize: 24 }}>🟠</div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 15 }}>{activeMandal?.name || 'Shri Ganesh Mandal'}</div>
-                    <div className="text-caption">Pro Plan • 3 Events</div>
+                  <div style={{ fontWeight: 800, color: '#10B981', fontSize: 14 }}>
+                    +{inr(d.amount)}
                   </div>
                 </div>
-                <div style={{ color: 'var(--primary)', fontWeight: 700 }}>✓ Active</div>
-              </div>
+              ))}
             </div>
-
-            <div className="card" style={{ padding: 16, cursor: 'pointer', background: 'var(--bg)' }}>
-              <div className="flex-start">
-                <div style={{ fontSize: 24 }}>🔵</div>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 15 }}>Shivaji Nagar Mandal</div>
-                  <div className="text-caption">Free Plan • 1 Event</div>
-                </div>
-              </div>
-            </div>
-
-            <button className="btn btn-outline w-full mb-3" style={{ borderStyle: 'dashed' }}>
-              + Add New Mandal
-            </button>
-            <div style={{ textAlign: 'center' }}>
-              <button className="btn btn-ghost" onClick={() => setShowSwitcher(false)}>Manage Mandals</button>
-            </div>
-          </div>
+          )}
         </div>
-      )}
+
+        {/* Pending Approvals Widget */}
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 className="text-h3" style={{ margin: 0 }}>⏳ {t('approvals.title')}</h3>
+            <Link to="/approvals" className="text-primary" style={{ fontSize: 13, fontWeight: 700 }}>
+              {language === 'mr' ? 'तपासा →' : 'Review →'}
+            </Link>
+          </div>
+
+          {pendingExpenses.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 28 }}>
+              <div style={{ fontSize: 36, marginBottom: 8 }}>🎉</div>
+              <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: 14 }}>{t('approvals.allCaughtUp')}</div>
+              <p className="text-muted" style={{ fontSize: 12, margin: '4px 0 0' }}>{t('approvals.noPendingSub')}</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {pendingExpenses.slice(0, 4).map((e) => (
+                <div key={e._id} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '10px 14px',
+                  background: 'rgba(245, 158, 11, 0.06)',
+                  borderRadius: 10,
+                  borderLeft: '3px solid #F59E0B',
+                  cursor: 'pointer'
+                }}
+                  onClick={() => navigate('/approvals')}
+                >
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#92400E', fontSize: 13.5 }}>{e.title || e.category}</div>
+                    <div style={{ fontSize: 11.5, color: '#B45309' }}>{e.vendor || 'Vendor'} • ⏳ Pending</div>
+                  </div>
+                  <div style={{ fontWeight: 800, color: '#EF4444', fontSize: 14 }}>
+                    {inr(e.amount)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </Layout>
   );
-};
-
-export default Dashboard;
+}
