@@ -24,8 +24,9 @@
     "approved": "मंजूर",
     "rejected": "नाकारले",
     "status": "स्थिती",
-    "inflow": "आवक",
-    "outflow": "जावक",
+    "inflow": "आवक - जमा",
+    "outflow": "जावक - खर्च",
+    "netBalance": "शिल्लक - एकूण बाकी",
     "total": "एकूण",
     "error": "त्रुटी",
     "success": "यशस्वी"

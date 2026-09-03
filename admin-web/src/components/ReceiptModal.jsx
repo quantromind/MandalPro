@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import html2pdf from 'html2pdf.js';
 import { useLanguage } from '../context/LanguageContext';
 import { numberToWordsMr, toMarathiDigits } from '../utils/numberToMarathi';
 
@@ -6,7 +7,8 @@ export default function ReceiptModal({ visible, receipt, mandal, collectorName, 
   if (!visible || !receipt) return null;
 
   const { t, language } = useLanguage();
-  const [copied, setCopied] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [pdfToast, setPdfToast] = useState('');
 
   const mandalName = mandal?.name || receipt.mandal?.name || receipt.mandalName || 'श्री राम मित्र मंडळ';
   const mandalLocation = mandal?.address || mandal?.city || receipt?.mandal?.address || 'सार्वजनिक उत्सव परिसर';
@@ -45,7 +47,17 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
 ॥ गणपती बाप्पा मोरया ॥`;
 
   const handleWhatsApp = () => {
-    let cleanMobile = donorMobile.replace(/[^0-9]/g, '');
+    let cleanMobile = (donorMobile || '').replace(/[^0-9]/g, '');
+    if (!cleanMobile) {
+      const entered = window.prompt(
+        language === 'mr'
+          ? 'WhatsApp वर पावती पाठवण्यासाठी कृपया मोबाइल नंबर टाका:'
+          : 'Please enter mobile number to send receipt on WhatsApp:'
+      );
+      if (entered) {
+        cleanMobile = entered.replace(/[^0-9]/g, '');
+      }
+    }
     let phoneParam = '';
     if (cleanMobile) {
       if (!cleanMobile.startsWith('91') || cleanMobile.length === 10) {
@@ -56,6 +68,88 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
     const encoded = encodeURIComponent(messageText);
     const url = phoneParam ? `https://wa.me/${phoneParam}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
     window.open(url, '_blank');
+  };
+
+  const handleSendPdfWhatsApp = async () => {
+    let cleanMobile = (donorMobile || '').replace(/[^0-9]/g, '');
+    if (!cleanMobile) {
+      const entered = window.prompt(
+        language === 'mr'
+          ? 'WhatsApp वर पावती पाठवण्यासाठी कृपया मोबाइल नंबर टाका:'
+          : 'Please enter mobile number to send receipt on WhatsApp:'
+      );
+      if (entered) {
+        cleanMobile = entered.replace(/[^0-9]/g, '');
+      }
+    }
+
+    let phoneParam = '';
+    if (cleanMobile) {
+      if (!cleanMobile.startsWith('91') || cleanMobile.length === 10) {
+        cleanMobile = '91' + cleanMobile;
+      }
+      phoneParam = cleanMobile;
+    }
+
+    const card = document.getElementById('printable-receipt-card');
+    if (!card) return;
+
+    try {
+      setGeneratingPdf(true);
+      setPdfToast(language === 'mr' ? 'पावतीची अधिकृत PDF तयार होत आहे...' : 'Generating official receipt PDF...');
+
+      const opt = {
+        margin: [6, 6, 6, 6],
+        filename: `Mandal_Receipt_${receiptNo}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      // 1. If Web Share API supports file sharing (Mobile Chrome/Safari/Edge)
+      if (navigator.canShare && typeof File !== 'undefined') {
+        try {
+          const pdfBlob = await html2pdf().from(card).set(opt).output('blob');
+          const pdfFile = new File([pdfBlob], `Receipt_${receiptNo}.pdf`, { type: 'application/pdf' });
+
+          if (navigator.canShare({ files: [pdfFile] })) {
+            await navigator.share({
+              files: [pdfFile],
+              title: `पावती #${receiptNo} - ${mandalName}`,
+              text: messageText
+            });
+            setPdfToast(language === 'mr' ? 'पावती PDF WhatsApp वर शेअर झाली!' : 'Receipt PDF shared to WhatsApp!');
+            setTimeout(() => setPdfToast(''), 4000);
+            setGeneratingPdf(false);
+            return;
+          }
+        } catch (shareErr) {
+          console.log('Native file share failed or canceled, falling back:', shareErr);
+        }
+      }
+
+      // 2. Desktop / fallback: Download the PDF and open WhatsApp Web with prefilled message
+      await html2pdf().from(card).set(opt).save();
+
+      const encoded = encodeURIComponent(messageText);
+      const waUrl = phoneParam ? `https://wa.me/${phoneParam}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
+      window.open(waUrl, '_blank');
+
+      setPdfToast(
+        language === 'mr'
+          ? '✅ PDF डाऊनलोड झाली आहे आणि WhatsApp उघडले आहे! WhatsApp चॅटमध्ये 📎 Attach Document वरून ही PDF पाठवा.'
+          : '✅ PDF downloaded and WhatsApp opened! Attach the PDF in WhatsApp chat to send.'
+      );
+      setTimeout(() => setPdfToast(''), 7000);
+    } catch (err) {
+      console.error('Error generating/sharing PDF:', err);
+      // Fallback to text WhatsApp
+      const encoded = encodeURIComponent(messageText);
+      const waUrl = phoneParam ? `https://wa.me/${phoneParam}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
+      window.open(waUrl, '_blank');
+    } finally {
+      setGeneratingPdf(false);
+    }
   };
 
   const handlePrint = () => {
@@ -228,20 +322,37 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, fontWeight: 800, color: '#0F172A' }}>
             <span>🧾</span> {language === 'mr' ? 'अधिकृत देणगी पावती' : 'Donation Receipt'}
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              fontSize: 18,
-              cursor: 'pointer',
-              color: '#64748B',
-              padding: '4px 8px',
-              borderRadius: 6
-            }}
-          >
-            ✕
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              onClick={handlePrint}
+              title={language === 'mr' ? 'प्रिंट करा' : 'Print Receipt'}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                fontSize: 16,
+                cursor: 'pointer',
+                color: '#64748B',
+                padding: '4px 8px',
+                borderRadius: 6
+              }}
+            >
+              🖨️
+            </button>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                fontSize: 18,
+                cursor: 'pointer',
+                color: '#64748B',
+                padding: '4px 8px',
+                borderRadius: 6
+              }}
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Receipt Container */}
@@ -480,6 +591,11 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
                 </span>
                 <span style={{ fontWeight: 700 }}>यांजकडून</span>
               </div>
+              {donorMobile && (
+                <div style={{ fontSize: 13, color: '#64748B', marginTop: 4, fontWeight: 700 }}>
+                  📱 मो. क्र.: <span style={{ color: '#0F172A' }}>+91 {donorMobile}</span>
+                </div>
+              )}
             </div>
 
             {/* 6. Contribution Purpose */}
@@ -556,15 +672,35 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
           </div>
         </div>
 
+        {/* PDF Status Notice (if any) */}
+        {pdfToast && (
+          <div
+            className="no-print"
+            style={{
+              padding: '10px 18px',
+              background: '#EFF6FF',
+              borderTop: '1px solid #BFDBFE',
+              color: '#1D4ED8',
+              fontSize: 13,
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}
+          >
+            <span>ℹ️</span> {pdfToast}
+          </div>
+        )}
+
         {/* Action Buttons Footer */}
         <div
-          className="receipt-modal-actions no-print"
+          className="receipt-modal-footer no-print"
           style={{
-            padding: '16px 20px',
+            padding: '14px 20px',
             borderTop: '1px solid #E2E8F0',
-            background: '#FFFFFF',
             display: 'flex',
             gap: 10,
+            background: '#F8FAFC',
             flexWrap: 'wrap'
           }}
         >
@@ -588,21 +724,48 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
               boxShadow: '0 4px 12px rgba(37, 211, 102, 0.25)'
             }}
           >
-            <span>📲</span> {language === 'mr' ? 'WhatsApp वर पाठवा' : 'Send WhatsApp'}
+            <span>📲</span> {language === 'mr' ? 'WhatsApp मेसेज पाठवा' : 'Send WhatsApp'}
           </button>
 
           <button
-            onClick={handlePrint}
+            onClick={handleSendPdfWhatsApp}
+            disabled={generatingPdf}
+            title={language === 'mr' ? 'WhatsApp वर थेट PDF पावती पाठवा' : 'Send receipt PDF on WhatsApp'}
             style={{
               flex: 1,
-              minWidth: 120,
-              background: '#2563EB',
+              minWidth: 150,
+              background: 'linear-gradient(135deg, #1E40AF, #2563EB)',
               color: '#FFF',
               border: 'none',
               borderRadius: 10,
               padding: '11px 16px',
               fontSize: 14,
               fontWeight: 800,
+              cursor: generatingPdf ? 'wait' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+              opacity: generatingPdf ? 0.8 : 1
+            }}
+          >
+            <span>{generatingPdf ? '⏳' : '📄'}</span>{' '}
+            {generatingPdf
+              ? (language === 'mr' ? 'PDF तयार होत आहे...' : 'Generating PDF...')
+              : (language === 'mr' ? 'WhatsApp वर PDF पाठवा' : 'Send PDF on WhatsApp')}
+          </button>
+
+          <button
+            onClick={onClose}
+            style={{
+              background: '#F1F5F9',
+              color: '#1E293B',
+              border: '1.5px solid #CBD5E1',
+              borderRadius: 10,
+              padding: '11px 18px',
+              fontSize: 14,
+              fontWeight: 700,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -610,23 +773,7 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
               gap: 6
             }}
           >
-            <span>🖨️</span> {language === 'mr' ? 'प्रिंट / PDF' : 'Print / PDF'}
-          </button>
-
-          <button
-            onClick={handleCopy}
-            style={{
-              background: '#F1F5F9',
-              color: '#334155',
-              border: '1px solid #CBD5E1',
-              borderRadius: 10,
-              padding: '11px 14px',
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: 'pointer'
-            }}
-          >
-            {copied ? '✓ Copied' : '📋 Copy Text'}
+            <span>✓</span> {language === 'mr' ? 'झाले (Done)' : 'Done'}
           </button>
         </div>
       </div>

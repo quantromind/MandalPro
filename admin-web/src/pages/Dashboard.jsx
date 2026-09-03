@@ -154,15 +154,63 @@ export default function Dashboard() {
 
       {/* ── Key Financial Overview Grid ── */}
       <div className="grid-4" style={{ marginTop: 24 }}>
-        <div className="card stat-card stat-cash" onClick={() => navigate('/collections')} style={{ cursor: 'pointer' }}>
-          <div className="stat-label">💰 {t('common.inflow')}</div>
-          <div className="stat-val" style={{ color: '#10B981' }}>{inr(totalInflow)}</div>
-          <div className="stat-sub">{language === 'mr' ? 'एकूण जमा नोंदी' : 'Total collections recorded'}</div>
+        {/* 1. शिल्लक - एकूण बाकी (First) */}
+        <div
+          className="card stat-card stat-upi"
+          role="button"
+          tabIndex={0}
+          onClick={() => navigate('/reports')}
+          style={{ cursor: 'pointer' }}
+          title={language === 'mr' ? 'शिल्लक ताळेबंद व अहवाल पहा' : 'View Balance Sheet'}
+        >
+          <div className="stat-label">
+            ⚖️ {language === 'mr' ? 'शिल्लक - एकूण बाकी' : t('common.netBalance')}
+          </div>
+          <div className="stat-val" style={{ color: netBalance >= 0 ? '#6366F1' : '#EF4444' }}>
+            {inr(netBalance)}
+          </div>
+          <div className="stat-sub">
+            {language === 'mr'
+              ? (netBalance >= 0 ? 'उपलब्ध शिल्लक निधी' : 'तुटवडा / Deficit')
+              : (netBalance >= 0 ? 'Available funds' : 'Deficit')}
+          </div>
         </div>
 
-        <div className="card stat-card" style={{ borderTop: '3px solid #EF4444', cursor: 'pointer' }} onClick={() => navigate('/expenses')}>
-          <div className="stat-label">💸 {t('common.outflow')}</div>
-          <div className="stat-val" style={{ color: '#EF4444' }}>{inr(totalOutflow)}</div>
+        {/* 2. आवक - जमा (Second) */}
+        <div
+          className="card stat-card stat-cash"
+          role="button"
+          tabIndex={0}
+          onClick={() => navigate('/collections')}
+          style={{ cursor: 'pointer' }}
+          title={language === 'mr' ? 'जमा व वर्गणीच्या नोंदी पहा' : 'View Collections'}
+        >
+          <div className="stat-label">
+            💰 {language === 'mr' ? 'आवक - जमा' : t('common.inflow')}
+          </div>
+          <div className="stat-val" style={{ color: '#10B981' }}>
+            {inr(totalInflow)}
+          </div>
+          <div className="stat-sub">
+            {language === 'mr' ? 'एकूण जमा नोंदी' : 'Total collections recorded'}
+          </div>
+        </div>
+
+        {/* 3. जावक - खर्च (Third) */}
+        <div
+          className="card stat-card"
+          role="button"
+          tabIndex={0}
+          style={{ borderTop: '3px solid #EF4444', cursor: 'pointer' }}
+          onClick={() => navigate('/expenses')}
+          title={language === 'mr' ? 'खर्चाचा तपशील पहा' : 'View Expenses'}
+        >
+          <div className="stat-label">
+            💸 {language === 'mr' ? 'जावक - खर्च' : t('common.outflow')}
+          </div>
+          <div className="stat-val" style={{ color: '#EF4444' }}>
+            {inr(totalOutflow)}
+          </div>
           <div className="stat-sub">
             {language === 'mr'
               ? `${approvedCount} मंजूर खर्च`
@@ -170,20 +218,22 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="card stat-card stat-upi" onClick={() => navigate('/reports')} style={{ cursor: 'pointer' }}>
-          <div className="stat-label">⚖️ {language === 'mr' ? 'शिल्लक' : 'Net Balance'}</div>
-          <div className="stat-val" style={{ color: netBalance >= 0 ? '#6366F1' : '#EF4444' }}>{inr(netBalance)}</div>
-          <div className="stat-sub">
-            {language === 'mr'
-              ? (netBalance >= 0 ? 'उपलब्ध निधी' : 'तुटवडा / Deficit')
-              : (netBalance >= 0 ? 'Available funds' : 'Deficit')}
-          </div>
-        </div>
-
-        <div className="card stat-card" onClick={() => navigate('/approvals')} style={{ cursor: 'pointer', borderTop: '3px solid #F59E0B' }}>
+        {/* 4. प्रलंबित मंजुऱ्या (Pending Approvals - Last) */}
+        <div
+          className="card stat-card"
+          role="button"
+          tabIndex={0}
+          onClick={() => navigate('/approvals')}
+          style={{ cursor: 'pointer', borderTop: '3px solid #F59E0B' }}
+          title={language === 'mr' ? 'प्रलंबित मंजुऱ्या पहा' : 'View Pending Approvals'}
+        >
           <div className="stat-label">⏳ {t('dashboard.pendingApprovals')}</div>
           <div className="stat-val" style={{ color: '#F59E0B' }}>{pendingExpenses.length}</div>
-          <div className="stat-sub">{pendingExpenses.length > 0 ? (language === 'mr' ? 'कृती आवश्यक →' : 'Action required →') : (language === 'mr' ? 'सर्व ठीक ✓' : 'All clear ✓')}</div>
+          <div className="stat-sub">
+            {pendingExpenses.length > 0
+              ? (language === 'mr' ? 'कृती आवश्यक →' : 'Action required →')
+              : (language === 'mr' ? 'सर्व ठीक ✓' : 'All clear ✓')}
+          </div>
         </div>
       </div>
 
