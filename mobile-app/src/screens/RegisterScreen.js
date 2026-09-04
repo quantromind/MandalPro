@@ -19,7 +19,9 @@ const EVENT_TYPES = [
 
 export default function RegisterScreen({ navigation, route }) {
   const { register } = useAuth();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
+  const isMr = language === 'mr';
+  const toggleLanguage = () => setLanguage(isMr ? 'en' : 'mr');
 
   const [step, setStep]               = useState(1);
   const [loading, setLoading]         = useState(false);
@@ -254,6 +256,32 @@ export default function RegisterScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={s.safe}>
+      {/* ── Top Navigation Bar ── */}
+      <View style={s.topBar}>
+        <TouchableOpacity
+          style={s.backBtn}
+          onPress={() => {
+            if (step > 1) {
+              setStep(step - 1);
+            } else if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.navigate('Welcome');
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={s.backBtnArrow}>←</Text>
+          <Text style={s.backBtnText}>{isMr ? 'मागे' : 'Back'}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={s.langPill} onPress={toggleLanguage} activeOpacity={0.8}>
+          <Text style={s.langIcon}>🌐</Text>
+          <Text style={s.langText}>{isMr ? 'मराठी' : 'English'}</Text>
+          <Text style={s.langSub}>{isMr ? 'EN' : 'मराठी'}</Text>
+        </TouchableOpacity>
+      </View>
+
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -619,5 +647,58 @@ const s = StyleSheet.create({
     color: '#64748B',
     fontSize: 13.5,
     fontWeight: '700',
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#F8F8F6',
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  backBtnArrow: {
+    fontSize: 20,
+    color: '#172554',
+    fontWeight: '800',
+  },
+  backBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#172554',
+  },
+  langPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    gap: 5,
+  },
+  langIcon: {
+    fontSize: 12,
+  },
+  langText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#C2410C',
+  },
+  langSub: {
+    fontSize: 9.5,
+    fontWeight: '700',
+    color: '#F97316',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 8,
   },
 });

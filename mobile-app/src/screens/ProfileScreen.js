@@ -286,24 +286,42 @@ export default function ProfileScreen({ navigation }) {
         {/* President Management: Team Members */}
         {isPresident && (
           <View style={styles.card}>
-            <View style={styles.sectionHeaderRow}>
-              <View style={{ flex: 1, paddingRight: 8 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={styles.sectionTitle}>{t('profile.teamMembers')}</Text>
-                  <View style={styles.countBadge}>
-                    <Text style={styles.countBadgeText}>{members.length} {t('profile.memberCount', { count: members.length })}</Text>
-                  </View>
+            {/* Clean Section Header without overcrowding */}
+            <View style={styles.teamHeaderContainer}>
+              <View style={styles.teamTitleBadgeRow}>
+                <Text style={styles.sectionTitle}>{t('profile.teamMembers')}</Text>
+                <View style={styles.countBadge}>
+                  <Text style={styles.countBadgeText}>
+                    {members.length === 1
+                      ? t('profile.singleMemberCount', { count: 1 })
+                      : t('profile.memberCount', { count: members.length })}
+                  </Text>
                 </View>
-                <Text style={styles.sectionSub}>{t('profile.addMemberOtpSub')}</Text>
               </View>
-              <TouchableOpacity
-                style={styles.addMemberBtn}
-                onPress={() => setShowMemberModal(true)}
-                activeOpacity={0.88}
-              >
-                <Text style={styles.addMemberBtnText}>{t('profile.addMember')}</Text>
-              </TouchableOpacity>
+              <Text style={styles.sectionSub}>{t('profile.addMemberOtpSub')}</Text>
             </View>
+
+            {/* Dedicated, unconstrained Add Member Action Banner */}
+            <TouchableOpacity
+              style={styles.addMemberBanner}
+              onPress={() => setShowMemberModal(true)}
+              activeOpacity={0.82}
+            >
+              <View style={styles.addMemberBannerIconBox}>
+                <Text style={styles.addMemberBannerIcon}>＋</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.addMemberBannerTitle}>{t('profile.addMember')}</Text>
+                <Text style={styles.addMemberBannerSub}>
+                  {language === 'mr'
+                    ? 'नवीन कार्यकारी सदस्यांना मोफत OTP द्वारे जोडा'
+                    : 'Invite committee members & collectors via OTP'}
+                </Text>
+              </View>
+              <View style={styles.addMemberArrowPill}>
+                <Text style={styles.addMemberArrowText}>➔</Text>
+              </View>
+            </TouchableOpacity>
 
             {loadingMembers ? (
               <ActivityIndicator color="#F97316" style={{ marginVertical: 20 }} />
@@ -833,6 +851,74 @@ const styles = StyleSheet.create({
     color: '#F97316',
     fontWeight: '800',
     fontSize: 11,
+  },
+  teamHeaderContainer: {
+    marginBottom: 12,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(23, 37, 84, 0.05)',
+  },
+  teamTitleBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  addMemberBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1.5,
+    borderColor: '#FDBA74',
+    borderRadius: 14,
+    paddingVertical: 11,
+    paddingHorizontal: 13,
+    marginBottom: 8,
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  addMemberBannerIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F97316',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 11,
+  },
+  addMemberBannerIcon: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '900',
+    marginTop: Platform.OS === 'ios' ? -1 : -2,
+  },
+  addMemberBannerTitle: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: '#9A3412',
+  },
+  addMemberBannerSub: {
+    fontSize: 11,
+    color: '#C2410C',
+    marginTop: 1,
+    fontWeight: '500',
+  },
+  addMemberArrowPill: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFEDD5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  addMemberArrowText: {
+    color: '#EA580C',
+    fontSize: 12,
+    fontWeight: '900',
   },
   addMemberBtn: {
     backgroundColor: '#F97316',

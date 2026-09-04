@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 
 import { useLanguage } from '../context/LanguageContext';
 
-export default function ChatScreen() {
+export default function ChatScreen({ navigation }) {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
@@ -119,16 +119,26 @@ export default function ChatScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['right', 'left', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 80}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         {/* Header Info */}
         <View style={styles.topHeader}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => navigation?.goBack?.()}
+            activeOpacity={0.7}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityLabel="Back"
+          >
+            <Text style={styles.backBtnIcon}>←</Text>
+          </TouchableOpacity>
+
           <View style={styles.headerAvatar}>
-            <Text style={styles.headerAvatarIcon}>🚩</Text>
+            <Text style={styles.headerAvatarIcon}>💬</Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.headerTitle} numberOfLines={1}>
@@ -266,7 +276,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(23, 37, 84, 0.06)',
-    gap: 12
+    gap: 10
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 2,
+  },
+  backBtnIcon: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginTop: Platform.OS === 'ios' ? -1 : -3,
   },
   headerAvatar: {
     width: 42,

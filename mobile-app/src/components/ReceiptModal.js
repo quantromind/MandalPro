@@ -6,29 +6,44 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-import { numberToWordsEn } from '../utils/numberToWords';
-
+import { numberToWordsMr, toMarathiDigits } from '../utils/numberToWords';
 import { useLanguage } from '../context/LanguageContext';
+
+const defaultLogo = require('../../assets/logo.png');
 
 export default function ReceiptModal({ visible, receipt, mandal, collectorName, onClose }) {
   const { t } = useLanguage();
   const receiptRef = useRef();
   const [sharingImage, setSharingImage] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   // Guard: must be after hooks to satisfy React Rules of Hooks
   if (!receipt) return null;
 
-  const mandalName = mandal?.name || (typeof receipt.mandalId === 'object' ? receipt.mandalId?.name : null) || receipt.mandal?.name || 'सखी मित्र मंडळ (Sakhee Mitra Mandal)';
+  const mandalName = mandal?.name || (typeof receipt.mandalId === 'object' ? receipt.mandalId?.name : null) || receipt.mandal?.name || receipt.mandalName || 'सखी मित्र मंडळ (Sakhee Mitra Mandal)';
+  const mandalLocation = mandal?.address || mandal?.city || receipt?.mandal?.address || 'सार्वजनिक उत्सव परिसर';
+  const establishedYear = mandal?.establishedYear || '२०२३';
   const logoUri = mandal?.logoBase64 || mandal?.logoUrl || (typeof receipt.mandalId === 'object' ? (receipt.mandalId?.logoBase64 || receipt.mandalId?.logoUrl) : null) || receipt?.mandal?.logoBase64 || receipt?.mandal?.logoUrl || receipt?.mandalLogo;
-  const receiptNo = receipt.receiptNumber || 'RCPT-001';
+
+  const receiptNo = receipt.receiptNumber || receipt._id?.slice(-6)?.toUpperCase() || 'RCPT-001';
   const amount = Number(receipt.amount || 0);
-  const donorName = receipt.donorName || 'Devotee';
-  const donorMobile = receipt.donorMobile || '';
-  const purpose = receipt.purpose || 'Ganpati Festival Donation';
+  const donorName = receipt.donorName || receipt.contributor || receipt.donor || 'भक्त';
+  const donorMobile = receipt.donorMobile || receipt.mobile || '';
+  const purpose = receipt.purpose || receipt.title || receipt.category || 'सार्वजनिक गणेशोत्सव';
   const paymentMode = (receipt.paymentMode || 'cash').toLowerCase();
 
-  const d = receipt.createdAt ? new Date(receipt.createdAt) : new Date();
-  const dateFormatted = `${String(d.getDate()).padStart(2, '0')} / ${String(d.getMonth() + 1).padStart(2, '0')} / ${d.getFullYear()}`;
+  const d = receipt.createdAt || receipt.date ? new Date(receipt.createdAt || receipt.date) : new Date();
+  const dayStr = String(d.getDate()).padStart(2, '0');
+  const monthStr = String(d.getMonth() + 1).padStart(2, '0');
+  const yearStr = String(d.getFullYear());
+  const dateFormattedMr = `${toMarathiDigits(dayStr)}/${toMarathiDigits(monthStr)}/${toMarathiDigits(yearStr)}`;
+  const currentYearMr = toMarathiDigits(yearStr);
+  const establishedYearMr = toMarathiDigits(establishedYear);
+
+  const amountFormattedMr = toMarathiDigits(amount.toLocaleString('en-IN'));
+  const marathiWords = numberToWordsMr(amount);
+  const isCash = paymentMode === 'cash';
+  const paymentAckText = isCash ? 'रोख (Cash) द्वारे मिळाले, धन्यवाद !' : 'UPI द्वारे मिळाले, धन्यवाद !';
 
   // ── Share as High-Resolution Image ──
   const handleShareImage = async () => {
@@ -72,18 +87,17 @@ export default function ReceiptModal({ visible, receipt, mandal, collectorName, 
     const message = 
 `॥ गणपती बाप्पा मोरया ॥
 🚩 *${mandalName}* 🚩
-*॥ देणगी पावती (DONATION RECEIPT) ॥*
+*॥ अधिकृत देणगी पावती ॥*
 ━━━━━━━━━━━━━━━━━━━━
-🧾 *Receipt No.:* #${receiptNo}
-📅 *Date:* ${dateFormatted}
-👤 *Mr./Mrs.:* ${donorName}
-📱 *Mobile No.:* ${donorMobile ? (donorMobile.startsWith('+') ? donorMobile : `+91 ${donorMobile}`) : 'N/A'}
-💰 *Donation Amount:* ₹${amount.toLocaleString('en-IN')}/-
-📝 *Amount in Words:* ${numberToWordsEn(amount)}
-💳 *Payment Mode:* ${paymentMode === 'cash' ? 'CASH' : 'UPI / ONLINE'}
-🎯 *Purpose:* ${purpose}
-${collectorName ? `✍️ *Issued By:* ${collectorName}\n` : ''}━━━━━━━━━━━━━━━━━━━━
-❖ *Thank you for your generous contribution!* ❖`;
+🧾 *पावती क्र.:* #${receiptNo}
+📅 *दिनांक:* ${dateFormattedMr}
+👤 *श्री/श्रीमती:* ${donorName}
+${donorMobile ? `📱 *मोबाइल:* +91 ${donorMobile}\n` : ''}💰 *देणगी रक्कम:* ₹${amount.toLocaleString('en-IN')}/- (अक्षरी: ${marathiWords})
+💳 *देयक पद्धत:* ${isCash ? 'रोख (Cash)' : 'UPI / Online'}
+🎯 *हेतू:* ${purpose}
+${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━━━━━━━━━━━━━━━━━━
+❖ *आपल्या मोलाच्या देणगीबद्दल मनःपूर्वक धन्यवाद!* ❖
+॥ गणपती बाप्पा मोरया ॥`;
 
     const encodedText = encodeURIComponent(message);
     const nativeUrl = `whatsapp://send?phone=${formattedPhone}&text=${encodedText}`;
@@ -118,41 +132,48 @@ ${collectorName ? `✍️ *Issued By:* ${collectorName}\n` : ''}━━━━━�
             {/* ════════ RECEIPT VIEW (CAPTURED AS HIGH-RES IMAGE) ════════ */}
             <View style={styles.receiptContainer}>
               <View ref={receiptRef} collapsable={false} style={styles.receiptCard}>
+                
+                {/* Subtle Background Watermark */}
+                <View style={styles.watermarkContainer} pointerEvents="none">
+                  <Text style={styles.watermarkText} numberOfLines={1}>
+                    {mandalName}
+                  </Text>
+                </View>
+
+                {/* Inner Decorative Golden Border */}
                 <View style={styles.innerBorder}>
                   
                   {/* 1. Top Sacred Row: Center Om Shri Ganesh | Right Sthapana */}
                   <View style={styles.topAuspiciousRow}>
                     <Text style={styles.topSacredCenterText}>॥ श्री गणेश ॥</Text>
-                    <Text style={styles.topSacredRightText}>स्थापना {toMarathiDigits(mandal?.establishedYear || '२०२३')}</Text>
+                    <Text style={styles.topSacredRightText}>स्थापना {establishedYearMr}</Text>
                   </View>
 
-                  {/* 2. Mandal Header Section - Centered */}
+                  {/* 2. Mandal Grand Header - Centered with Logo Badge */}
                   <View style={styles.mandalHeaderSection}>
-                    {logoUri ? (
+                    <View style={styles.logoBadge}>
                       <Image
-                        source={{ uri: logoUri }}
+                        source={logoUri && !logoError ? { uri: logoUri } : defaultLogo}
                         style={styles.mandalLogoImg}
-                        resizeMode="cover"
+                        resizeMode="contain"
+                        onError={() => setLogoError(true)}
                       />
-                    ) : (
-                      <View style={styles.ganeshaCircle}>
-                        <Text style={styles.ganeshaIcon}>🪔</Text>
-                      </View>
-                    )}
+                    </View>
+
                     <View style={styles.mandalTitleCol}>
                       <Text
                         style={styles.mandalTitleText}
                         numberOfLines={2}
                         adjustsFontSizeToFit={true}
-                        minimumFontScale={0.75}
+                        minimumFontScale={0.8}
                       >
                         {mandalName}
                       </Text>
                       <Text style={styles.mandalSubFestival}>
-                        आयोजित सार्वजनिक गणेशोत्सव {toMarathiDigits(new Date().getFullYear())}
+                        आयोजित सार्वजनिक गणेशोत्सव {currentYearMr}
                       </Text>
                       <Text style={styles.mandalLocationText} numberOfLines={1}>
-                        {mandal?.address || mandal?.city || 'सार्वजनिक उत्सव परिसर'}
+                        {mandalLocation}
                       </Text>
                     </View>
                   </View>
@@ -170,20 +191,27 @@ ${collectorName ? `✍️ *Issued By:* ${collectorName}\n` : ''}━━━━━�
                       पावती क्र. <Text style={styles.metaBoldText}>{receiptNo}</Text>
                     </Text>
                     <Text style={styles.metaLabelText}>
-                      दिनांक: <Text style={styles.metaBoldText}>{toMarathiDigits(dateFormatted)}</Text>
+                      दिनांक: <Text style={styles.metaBoldText}>{dateFormattedMr}</Text>
                     </Text>
                   </View>
 
-                  {/* 5. Donor Info Row */}
-                  <View style={styles.donorRow}>
-                    <Text style={styles.donorPrefix}>श्री./श्रीमती/मेसर्स </Text>
-                    <View style={styles.lineFill}>
-                      <Text style={styles.donorNameText} numberOfLines={1}>
-                        {donorName}
-                      </Text>
-                      <View style={styles.dotLine} />
+                  {/* 5. Donor Info Row with Dashed Underline */}
+                  <View style={styles.donorContainer}>
+                    <View style={styles.donorRow}>
+                      <Text style={styles.donorPrefix}>श्री./श्रीमती/मेसर्स </Text>
+                      <View style={styles.donorUnderlineWrap}>
+                        <Text style={styles.donorNameText} numberOfLines={1}>
+                          {donorName}
+                        </Text>
+                        <View style={styles.dashedUnderline} />
+                      </View>
+                      <Text style={styles.donorSuffix}>यांजकडून</Text>
                     </View>
-                    <Text style={styles.donorPrefix}> यांजकडून</Text>
+                    {donorMobile ? (
+                      <Text style={styles.donorMobileText}>
+                        📱 मो. क्र.: <Text style={styles.donorMobileVal}>+91 {donorMobile}</Text>
+                      </Text>
+                    ) : null}
                   </View>
 
                   {/* 6. Contribution Line */}
@@ -193,22 +221,22 @@ ${collectorName ? `✍️ *Issued By:* ${collectorName}\n` : ''}━━━━━�
                   <View style={styles.amountBoxContainer}>
                     <View style={styles.amountBox}>
                       <Text style={styles.amountBoxText}>
-                        ₹ {toMarathiDigits(amount.toLocaleString('en-IN'))}
+                        ₹ {amountFormattedMr}
                       </Text>
                     </View>
                   </View>
 
                   {/* 8. Amount in Marathi Words */}
                   <Text style={styles.amountInWordsText}>
-                    {numberToWordsMr(amount)}
+                    {marathiWords}
                   </Text>
 
                   {/* 9. Payment Acknowledgement */}
                   <Text style={styles.paymentAckText}>
-                    {paymentMode === 'cash' ? 'रोख (Cash) द्वारे मिळाले, धन्यवाद !' : 'UPI द्वारे मिळाले, धन्यवाद !'}
+                    {paymentAckText}
                   </Text>
 
-                  {/* 10. Bottom Blessing */}
+                  {/* 10. Bottom Blessing & Chant */}
                   <View style={styles.bottomBlessingSection}>
                     <View style={styles.dashedFooterLine} />
                     <Text style={styles.bottomChantText}>॥ गणपती बाप्पा मोरया ॥</Text>
@@ -266,7 +294,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15, 23, 42, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 10
+    padding: 8
   },
   container: {
     width: '100%',
@@ -290,10 +318,10 @@ const styles = StyleSheet.create({
   successIcon: { fontSize: 14 },
   successText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 
-  /* ── Traditional Receipt Card Styling ── */
+  /* ── Traditional Marathi Receipt Card Styling ── */
   receiptContainer: {
     width: '100%',
-    maxWidth: 390,
+    maxWidth: 400,
     alignItems: 'center',
     marginVertical: 4
   },
@@ -301,17 +329,48 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#FFFDF9',
     borderRadius: 18,
-    padding: 6,
+    padding: 5,
     borderWidth: 2.5,
     borderColor: '#C2410C',
-    elevation: 6
+    position: 'relative',
+    overflow: 'hidden',
+    elevation: 6,
+    shadowColor: '#C2410C',
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 }
   },
+
+  /* Subtle Watermark */
+  watermarkContainer: {
+    position: 'absolute',
+    top: '48%',
+    left: -80,
+    right: -80,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ rotate: '-10deg' }],
+    opacity: 0.045,
+    zIndex: 0
+  },
+  watermarkText: {
+    fontSize: 52,
+    fontWeight: '900',
+    color: '#C2410C',
+    textAlign: 'center',
+    letterSpacing: 2
+  },
+
+  /* Inner Golden Border */
   innerBorder: {
     borderWidth: 1,
     borderColor: '#FED7AA',
-    borderRadius: 12,
-    padding: 14,
-    backgroundColor: '#FFFDF9'
+    borderRadius: 13,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    backgroundColor: 'transparent',
+    position: 'relative',
+    zIndex: 1
   },
 
   /* Top Sacred Row */
@@ -320,82 +379,93 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
     minHeight: 20
   },
   topSacredCenterText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '900',
     color: '#9A3412',
-    textAlign: 'center'
+    textAlign: 'center',
+    letterSpacing: 0.5
   },
   topSacredRightText: {
     position: 'absolute',
     right: 0,
-    fontSize: 11.5,
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#9A3412'
   },
 
-  /* Mandal Header */
+  /* Mandal Grand Header */
   mandalHeaderSection: {
-    marginBottom: 8
-  },
-  mandalTitleRow: {
-    flexDirection: 'row',
+    position: 'relative',
     alignItems: 'center',
-    gap: 10
+    justifyContent: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 48,
+    minHeight: 58
+  },
+  logoBadge: {
+    position: 'absolute',
+    left: 0,
+    top: 2,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 2,
+    borderColor: '#EA580C',
+    backgroundColor: '#FFFFFF',
+    padding: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#EA580C',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    overflow: 'hidden'
   },
   mandalLogoImg: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: '#EA580C',
-    backgroundColor: '#fff'
-  },
-  ganeshaCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: '#EA580C',
-    backgroundColor: '#FFF7ED',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  ganeshaIcon: {
-    fontSize: 24
+    width: '100%',
+    height: '100%',
+    borderRadius: 25
   },
   mandalTitleCol: {
-    flex: 1
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%'
   },
   mandalTitleText: {
-    fontSize: 18,
+    fontSize: 20.5,
     fontWeight: '900',
     color: '#831843',
-    lineHeight: 22
+    textAlign: 'center',
+    lineHeight: 25,
+    letterSpacing: 0.3
   },
   mandalSubFestival: {
-    fontSize: 12.5,
+    fontSize: 14,
     fontWeight: '800',
     color: '#C2410C',
-    marginTop: 2
+    textAlign: 'center',
+    marginTop: 3
   },
   mandalLocationText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: '#64748B',
-    marginTop: 1
+    textAlign: 'center',
+    marginTop: 2
   },
 
-  /* Section Divider */
+  /* Section Divider: ◆ देणगी पावती ◆ */
   pawtiDividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 10,
-    gap: 8
+    marginVertical: 12,
+    gap: 10
   },
   pawtiLine: {
     flex: 1,
@@ -403,20 +473,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#FDBA74'
   },
   pawtiBadgeText: {
-    fontSize: 14,
+    fontSize: 15.5,
     fontWeight: '900',
-    color: '#9A3412'
+    color: '#9A3412',
+    letterSpacing: 0.5
   },
 
-  /* Meta Row */
+  /* Meta Row: पावती क्र. & दिनांक */
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12
+    marginBottom: 14
   },
   metaLabelText: {
-    fontSize: 12.5,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#334155'
   },
@@ -426,110 +497,140 @@ const styles = StyleSheet.create({
   },
 
   /* Donor Row */
+  donorContainer: {
+    marginBottom: 12
+  },
   donorRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 8,
-    flexWrap: 'wrap'
+    alignItems: 'flex-end',
+    justifyContent: 'space-between'
   },
   donorPrefix: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#334155'
+    color: '#334155',
+    paddingBottom: 2
+  },
+  donorUnderlineWrap: {
+    flex: 1,
+    marginHorizontal: 4,
+    paddingHorizontal: 4,
+    position: 'relative',
+    justifyContent: 'flex-end'
   },
   donorNameText: {
-    fontSize: 14.5,
+    fontSize: 15.5,
     fontWeight: '900',
     color: '#0F172A',
     paddingBottom: 2
   },
-  lineFill: {
-    flex: 1,
-    minWidth: 100,
-    justifyContent: 'center',
-    position: 'relative'
-  },
-  dotLine: {
-    width: '100%',
-    height: 1,
-    borderBottomWidth: 1.2,
+  dashedUnderline: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderBottomWidth: 1.5,
     borderBottomColor: '#94A3B8',
-    borderStyle: 'dashed',
-    marginTop: 1
+    borderStyle: 'dashed'
+  },
+  donorSuffix: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#334155',
+    paddingBottom: 2
+  },
+  donorMobileText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 4
+  },
+  donorMobileVal: {
+    fontWeight: '800',
+    color: '#0F172A'
   },
 
+  /* Contribution Line */
   varganiText: {
-    fontSize: 12.5,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#334155',
     marginBottom: 6
   },
 
-  /* Amount Box */
+  /* Highlight Amount Box */
   amountBoxContainer: {
     alignItems: 'center',
-    marginVertical: 6
+    marginVertical: 8
   },
   amountBox: {
-    borderWidth: 2,
+    borderWidth: 2.5,
     borderColor: '#EA580C',
-    borderRadius: 12,
-    paddingHorizontal: 22,
-    paddingVertical: 6,
+    borderRadius: 14,
+    paddingHorizontal: 28,
+    paddingVertical: 10,
     backgroundColor: '#FFFFFF',
+    minWidth: 220,
+    maxWidth: 280,
+    alignItems: 'center',
+    justifyContent: 'center',
     elevation: 2,
     shadowColor: '#EA580C',
     shadowOpacity: 0.12,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 }
   },
   amountBoxText: {
-    fontSize: 26,
+    fontSize: 34,
     fontWeight: '900',
     color: '#9A3412',
-    letterSpacing: 0.5
+    letterSpacing: 1,
+    textAlign: 'center'
   },
 
+  /* Amount in Marathi Words */
   amountInWordsText: {
-    fontSize: 12.5,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#475569',
     textAlign: 'center',
-    marginBottom: 8
+    marginTop: 4,
+    marginBottom: 6
   },
 
+  /* Payment Ack */
   paymentAckText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '800',
     color: '#1E293B',
     textAlign: 'center',
-    marginBottom: 10
+    marginBottom: 12
   },
 
   /* Bottom Blessing */
   bottomBlessingSection: {
-    marginTop: 4,
+    marginTop: 2,
     alignItems: 'center'
   },
   dashedFooterLine: {
     width: '100%',
-    height: 1,
-    borderBottomWidth: 1,
-    borderBottomColor: '#FED7AA',
+    borderTopWidth: 1,
+    borderTopColor: '#FED7AA',
     borderStyle: 'dashed',
-    marginBottom: 8
+    marginBottom: 10
   },
   bottomChantText: {
-    fontSize: 15,
+    fontSize: 16.5,
     fontWeight: '900',
     color: '#9A3412',
-    letterSpacing: 0.5
+    textAlign: 'center',
+    letterSpacing: 0.8
   },
 
   /* Action Buttons */
   actionContainer: {
     width: '100%',
-    maxWidth: 390,
+    maxWidth: 400,
     marginTop: 12,
     gap: 8
   },
@@ -538,14 +639,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 13,
     borderRadius: 12,
     gap: 8,
     elevation: 3
   },
   imageShareBtnText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 14.5,
     fontWeight: '800'
   },
   whatsappDirectBtn: {
@@ -559,7 +660,7 @@ const styles = StyleSheet.create({
   },
   whatsappDirectBtnText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '700'
   },
   doneBtn: {

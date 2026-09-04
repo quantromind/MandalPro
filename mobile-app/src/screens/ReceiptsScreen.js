@@ -78,7 +78,7 @@ export default function ReceiptsScreen() {
                 {item.purpose ? `· 🎯 ${item.purpose}` : ''}
               </Text>
               <View style={styles.sharePill}>
-                <Text style={styles.viewText}>{t('receipts.shareWhatsApp')} 📲</Text>
+                <Text style={styles.viewText}>Share 📲</Text>
               </View>
             </View>
           </TouchableOpacity>

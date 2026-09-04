@@ -23,11 +23,11 @@ const PLANS = [
     cta: 'सिल्व्हर योजना निवडा (₹199)'
   },
   {
-    id: 'Gold', price: 299, label: '₹299', period: '/month', color: '#F59E0B',
-    badge: '🔥 सर्वाधिक पसंती',
+    id: 'Gold', price: 299, label: '₹299', period: '/month', color: '#F97316',
+    badge: '🔥 सर्वाधिक पसंती • BEST VALUE',
     tagline: 'गोल्ड मेंबरशिप (२५ सदस्य)',
     features: [
-      '२ मंडळे / शाखा व्यवस्थापन',
+      '२ मंडळे / शाखा संपूर्ण व्यवस्थापन',
       '२५ समिती सदस्य व स्वयंसेवक',
       'अधिकृत शिक्का व लोगो असलेली पावती',
       'खर्च मंजुरी व बिलांचे फोटो साठवणूक',
@@ -47,7 +47,7 @@ import { useLanguage } from '../context/LanguageContext';
 
 export default function SubscriptionScreen({ navigation }) {
   const { user, mandal, updateMandal, logout, refreshProfile } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const [selectedPlan, setSelectedPlan] = useState(getRecommendedPlan(mandal));
   const [annual, setAnnual] = useState(false);
@@ -218,14 +218,18 @@ export default function SubscriptionScreen({ navigation }) {
 
         {/* Header */}
         <View style={s.header}>
-          <Text style={s.brand}>🪔 {t('nav.appTitle')}</Text>
+          <View style={s.headerPill}>
+            <Text style={s.headerPillText}>💎 APLA MANDAL MEMBERSHIP PLANS</Text>
+          </View>
           <Text style={s.title}>
-            {mandal?.planStatus === 'Expired' ? t('subscription.renewTitle') : t('subscription.title')}
+            {mandal?.planStatus === 'Expired'
+              ? (language === 'mr' ? 'मेंबरशिप नूतनीकरण करा' : 'Renew Your Membership')
+              : (language === 'mr' ? 'सोप्या व पारदर्शक मासिक योजना' : 'Simple & Transparent Monthly Plans')}
           </Text>
           <Text style={s.sub}>
-            {mandal?.planStatus === 'Expired'
-              ? t('subscription.expiredSub')
-              : t('subscription.subtitle')}
+            {language === 'mr'
+              ? 'क्लाउड लेजर, WhatsApp पावत्या, खर्च ऑडिट आणि मराठी संवाद एकाच ठिकाणी.'
+              : 'Enterprise-grade cloud ledger, instant WhatsApp receipts, expense audits, and bilingual Marathi communication.'}
           </Text>
         </View>
 
@@ -255,65 +259,82 @@ export default function SubscriptionScreen({ navigation }) {
           </View>
         )}
 
-        {/* Billing Toggle */}
-        <View style={s.billingRow}>
-          <Text style={[s.billingLabel, !annual && s.billingActive]}>{t('subscription.monthly')}</Text>
-          <Switch
-            value={annual}
-            onValueChange={setAnnual}
-            trackColor={{ false: '#E5E7EB', true: '#FF6B00' }}
-            thumbColor={'#fff'}
-          />
-          <Text style={[s.billingLabel, annual && s.billingActive]}>
-            {t('subscription.annual')} <Text style={s.saveBadge}>{t('subscription.save20')}</Text>
-          </Text>
+        {/* Billing Segmented Switch */}
+        <View style={s.billingWrapper}>
+          <TouchableOpacity
+            style={[s.billingSegment, !annual && s.billingSegmentActive]}
+            onPress={() => setAnnual(false)}
+            activeOpacity={0.8}
+          >
+            <Text style={[s.billingSegmentText, !annual && s.billingSegmentTextActive]}>
+              {language === 'mr' ? 'मासिक (Monthly)' : 'MONTHLY'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.billingSegment, annual && s.billingSegmentActive]}
+            onPress={() => setAnnual(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={[s.billingSegmentText, annual && s.billingSegmentTextActive]}>
+              {language === 'mr' ? 'वार्षिक (Annual)' : 'ANNUAL'}
+            </Text>
+            <View style={s.saveBadgePill}>
+              <Text style={s.saveBadgeText}>SAVE 20%</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Plan Cards */}
-        {PLANS.map(plan => {
+        {PLANS.map((plan) => {
           const isSelected = selectedPlan === plan.id;
-          const isRec = plan.id === recommended;
+          const isGold = plan.id === 'Gold';
+
           return (
             <TouchableOpacity
               key={plan.id}
-              style={[s.planCard, isSelected && { borderColor: plan.color, borderWidth: 2, backgroundColor: `${plan.color}08` }]}
+              style={[
+                s.planCard,
+                isGold && s.goldPlanCard,
+                isSelected && { borderColor: plan.color, borderWidth: 2.5, backgroundColor: `${plan.color}0A` },
+              ]}
               onPress={() => setSelectedPlan(plan.id)}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
-              {(plan.badge || isRec) && !isSelected && (
+              {plan.badge && (
                 <View style={[s.badge, { backgroundColor: plan.color }]}>
-                  <Text style={s.badgeText}>{plan.badge || `⭐ ${t('subscription.recommended')}`}</Text>
-                </View>
-              )}
-              {isSelected && (
-                <View style={[s.badge, { backgroundColor: plan.color }]}>
-                  <Text style={s.badgeText}>✓ {t('subscription.selected')}</Text>
+                  <Text style={s.badgeText}>{plan.badge}</Text>
                 </View>
               )}
 
               <View style={s.planTop}>
-                <View>
-                  <Text style={[s.planName, { color: plan.color }]}>{plan.id}</Text>
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  <Text style={[s.planName, { color: plan.color }]}>{plan.id} Pro</Text>
                   <Text style={s.planTagline}>{plan.tagline}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={s.planPrice}>{effectivePrice(plan)}</Text>
                   {plan.price !== null && plan.price > 0 && (
-                    <Text style={s.planPeriod}>{annual ? t('subscription.perMonthAnnual') : t('subscription.perMonth')}</Text>
+                    <Text style={s.planPeriod}>
+                      {annual ? (language === 'mr' ? '/महिना (वार्षिक)' : '/mo billed annually') : (language === 'mr' ? '/महिना' : '/month')}
+                    </Text>
                   )}
                 </View>
               </View>
 
-              {isSelected && (
-                <View style={s.features}>
-                  {plan.features.map(f => (
-                    <View key={f} style={s.featureRow}>
-                      <Text style={[s.featureDot, { color: plan.color }]}>✓</Text>
-                      <Text style={s.featureText}>{f}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
+              <View style={s.features}>
+                {plan.features.map((f) => (
+                  <View key={f} style={s.featureRow}>
+                    <Text style={[s.featureDot, { color: plan.color }]}>✓</Text>
+                    <Text style={s.featureText}>{f}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <View style={[s.cardSelectBar, isSelected && { backgroundColor: plan.color }]}>
+                <Text style={[s.cardSelectText, isSelected && { color: '#FFFFFF' }]}>
+                  {isSelected ? `✓ ${language === 'mr' ? 'निवडलेली योजना' : 'Selected Plan'}` : (language === 'mr' ? 'निवडण्यासाठी स्पर्श करा' : 'Tap to Select')}
+                </Text>
+              </View>
             </TouchableOpacity>
           );
         })}
@@ -323,16 +344,20 @@ export default function SubscriptionScreen({ navigation }) {
           style={[s.ctaBtn, loading && { opacity: 0.7 }]}
           onPress={handleSelect}
           disabled={loading}
+          activeOpacity={0.88}
         >
-          {loading
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={s.ctaText}>
-              {selectedPlan === 'Enterprise' ? `${t('subscription.contactSales')} →` : `${t('subscription.choosePlan', { plan: selectedPlan })} →`}
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={s.ctaText}>
+              {selectedPlan === 'Gold'
+                ? (language === 'mr' ? '⚡ गोल्ड मेंबरशिप सुरू करा (₹299/महिना) →' : '⚡ Choose Gold Membership (₹299/mo) →')
+                : (language === 'mr' ? '⚡ सिल्व्हर योजना सुरू करा (₹199/महिना) →' : '⚡ Choose Silver Plan (₹199/mo) →')}
             </Text>
-          }
+          )}
         </TouchableOpacity>
 
-        <Text style={s.footer}>🔒 {t('subscription.securePayments')}</Text>
+        <Text style={s.footer}>🔒 100% Secure Payments via Razorpay • 256-bit SSL Encryption</Text>
 
         <TouchableOpacity style={s.logoutLink} onPress={logout}>
           <Text style={s.logoutText}>{t('common.logout')}</Text>
@@ -360,10 +385,24 @@ const s = StyleSheet.create({
     fontWeight: '800',
     color: '#172554',
   },
-  header: { alignItems: 'center', marginBottom: 24 },
-  brand: { color: '#F97316', fontSize: 16, fontWeight: '800', marginBottom: 6 },
-  title: { fontSize: 24, fontWeight: '800', color: '#172554', textAlign: 'center', marginBottom: 6, letterSpacing: -0.3 },
-  sub: { fontSize: 13.5, color: '#64748B', textAlign: 'center', lineHeight: 20 },
+  header: { alignItems: 'center', marginBottom: 20 },
+  headerPill: {
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginBottom: 10,
+  },
+  headerPillText: {
+    color: '#EA580C',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+  },
+  title: { fontSize: 22, fontWeight: '800', color: '#0F172A', textAlign: 'center', marginBottom: 6, letterSpacing: -0.3 },
+  sub: { fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 19, paddingHorizontal: 10 },
 
   recBanner: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
@@ -383,45 +422,124 @@ const s = StyleSheet.create({
   expiredTitle: { fontSize: 13, fontWeight: '800', color: '#DC2626', marginBottom: 2 },
   expiredSub: { fontSize: 12, color: '#172554', lineHeight: 18, fontWeight: '500' },
 
-  billingRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 10, marginBottom: 20
+  /* Segmented Billing Switch */
+  billingWrapper: {
+    flexDirection: 'row',
+    backgroundColor: '#E2E8F0',
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 20,
   },
-  billingLabel: { fontSize: 13.5, color: '#94A3B8', fontWeight: '700' },
-  billingActive: { color: '#172554' },
-  saveBadge: { fontSize: 11, color: '#10B981', fontWeight: '800' },
+  billingSegment: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 9,
+    borderRadius: 10,
+    gap: 6,
+  },
+  billingSegmentActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  billingSegmentText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  billingSegmentTextActive: {
+    color: '#0F172A',
+    fontWeight: '800',
+  },
+  saveBadgePill: {
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+  },
+  saveBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#059669',
+  },
 
   planCard: {
-    backgroundColor: '#FFFFFF', borderRadius: 18, padding: 18, marginBottom: 12,
-    borderWidth: 1.5, borderColor: 'rgba(23, 37, 84, 0.08)',
-    shadowColor: '#172554', shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
-    position: 'relative', overflow: 'hidden'
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(23, 37, 84, 0.08)',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  goldPlanCard: {
+    borderColor: '#FED7AA',
+    borderWidth: 2,
   },
   badge: {
-    position: 'absolute', top: 0, right: 0,
-    paddingHorizontal: 12, paddingVertical: 4,
-    borderBottomLeftRadius: 10
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 4.5,
+    borderBottomLeftRadius: 12,
   },
-  badgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
-  planTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 4 },
-  planName: { fontSize: 16.5, fontWeight: '800', marginBottom: 2 },
-  planTagline: { fontSize: 12, color: '#64748B' },
-  planPrice: { fontSize: 20, fontWeight: '800', color: '#172554' },
+  badgeText: { color: '#FFFFFF', fontSize: 10.5, fontWeight: '800', letterSpacing: 0.3 },
+  planTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 6 },
+  planName: { fontSize: 18, fontWeight: '900', marginBottom: 2 },
+  planTagline: { fontSize: 12.5, color: '#64748B', fontWeight: '500' },
+  planPrice: { fontSize: 24, fontWeight: '900', color: '#0F172A', letterSpacing: -0.4 },
   planPeriod: { fontSize: 11, color: '#94A3B8', fontWeight: '600' },
-  features: { marginTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(23, 37, 84, 0.05)', paddingTop: 12, gap: 8 },
-  featureRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  featureDot: { fontSize: 13, fontWeight: '800' },
-  featureText: { fontSize: 13, color: '#334155', flex: 1, fontWeight: '500' },
+  features: {
+    marginTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(23, 37, 84, 0.05)',
+    paddingTop: 12,
+    gap: 8,
+  },
+  featureRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  featureDot: { fontSize: 14, fontWeight: '900', marginTop: -1 },
+  featureText: { fontSize: 12.5, color: '#334155', flex: 1, fontWeight: '500', lineHeight: 18 },
+
+  cardSelectBar: {
+    marginTop: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+  },
+  cardSelectText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#475569',
+  },
 
   ctaBtn: {
-    backgroundColor: '#F97316', borderRadius: 16, padding: 16,
-    alignItems: 'center', marginTop: 10, marginBottom: 12,
-    shadowColor: '#F97316', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28, shadowRadius: 10, elevation: 4
+    backgroundColor: '#F97316',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 12,
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  ctaText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
-  footer: { textAlign: 'center', fontSize: 12, color: '#94A3B8', fontWeight: '500' },
+  ctaText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
+  footer: { textAlign: 'center', fontSize: 11.5, color: '#94A3B8', fontWeight: '500', lineHeight: 16 },
   logoutLink: { alignItems: 'center', marginTop: 14, paddingVertical: 8 },
-  logoutText: { color: '#EF4444', fontSize: 13.5, fontWeight: '700' }
+  logoutText: { color: '#EF4444', fontSize: 13.5, fontWeight: '700' },
 });

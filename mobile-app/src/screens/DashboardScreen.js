@@ -12,29 +12,41 @@ export default function DashboardScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
   const { user, mandal, logout } = useAuth();
-  const { t, showLanguageModal, setShowLanguageModal, dismissLanguageModal, promptFirstTime } = useLanguage();
+  const { t, language, setLanguage, showLanguageModal, setShowLanguageModal, dismissLanguageModal, promptFirstTime } = useLanguage();
 
   const isPresident = user?.role === 'president' || user?.role === 'superadmin' || user?.role === 'treasurer';
   const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+  const totalCollections = Number(summary?.totalCollections || 0);
+  const totalExpenses = Number(summary?.totalExpenses || 0);
+  const netBalance = totalCollections - totalExpenses;
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <TouchableOpacity
-          style={styles.headerChatBtn}
-          onPress={() => setShowChatModal(true)}
-          activeOpacity={0.75}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityLabel={t('nav.chat')}
-        >
-          <View style={styles.chatIconBox}>
-            <Text style={styles.chatIconEmoji}>💬</Text>
-            <View style={styles.chatDot} />
-          </View>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 12 }}>
+          <TouchableOpacity
+            style={styles.headerLangPill}
+            onPress={() => setLanguage(language === 'mr' ? 'en' : 'mr')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.headerLangText}>🌐 {language === 'mr' ? 'मराठी' : 'EN'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.headerChatBtn}
+            onPress={() => navigation.navigate('Chat')}
+            activeOpacity={0.75}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityLabel={t('nav.chat')}
+          >
+            <View style={styles.chatIconBox}>
+              <Text style={styles.chatIconEmoji}>💬</Text>
+              <View style={styles.chatDot} />
+            </View>
+          </TouchableOpacity>
+        </View>
       ),
     });
-  }, [navigation, t]);
+  }, [navigation, t, language, setLanguage]);
 
   const load = async () => {
     try {
@@ -66,22 +78,59 @@ export default function DashboardScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F97316']} tintColor="#F97316" />}
       >
-        {/* Header Banner */}
-        <View style={styles.headerCard}>
-          <View style={{ flex: 1 }}>
-            <View style={styles.roleBadge}>
-              <Text style={styles.roleBadgeText}>
-                {user?.role === 'president' ? t('dashboard.presidentWorkspace') : t('dashboard.committeeMember')}
-              </Text>
-            </View>
-            <Text style={styles.greeting}>
-              {t('dashboard.greeting', { name: user?.name?.split(' ')[0] || '' })}
-            </Text>
-            <Text style={styles.mandalSub}>{mandal?.name || 'Apla Mandal'} • {t('dashboard.activeSession')}</Text>
+        {/* Top Mandal Pill (Website matching) */}
+        <View style={styles.topMandalPillContainer}>
+          <View style={styles.topMandalPill}>
+            <Text style={styles.topMandalPillText}>🚩 {mandal?.name || 'Apla Mandal'}</Text>
           </View>
-          <TouchableOpacity style={styles.logoutPill} onPress={logout} activeOpacity={0.8}>
-            <Text style={styles.logoutText}>{t('common.logout')}</Text>
-          </TouchableOpacity>
+        </View>
+
+        {/* Header Hero Banner (Website matching) */}
+        <View style={styles.headerCard}>
+          <View style={styles.roleBadge}>
+            <Text style={styles.roleBadgeText}>
+              {user?.role === 'president' ? '👑 PRESIDENT WORKSPACE' : '👥 COMMITTEE WORKSPACE'}
+            </Text>
+          </View>
+
+          <Text style={styles.greeting}>
+            Namaste, {user?.name?.split(' ')[0] || 'Member'} 🪔
+          </Text>
+          <Text style={styles.mandalSub}>
+            🚩 {mandal?.name || 'Apla Mandal'} • {language === 'mr' ? 'लाइव्ह मंडळ आकडेवारी' : 'Live Mandal statistics'}
+          </Text>
+
+          {/* Quick Action CTA Buttons inside Hero Banner */}
+          <View style={styles.heroActionRow}>
+            <TouchableOpacity
+              style={styles.heroPrimaryBtn}
+              onPress={() => navigation.navigate('Collection')}
+              activeOpacity={0.88}
+            >
+              <Text style={styles.heroPrimaryBtnText}>
+                ✨ + {language === 'mr' ? 'नवीन पावती' : 'Record New Donation'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.heroSecondaryBtn}
+              onPress={() => navigation.navigate('Expenses')}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.heroSecondaryBtnText}>
+                💸 {language === 'mr' ? 'खर्च जोडा' : 'Add Expense'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.heroChatIconBtn}
+              onPress={() => navigation.navigate('Chat')}
+              activeOpacity={0.85}
+              accessibilityLabel="Chat"
+            >
+              <Text style={styles.heroChatIconText}>💬</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Section: Metrics & Summary */}
@@ -90,152 +139,137 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.sectionSub}>{t('dashboard.liveMandalStats')}</Text>
         </View>
 
-        {/* Summary Cards */}
-        {isPresident ? (
-          <>
-            <View style={styles.cardsRow}>
-              {/* Collections */}
-              <View style={[styles.card, styles.cardCollection]}>
-                <View style={styles.cardHeaderRow}>
-                  <Text style={styles.cardIcon}>💰</Text>
-                  <View style={[styles.trendBadge, { backgroundColor: '#DCFCE7' }]}>
-                    <Text style={[styles.trendText, { color: '#15803D' }]}>↑ {t('common.inflow')}</Text>
-                  </View>
-                </View>
-                <Text style={styles.cardLabel}>{t('dashboard.collections')}</Text>
-                <Text style={[styles.cardValue, { color: '#15803D' }]}>{inr(summary?.totalCollections)}</Text>
-              </View>
-
-              {/* Expenses */}
-              <View style={[styles.card, styles.cardExpense]}>
-                <View style={styles.cardHeaderRow}>
-                  <Text style={styles.cardIcon}>💸</Text>
-                  <View style={[styles.trendBadge, { backgroundColor: '#FEE2E2' }]}>
-                    <Text style={[styles.trendText, { color: '#B91C1C' }]}>↓ {t('common.outflow')}</Text>
-                  </View>
-                </View>
-                <Text style={styles.cardLabel}>{t('dashboard.expenses')}</Text>
-                <Text style={[styles.cardValue, { color: '#B91C1C' }]}>{inr(summary?.totalExpenses)}</Text>
-              </View>
-            </View>
-
-            <View style={styles.cardsRow}>
-              {/* Pending Approvals */}
-              <View style={[styles.card, styles.cardPending]}>
-                <View style={styles.cardHeaderRow}>
-                  <Text style={styles.cardIcon}>⏳</Text>
-                  <View style={[styles.trendBadge, { backgroundColor: '#FEF3C7' }]}>
-                    <Text style={[styles.trendText, { color: '#B45309' }]}>{t('common.pending')}</Text>
-                  </View>
-                </View>
-                <Text style={styles.cardLabel}>{t('dashboard.approvals')}</Text>
-                <Text style={[styles.cardValue, { color: '#B45309' }]}>{summary?.pendingApprovals ?? '0'}</Text>
-              </View>
-
-              {/* Active Events */}
-              <View style={[styles.card, styles.cardEvents]}>
-                <View style={styles.cardHeaderRow}>
-                  <Text style={styles.cardIcon}>🎪</Text>
-                  <View style={[styles.trendBadge, { backgroundColor: '#E0E7FF' }]}>
-                    <Text style={[styles.trendText, { color: '#4338CA' }]}>{t('common.active')}</Text>
-                  </View>
-                </View>
-                <Text style={styles.cardLabel}>{t('dashboard.festivalsAndEvents')}</Text>
-                <Text style={[styles.cardValue, { color: '#172554' }]}>{summary?.activeEvents ?? '—'}</Text>
-              </View>
-            </View>
-          </>
-        ) : (
-          /* Member Summary */
-          <View style={styles.cardsRow}>
-            <View style={[styles.card, styles.cardCollection]}>
-              <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardIcon}>💰</Text>
-                <View style={[styles.trendBadge, { backgroundColor: '#DCFCE7' }]}>
-                  <Text style={[styles.trendText, { color: '#15803D' }]}>{t('common.total')}</Text>
-                </View>
-              </View>
-              <Text style={styles.cardLabel}>{t('dashboard.mandalCollections')}</Text>
-              <Text style={[styles.cardValue, { color: '#15803D' }]}>{inr(summary?.totalCollections)}</Text>
-            </View>
-
-            <View style={[styles.card, styles.cardPending]}>
-              <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardIcon}>⏳</Text>
-                <View style={[styles.trendBadge, { backgroundColor: '#FEF3C7' }]}>
-                  <Text style={[styles.trendText, { color: '#B45309' }]}>{t('common.pending')}</Text>
-                </View>
-              </View>
-              <Text style={styles.cardLabel}>{t('dashboard.pendingApprovals')}</Text>
-              <Text style={[styles.cardValue, { color: '#B45309' }]}>{summary?.pendingApprovals ?? '0'}</Text>
-            </View>
+        {/* 4 Website-Aligned Stat Cards with Colored Top Accent Lines */}
+        <View style={styles.statCardsGrid}>
+          {/* Card 1: Net Balance */}
+          <View style={styles.statCard}>
+            <View style={[styles.statAccentLine, { backgroundColor: '#F97316' }]} />
+            <Text style={styles.statCardLabel}>🪙 {language === 'mr' ? 'शिल्लक रक्कम' : 'NET BALANCE - REMAINING'}</Text>
+            <Text style={[styles.statCardAmount, { color: netBalance >= 0 ? '#172554' : '#DC2626' }]}>
+              {inr(netBalance)}
+            </Text>
+            <Text style={styles.statCardSub}>{language === 'mr' ? 'उपलब्ध निधी' : 'Available funds'}</Text>
           </View>
-        )}
 
-        {/* Quick Action Buttons */}
+          {/* Card 2: Inflow - Collections */}
+          <View style={styles.statCard}>
+            <View style={[styles.statAccentLine, { backgroundColor: '#10B981' }]} />
+            <Text style={styles.statCardLabel}>💰 {language === 'mr' ? 'जमा निधी' : 'INFLOW - COLLECTIONS'}</Text>
+            <Text style={[styles.statCardAmount, { color: '#15803D' }]}>
+              {inr(summary?.totalCollections)}
+            </Text>
+            <Text style={styles.statCardSub}>{language === 'mr' ? 'एकूण जमा नोंदी' : 'Total collections recorded'}</Text>
+          </View>
+        </View>
+
+        <View style={styles.statCardsGrid}>
+          {/* Card 3: Outflow - Expenses */}
+          <View style={styles.statCard}>
+            <View style={[styles.statAccentLine, { backgroundColor: '#EF4444' }]} />
+            <Text style={styles.statCardLabel}>💸 {language === 'mr' ? 'खर्च निधी' : 'OUTFLOW - EXPENSES'}</Text>
+            <Text style={[styles.statCardAmount, { color: '#DC2626' }]}>
+              {inr(summary?.totalExpenses)}
+            </Text>
+            <Text style={styles.statCardSub}>{language === 'mr' ? 'मंजूर खर्च' : '0 approved expenditures'}</Text>
+          </View>
+
+          {/* Card 4: Pending Approvals */}
+          <View style={styles.statCard}>
+            <View style={[styles.statAccentLine, { backgroundColor: '#F59E0B' }]} />
+            <Text style={styles.statCardLabel}>⏳ {language === 'mr' ? 'प्रलंबित मंजुऱ्या' : 'PENDING APPROVALS'}</Text>
+            <Text style={[styles.statCardAmount, { color: '#B45309' }]}>
+              {summary?.pendingApprovals ?? 0}
+            </Text>
+            <Text style={styles.statCardSub}>
+              {Number(summary?.pendingApprovals || 0) === 0
+                ? (language === 'mr' ? 'सर्व मंजूर ✓' : 'All clear ✓')
+                : (language === 'mr' ? `${summary?.pendingApprovals} प्रलंबित` : `${summary?.pendingApprovals} pending review`)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Quick Action Tools (6 Tools matching Website Screenshot 1) */}
         <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionHeader}>{t('dashboard.quickActions')}</Text>
+          <Text style={styles.sectionHeader}>⚡ {t('dashboard.quickActions')}</Text>
           <Text style={styles.sectionSub}>{t('dashboard.frequentlyUsedTools')}</Text>
         </View>
-        
-        {/* 1. Featured Primary Action: New Collection (Add Donor) */}
-        <TouchableOpacity
-          style={styles.featuredActionCard}
-          onPress={() => navigation.navigate('Collection')}
-          activeOpacity={0.88}
-        >
-          {/* Subtle decorative glow circle in corner */}
-          <View style={styles.featuredDecorCircle} />
-          <View style={styles.featuredDecorCircleSmall} />
 
-          <View style={styles.featuredCardTopRow}>
-            <View style={styles.featuredIconBox}>
-              <Text style={styles.featuredIconText}>➕</Text>
-            </View>
-            <View style={styles.featuredArrowCircle}>
-              <Text style={styles.featuredArrowText}>→</Text>
-            </View>
-          </View>
-
-          <View style={styles.featuredCardContent}>
-            <Text style={styles.featuredActionTitle}>{t('dashboard.newCollection')}</Text>
-            <Text style={styles.featuredActionSub}>{t('dashboard.newCollectionSub')}</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* 2 & 3. Responsive 2-Column Action Cards */}
+        {/* Row 1: New Collection & View Receipts */}
         <View style={styles.actionGridRow}>
-          {/* 2. View & Share Receipts */}
+          {/* Tool 1: New Collection */}
           <TouchableOpacity
-            style={[styles.gridActionCard, styles.cardBlueBorder]}
+            style={styles.gridActionCard}
+            onPress={() => navigation.navigate('Collection')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.gridCardTop}>
+              <View style={[styles.gridIconBox, { backgroundColor: '#FEE2E2' }]}>
+                <Text style={styles.gridIcon}>🚩</Text>
+              </View>
+              <View style={[styles.arrowPill, { backgroundColor: '#FEE2E2' }]}>
+                <Text style={[styles.arrowPillText, { color: '#DC2626' }]}>→</Text>
+              </View>
+            </View>
+            <Text style={styles.gridActionTitle}>{t('dashboard.newCollection')}</Text>
+            <Text style={styles.gridActionSub} numberOfLines={2}>
+              {language === 'mr' ? 'पावती तयार करा व WhatsApp वर पाठवा' : 'Record donation & generate WhatsApp receipt'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Tool 2: View Receipts */}
+          <TouchableOpacity
+            style={styles.gridActionCard}
             onPress={() => navigation.navigate('Receipts')}
             activeOpacity={0.85}
           >
             <View style={styles.gridCardTop}>
-              <View style={[styles.gridIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+              <View style={[styles.gridIconBox, { backgroundColor: '#CCFBF1' }]}>
                 <Text style={styles.gridIcon}>🧾</Text>
               </View>
-              <View style={[styles.arrowPill, { backgroundColor: 'rgba(59, 130, 246, 0.08)' }]}>
-                <Text style={[styles.arrowPillText, { color: '#2563EB' }]}>→</Text>
+              <View style={[styles.arrowPill, { backgroundColor: '#CCFBF1' }]}>
+                <Text style={[styles.arrowPillText, { color: '#0D9488' }]}>→</Text>
               </View>
             </View>
             <Text style={styles.gridActionTitle}>{t('dashboard.viewShareReceipts')}</Text>
             <Text style={styles.gridActionSub} numberOfLines={2}>
-              {t('dashboard.viewShareReceiptsSub')}
+              {language === 'mr' ? 'पावत्या शोधा आणि शेअर करा' : 'Search past receipts and share via WhatsApp'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Row 2: Committee Chat & Expenses & Approvals */}
+        <View style={styles.actionGridRow}>
+          {/* Tool 3: Committee Chat */}
+          <TouchableOpacity
+            style={styles.gridActionCard}
+            onPress={() => navigation.navigate('Chat')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.gridCardTop}>
+              <View style={[styles.gridIconBox, { backgroundColor: '#EDE9FE' }]}>
+                <Text style={styles.gridIcon}>💬</Text>
+              </View>
+              <View style={[styles.arrowPill, { backgroundColor: '#EDE9FE' }]}>
+                <Text style={[styles.arrowPillText, { color: '#7C3AED' }]}>→</Text>
+              </View>
+            </View>
+            <Text style={styles.gridActionTitle}>{language === 'mr' ? 'समिती संवाद' : 'Committee Chat'}</Text>
+            <Text style={styles.gridActionSub} numberOfLines={2}>
+              {language === 'mr' ? 'अधिकृत समिती चॅनेल' : 'Official Committee Channel'}
             </Text>
           </TouchableOpacity>
 
-          {/* 3. Expenses & Approvals */}
+          {/* Tool 4: Expenses & Approvals */}
           <TouchableOpacity
-            style={[styles.gridActionCard, styles.cardGreenBorder]}
+            style={styles.gridActionCard}
             onPress={() => navigation.navigate('Expenses')}
             activeOpacity={0.85}
           >
             <View style={styles.gridCardTop}>
-              <View style={[styles.gridIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+              <View style={[styles.gridIconBox, { backgroundColor: '#DCFCE7' }]}>
                 <Text style={styles.gridIcon}>💸</Text>
               </View>
-              <View style={[styles.arrowPill, { backgroundColor: 'rgba(16, 185, 129, 0.08)' }]}>
+              <View style={[styles.arrowPill, { backgroundColor: '#DCFCE7' }]}>
                 <Text style={[styles.arrowPillText, { color: '#15803D' }]}>→</Text>
               </View>
             </View>
@@ -243,29 +277,134 @@ export default function DashboardScreen({ navigation }) {
               {isPresident ? t('dashboard.expensesApprovals') : t('dashboard.requestExpense')}
             </Text>
             <Text style={styles.gridActionSub} numberOfLines={2}>
-              {isPresident ? t('dashboard.expensesApprovalsSub') : t('dashboard.requestExpenseSub')}
+              {language === 'mr' ? 'खर्च नोंदवा किंवा मंजुरी द्या' : 'Record expenses or approve member requests'}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* 4. Events & Tasks (Wide Card for President) */}
-        {isPresident && (
+        {/* Row 3: Events / Digital ID Cards & Subscription */}
+        <View style={styles.actionGridRow}>
+          {/* Tool 5: Events & Tasks */}
           <TouchableOpacity
-            style={styles.wideActionCard}
+            style={styles.gridActionCard}
             onPress={() => navigation.navigate('Events')}
             activeOpacity={0.85}
           >
-            <View style={[styles.wideIconBox, { backgroundColor: 'rgba(99, 102, 241, 0.1)' }]}>
-              <Text style={styles.wideIcon}>🎪</Text>
+            <View style={styles.gridCardTop}>
+              <View style={[styles.gridIconBox, { backgroundColor: '#DBEAFE' }]}>
+                <Text style={styles.gridIcon}>🪪</Text>
+              </View>
+              <View style={[styles.arrowPill, { backgroundColor: '#DBEAFE' }]}>
+                <Text style={[styles.arrowPillText, { color: '#2563EB' }]}>→</Text>
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.wideActionTitle}>{t('dashboard.eventsTasks')}</Text>
-              <Text style={styles.wideActionSub}>{t('dashboard.eventsTasksSub')}</Text>
-            </View>
-            <View style={styles.wideActionPill}>
-              <Text style={styles.wideActionPillText}>{t('dashboard.schedules')}</Text>
-            </View>
+            <Text style={styles.gridActionTitle}>{language === 'mr' ? 'उत्सव व कार्यक्रम' : 'Events & ID Cards'}</Text>
+            <Text style={styles.gridActionSub} numberOfLines={2}>
+              {language === 'mr' ? 'डिजिटल ओळखपत्रे व उत्सव नियोजन' : 'Generate ID cards and festival schedules'}
+            </Text>
           </TouchableOpacity>
+
+          {/* Tool 6: Subscription */}
+          <TouchableOpacity
+            style={styles.gridActionCard}
+            onPress={() => navigation.navigate('Subscription')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.gridCardTop}>
+              <View style={[styles.gridIconBox, { backgroundColor: '#E0E7FF' }]}>
+                <Text style={styles.gridIcon}>💎</Text>
+              </View>
+              <View style={[styles.arrowPill, { backgroundColor: '#E0E7FF' }]}>
+                <Text style={[styles.arrowPillText, { color: '#4F46E5' }]}>→</Text>
+              </View>
+            </View>
+            <Text style={styles.gridActionTitle}>{language === 'mr' ? 'सदस्यता योजना' : 'Subscription'}</Text>
+            <Text style={styles.gridActionSub} numberOfLines={2}>
+              {language === 'mr' ? 'आपली योजना व मर्यादा व्यवस्थापित करा' : 'Manage your Apla Mandal subscription'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+
+        {/* ════════ RECENT COLLECTIONS SECTION ════════ */}
+        {((summary?.recentDonations && summary.recentDonations.length > 0)) && (
+          <View style={styles.recentSection}>
+            {/* Header Row */}
+            <View style={styles.recentHeaderRow}>
+              <View>
+                <Text style={styles.recentTitle}>
+                  {language === 'mr' ? '🧾 अलीकडील देणग्या' : '🧾 Recent Collections'}
+                </Text>
+                <Text style={styles.recentSub}>
+                  {language === 'mr' ? 'ताज्या ५ नोंदी' : 'Latest 5 entries'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Receipts')}
+                activeOpacity={0.75}
+                style={styles.viewAllPill}
+              >
+                <Text style={styles.viewAllText}>
+                  {language === 'mr' ? 'सर्व पहा →' : 'View All →'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Donation Rows */}
+            {(summary.recentDonations || []).slice(0, 5).map((item, idx) => {
+              const donorInitial = (item.donorName || '?')[0].toUpperCase();
+              const avatarColors = ['#F97316', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'];
+              const avatarBg = avatarColors[idx % avatarColors.length];
+              const amtNum = Number(item.amount || 0);
+              const amtStr = `+₹${amtNum.toLocaleString('en-IN')}`;
+              const mode = (item.paymentMode || 'cash').toUpperCase();
+              const purpose = item.purpose || item.title || (language === 'mr' ? 'देणगी' : 'Donation');
+              const dateStr = item.createdAt || item.date
+                ? new Date(item.createdAt || item.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+                : '';
+
+              return (
+                <TouchableOpacity
+                  key={item._id || idx}
+                  style={[styles.recentRow, idx < (summary.recentDonations.length < 5 ? summary.recentDonations.length : 5) - 1 && styles.recentRowBorder]}
+                  activeOpacity={0.72}
+                  onPress={() => navigation.navigate('Receipts')}
+                >
+                  {/* Avatar */}
+                  <View style={[styles.recentAvatar, { backgroundColor: avatarBg }]}>
+                    <Text style={styles.recentAvatarText}>{donorInitial}</Text>
+                  </View>
+
+                  {/* Middle: Name + purpose + mode */}
+                  <View style={styles.recentMid}>
+                    <Text style={styles.recentDonorName} numberOfLines={1}>
+                      {item.donorName || (language === 'mr' ? 'देणगीदार' : 'Donor')}
+                    </Text>
+                    <Text style={styles.recentMeta} numberOfLines={1}>
+                      {purpose} · {mode}
+                    </Text>
+                  </View>
+
+                  {/* Right: Amount + date */}
+                  <View style={styles.recentRight}>
+                    <Text style={styles.recentAmount}>{amtStr}</Text>
+                    {dateStr ? <Text style={styles.recentDate}>{dateStr}</Text> : null}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+
+            {/* Footer CTA */}
+            <TouchableOpacity
+              style={styles.recentFooterBtn}
+              onPress={() => navigation.navigate('Collection')}
+              activeOpacity={0.82}
+            >
+              <Text style={styles.recentFooterBtnText}>
+                {language === 'mr' ? '➕ नवीन देणगी नोंदवा' : '➕ Record New Collection'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Info Banner for Members */}
@@ -332,146 +471,165 @@ const styles = StyleSheet.create({
   },
   container: { flex: 1, backgroundColor: '#F8F7F4' },
   contentContainer: { padding: 16, paddingBottom: 100 },
-  headerCard: {
-    backgroundColor: '#FFFFFF',
+  topMandalPillContainer: {
+    marginBottom: 10,
+    alignItems: 'flex-start',
+  },
+  topMandalPill: {
+    backgroundColor: '#FFF1E7',
+    borderWidth: 1,
+    borderColor: 'rgba(249, 115, 22, 0.25)',
     borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  topMandalPillText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#9A3412',
+  },
+  headerCard: {
+    backgroundColor: '#0F172A',
+    borderRadius: 22,
     padding: 18,
     marginBottom: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
     borderWidth: 1,
-    borderColor: 'rgba(23, 37, 84, 0.06)',
-    shadowColor: '#172554',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 6,
   },
   roleBadge: {
-    backgroundColor: 'rgba(249, 115, 22, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginBottom: 6
-  },
-  roleBadgeText: { color: '#F97316', fontWeight: '800', fontSize: 10.5, letterSpacing: 0.5 },
-  greeting: { fontSize: 22, fontWeight: '800', color: '#172554', letterSpacing: -0.3 },
-  mandalSub: { fontSize: 13, color: '#64748B', marginTop: 3, fontWeight: '500' },
-  logoutPill: {
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: 'rgba(254, 243, 199, 0.14)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 20,
+    alignSelf: 'flex-start',
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#FECACA'
+    borderColor: 'rgba(254, 243, 199, 0.25)',
   },
-  logoutText: { color: '#EF4444', fontWeight: '700', fontSize: 12 },
-  
+  roleBadgeText: {
+    color: '#FDE68A',
+    fontWeight: '800',
+    fontSize: 11,
+    letterSpacing: 0.5,
+  },
+  greeting: {
+    fontSize: 23,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+  },
+  mandalSub: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.72)',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  heroActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 16,
+  },
+  heroPrimaryBtn: {
+    flex: 1,
+    backgroundColor: '#F97316',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  heroPrimaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12.5,
+    fontWeight: '800',
+  },
+  heroSecondaryBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 13,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroSecondaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  heroChatIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroChatIconText: {
+    fontSize: 18,
+  },
   sectionTitleRow: { marginTop: 18, marginBottom: 12 },
   sectionHeader: { fontSize: 18, fontWeight: '800', color: '#172554', letterSpacing: -0.2 },
   sectionSub: { fontSize: 12.5, color: '#64748B', marginTop: 2, fontWeight: '500' },
-
-  cardsRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  card: {
+  statCardsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  statCard: {
     flex: 1,
-    borderRadius: 18,
-    padding: 16,
     backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    paddingTop: 16,
     borderWidth: 1,
     borderColor: 'rgba(23, 37, 84, 0.06)',
     shadowColor: '#172554',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 6,
-    elevation: 2
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10
-  },
-  cardIcon: { fontSize: 18 },
-  trendBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6
-  },
-  trendText: { fontSize: 10, fontWeight: '700' },
-  cardLabel: { fontSize: 12, color: '#64748B', marginBottom: 4, fontWeight: '600' },
-  cardValue: { fontSize: 21, fontWeight: '800', letterSpacing: -0.5 },
-
-  /* 1. Featured Action (New Collection) */
-  featuredActionCard: {
-    backgroundColor: '#F97316',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 12,
+    elevation: 2,
     position: 'relative',
     overflow: 'hidden',
-    shadowColor: '#F97316',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.32,
-    shadowRadius: 12,
-    elevation: 5
   },
-  featuredDecorCircle: {
+  statAccentLine: {
     position: 'absolute',
-    top: -24,
-    right: -24,
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)'
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3.5,
   },
-  featuredDecorCircleSmall: {
-    position: 'absolute',
-    bottom: -15,
-    left: 40,
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)'
-  },
-  featuredCardTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14
-  },
-  featuredIconBox: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  featuredIconText: { fontSize: 22 },
-  featuredArrowCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  featuredArrowText: { color: '#FFFFFF', fontSize: 18, fontWeight: '800' },
-  featuredCardContent: {},
-  featuredActionTitle: {
-    color: '#FFFFFF',
+  statCardLabel: {
+    fontSize: 10.5,
     fontWeight: '800',
-    fontSize: 17.5,
-    letterSpacing: -0.2
+    color: '#64748B',
+    marginBottom: 6,
+    letterSpacing: 0.3,
   },
-  featuredActionSub: {
-    color: 'rgba(255, 255, 255, 0.92)',
-    fontSize: 12.5,
-    marginTop: 4,
-    lineHeight: 18,
-    fontWeight: '500'
+  statCardAmount: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    marginBottom: 2,
+  },
+  statCardSub: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '500',
   },
 
   /* 2 & 3. Responsive 2-Column Action Cards */
@@ -601,5 +759,178 @@ const styles = StyleSheet.create({
     marginBottom: 20
   },
   memberInfoIcon: { fontSize: 18 },
-  memberInfoText: { color: '#1E40AF', fontSize: 12.5, lineHeight: 18, flex: 1, fontWeight: '500' }
+  memberInfoText: { color: '#1E40AF', fontSize: 12.5, lineHeight: 18, flex: 1, fontWeight: '500' },
+
+  headerLangPill: {
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 14,
+  },
+  headerLangText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#C2410C',
+  },
+
+  netBalanceBanner: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.06)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  netBalanceLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+    marginBottom: 3,
+  },
+  netBalanceValue: {
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  netBalanceBadge: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+  netBalanceBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  cardPurpleBorder: {
+    borderLeftWidth: 3.5,
+    borderLeftColor: '#8B5CF6',
+  },
+  cardAmberBorder: {
+    borderLeftWidth: 3.5,
+    borderLeftColor: '#F59E0B',
+  },
+
+  /* ── Recent Collections ── */
+  recentSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    marginTop: 18,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.06)',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  recentHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  recentTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#172554',
+    letterSpacing: -0.2,
+  },
+  recentSub: {
+    fontSize: 11.5,
+    color: '#94A3B8',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  viewAllPill: {
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+  viewAllText: {
+    color: '#EA580C',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  recentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 11,
+    gap: 12,
+  },
+  recentRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  recentAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recentAvatarText: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  recentMid: {
+    flex: 1,
+  },
+  recentDonorName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#172554',
+    letterSpacing: -0.1,
+  },
+  recentMeta: {
+    fontSize: 11.5,
+    color: '#94A3B8',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  recentRight: {
+    alignItems: 'flex-end',
+  },
+  recentAmount: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#15803D',
+    letterSpacing: -0.3,
+  },
+  recentDate: {
+    fontSize: 10.5,
+    color: '#94A3B8',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  recentFooterBtn: {
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1.5,
+    borderColor: '#FED7AA',
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  recentFooterBtnText: {
+    color: '#EA580C',
+    fontWeight: '800',
+    fontSize: 13.5,
+  },
 });

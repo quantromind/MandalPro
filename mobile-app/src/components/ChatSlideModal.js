@@ -9,7 +9,7 @@ import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function ChatSlideModal({ visible, onClose }) {
   const [messages, setMessages] = useState([]);
@@ -21,7 +21,7 @@ export default function ChatSlideModal({ visible, onClose }) {
   const { user, mandal } = useAuth();
   const { t } = useLanguage();
 
-  const slideAnim = useRef(new Animated.Value(-SCREEN_HEIGHT)).current;
+  const slideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
 
   const currentUserId = user?._id || user?.id;
@@ -52,8 +52,8 @@ export default function ChatSlideModal({ visible, onClose }) {
       Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: 0,
-          tension: 65,
-          friction: 11,
+          tension: 68,
+          friction: 12,
           useNativeDriver: true,
         }),
         Animated.timing(backdropAnim, {
@@ -63,7 +63,7 @@ export default function ChatSlideModal({ visible, onClose }) {
         }),
       ]).start();
     } else {
-      slideAnim.setValue(-SCREEN_HEIGHT);
+      slideAnim.setValue(SCREEN_WIDTH);
       backdropAnim.setValue(0);
     }
   }, [visible]);
@@ -80,7 +80,7 @@ export default function ChatSlideModal({ visible, onClose }) {
   const handleClose = () => {
     Animated.parallel([
       Animated.timing(slideAnim, {
-        toValue: -SCREEN_HEIGHT,
+        toValue: SCREEN_WIDTH,
         duration: 220,
         useNativeDriver: true,
       }),
@@ -172,6 +172,8 @@ export default function ChatSlideModal({ visible, onClose }) {
       onRequestClose={handleClose}
       statusBarTranslucent
     >
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
       {/* Dimmed Backdrop */}
       <Animated.View
         style={[
@@ -179,7 +181,7 @@ export default function ChatSlideModal({ visible, onClose }) {
           {
             opacity: backdropAnim.interpolate({
               inputRange: [0, 1],
-              outputRange: [0, 0.55],
+              outputRange: [0, 0.5],
             }),
           },
         ]}
@@ -187,28 +189,35 @@ export default function ChatSlideModal({ visible, onClose }) {
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={handleClose} />
       </Animated.View>
 
-      {/* Slide-Down Container */}
+      {/* Full-Screen Right-Side Slide Panel */}
       <Animated.View
         style={[
           styles.panelContainer,
           {
-            transform: [{ translateY: slideAnim }],
+            transform: [{ translateX: slideAnim }],
           },
         ]}
       >
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
           <KeyboardAvoidingView
             style={{ flex: 1 }}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
           >
-            {/* Slide Down Handle & Header */}
+            {/* Header */}
             <View style={styles.header}>
-              <View style={styles.headerTopHandleContainer}>
-                <View style={styles.headerHandle} />
-              </View>
-
               <View style={styles.headerContentRow}>
+                {/* Back Button on Left */}
+                <TouchableOpacity
+                  style={styles.backBtn}
+                  onPress={handleClose}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  accessibilityLabel="Back"
+                >
+                  <Text style={styles.backBtnIcon}>←</Text>
+                </TouchableOpacity>
+
                 <View style={styles.headerAvatar}>
                   <Text style={styles.headerAvatarIcon}>💬</Text>
                 </View>
@@ -223,12 +232,13 @@ export default function ChatSlideModal({ visible, onClose }) {
                   </View>
                 </View>
 
-                {/* Close Button */}
+                {/* Close Button on Right */}
                 <TouchableOpacity
                   style={styles.closeBtn}
                   onPress={handleClose}
                   activeOpacity={0.7}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  accessibilityLabel="Close"
                 >
                   <Text style={styles.closeBtnText}>✕</Text>
                 </TouchableOpacity>
@@ -359,15 +369,15 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    bottom: Platform.OS === 'ios' ? 20 : 0,
-    backgroundColor: '#F8F7F4',
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#FFFFFF',
     overflow: 'hidden',
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
+    shadowOffset: { width: -6, height: 0 },
+    shadowOpacity: 0.22,
+    shadowRadius: 20,
     elevation: 25,
   },
   safeArea: {
@@ -376,25 +386,35 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
+    paddingTop: 10,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(23, 37, 84, 0.06)',
-  },
-  headerTopHandleContainer: {
-    alignItems: 'center',
-    paddingTop: 6,
-    paddingBottom: 6,
-  },
-  headerHandle: {
-    width: 38,
-    height: 4.5,
-    borderRadius: 3,
-    backgroundColor: '#CBD5E1',
+    borderBottomColor: 'rgba(23, 37, 84, 0.08)',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
   headerContentRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  backBtnIcon: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginTop: Platform.OS === 'ios' ? -1 : -3,
   },
   headerAvatar: {
     width: 40,
@@ -438,10 +458,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 10,
+    marginLeft: 8,
   },
   closeBtnText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     color: '#475569',
   },

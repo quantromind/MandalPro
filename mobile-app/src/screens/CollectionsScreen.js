@@ -19,6 +19,10 @@ export default function CollectionsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
+  // Filter & Search states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMode, setSelectedMode] = useState('all'); // 'all', 'cash', 'upi'
+
   // Modal states
   const [showModal, setShowModal] = useState(false);
   const [editingCollection, setEditingCollection] = useState(null);
@@ -38,7 +42,7 @@ export default function CollectionsScreen() {
   const [formErrors, setFormErrors] = useState({});
 
   const { mandal, user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const isPresident = user?.role === 'president' || user?.role === 'superadmin' || user?.role === 'treasurer';
   const canManage = isPresident;
@@ -67,7 +71,32 @@ export default function CollectionsScreen() {
     setRefreshing(false);
   };
 
+  // Stat calculations
   const totalCollections = collections.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const cashCollections = collections
+    .filter((item) => (item.paymentMode || '').toLowerCase() === 'cash')
+    .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const onlineCollections = collections
+    .filter((item) => {
+      const m = (item.paymentMode || '').toLowerCase();
+      return m === 'upi' || m === 'card' || m === 'netbanking' || m === 'online';
+    })
+    .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+  // Filtered collections
+  const filteredCollections = collections.filter((item) => {
+    const mode = (item.paymentMode || 'cash').toLowerCase();
+    if (selectedMode === 'cash' && mode !== 'cash') return false;
+    if (selectedMode === 'upi' && mode === 'cash') return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const nameMatch = (item.donorName || item.contributor || '').toLowerCase().includes(q);
+      const purposeMatch = (item.purpose || item.title || '').toLowerCase().includes(q);
+      const receiptMatch = (item.receiptNumber || '').toLowerCase().includes(q);
+      return nameMatch || purposeMatch || receiptMatch;
+    }
+    return true;
+  });
 
   const openAddModal = () => {
     setEditingCollection(null);
@@ -191,26 +220,127 @@ export default function CollectionsScreen() {
     }
   };
 
-  return (
-    <View style={styles.container}>
-      {/* 1. Header Card: Total Collections */}
+  const renderHeaderComponents = () => (
+    <View>
+      {/* 1. Website-Aligned Header Card */}
       <View style={styles.headerCard}>
         <View style={styles.headerTopRow}>
           <View style={styles.badgePill}>
-            <Text style={styles.badgePillText}>💰 {t('collections.title')}</Text>
+            <Text style={styles.badgePillText}>
+              💰 {language === 'mr' ? 'संकलन वही' : 'COLLECTION LEDGER'}
+            </Text>
           </View>
-          <Text style={styles.countPill}>{collections.length} {t('common.total')}</Text>
+          <Text style={styles.countPill}>
+            {filteredCollections.length} {language === 'mr' ? 'नोंदी' : 'records'}
+          </Text>
         </View>
 
-        <Text style={styles.headerTitle}>{t('collections.totalCollections')}</Text>
-        <Text style={styles.headerAmount}>{inr(totalCollections)}</Text>
+        <Text style={styles.headerTitle}>
+          {language === 'mr' ? 'सर्व देणग्या (All Donations)' : 'All Donations & Collections'}
+        </Text>
+        <Text style={styles.headerSub}>
+          {language === 'mr'
+            ? 'थेट डिजिटल पावती व पारदर्शक हिशोब व्यवस्था'
+            : 'Live verified collection ledger with instant receipt generation'}
+        </Text>
 
         <TouchableOpacity style={styles.headerAddBtn} onPress={openAddModal} activeOpacity={0.88}>
-          <Text style={styles.headerAddBtnText}>+ {t('collections.addCollection')}</Text>
+          <Text style={styles.headerAddBtnText}>
+            {language === 'mr' ? '➕ नवीन देणगी नोंदवा' : '➕ Record New Donation'}
+          </Text>
         </TouchableOpacity>
       </View>
 
-      {/* 2. Main History List / States */}
+      {/* 2. Three Website-Aligned Stat Cards */}
+      <View style={styles.statsContainer}>
+        {/* Card 1: Total Collections (Orange Accent) */}
+        <View style={[styles.statCardFull, styles.accentBorderOrange]}>
+          <View style={styles.statCardHeader}>
+            <Text style={styles.statCardLabel}>
+              🔥 {language === 'mr' ? 'एकूण देणगी संकलन' : 'Total Collections'}
+            </Text>
+            <View style={styles.statCountBadge}>
+              <Text style={styles.statCountBadgeText}>{collections.length}</Text>
+            </View>
+          </View>
+          <Text style={[styles.statCardAmount, { color: '#EA580C' }]}>{inr(totalCollections)}</Text>
+          <Text style={styles.statCardSub}>
+            {language === 'mr' ? 'एकूण जमा झालेली रक्कम' : 'Verified mandal inflow collections'}
+          </Text>
+        </View>
+
+        {/* Row 2: Cash Inflow & Online / UPI */}
+        <View style={styles.statCardRow}>
+          {/* Card 2: Cash Inflow (Green Accent) */}
+          <View style={[styles.statCardHalf, styles.accentBorderGreen]}>
+            <Text style={styles.statCardLabel}>
+              💵 {language === 'mr' ? 'रोख जमा' : 'Cash Inflow'}
+            </Text>
+            <Text style={[styles.statCardAmount, { color: '#059669' }]}>{inr(cashCollections)}</Text>
+            <Text style={styles.statCardSub}>
+              {language === 'mr' ? 'थेट रोख संकलन' : 'Direct physical cash'}
+            </Text>
+          </View>
+
+          {/* Card 3: Online / UPI (Purple Accent) */}
+          <View style={[styles.statCardHalf, styles.accentBorderPurple]}>
+            <Text style={styles.statCardLabel}>
+              📱 {language === 'mr' ? 'युपीआय / ऑनलाइन' : 'Online / UPI'}
+            </Text>
+            <Text style={[styles.statCardAmount, { color: '#7C3AED' }]}>{inr(onlineCollections)}</Text>
+            <Text style={styles.statCardSub}>
+              {language === 'mr' ? 'डिजिटल पेमेंट' : 'UPI & Gateway'}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* 3. Search Bar and Mode Filter Pills */}
+      <View style={styles.searchFilterContainer}>
+        <View style={styles.searchBar}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder={language === 'mr' ? 'नाव, हेतू किंवा पावती क्र. शोधा...' : 'Search donor, purpose, receipt #...'}
+            placeholderTextColor="#94A3B8"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={styles.clearIcon}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <View style={styles.filterPillsRow}>
+          {[
+            { key: 'all', label: language === 'mr' ? 'सर्व' : 'All', icon: '📋' },
+            { key: 'cash', label: language === 'mr' ? 'रोख' : 'Cash', icon: '💵' },
+            { key: 'upi', label: language === 'mr' ? 'UPI / ऑनलाइन' : 'UPI / Online', icon: '📱' },
+          ].map((pill) => {
+            const active = selectedMode === pill.key;
+            return (
+              <TouchableOpacity
+                key={pill.key}
+                style={[styles.filterPill, active && styles.filterPillActive]}
+                onPress={() => setSelectedMode(pill.key)}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.filterPillText, active && styles.filterPillTextActive]}>
+                  {pill.icon} {pill.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      {/* Main History List / States */}
       {loading ? (
         <View style={styles.centerBox}>
           <ActivityIndicator size="large" color="#F97316" />
@@ -226,53 +356,84 @@ export default function CollectionsScreen() {
         </View>
       ) : (
         <FlatList
-          data={collections}
+          data={filteredCollections}
           keyExtractor={(item) => item._id}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F97316']} tintColor="#F97316" />}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.card}
-              activeOpacity={0.85}
-              onPress={() => setSelectedRecord(item)}
-            >
-              <View style={styles.cardHeader}>
-                <View style={styles.avatarBox}>
-                  <Text style={styles.avatarText}>
-                    {item.donorName ? item.donorName[0].toUpperCase() : '🙏'}
-                  </Text>
-                </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={styles.cardTitle} numberOfLines={1}>
-                    {item.donorName || item.contributor || item.title}
-                  </Text>
-                  <Text style={styles.cardSubtitle} numberOfLines={1}>
-                    {item.purpose || item.title || 'Donation'} {item.receiptNumber ? `• #${item.receiptNumber}` : ''}
-                  </Text>
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={styles.cardAmount}>{inr(item.amount)}</Text>
-                  <View style={styles.modePill}>
-                    <Text style={styles.modePillText}>{item.paymentMode ? item.paymentMode.toUpperCase() : 'CASH'}</Text>
+          ListHeaderComponent={renderHeaderComponents}
+          renderItem={({ item, index }) => {
+            const avatarColors = ['#F97316', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'];
+            const avatarBg = avatarColors[index % avatarColors.length];
+            const donorName = item.donorName || item.contributor || item.title || (language === 'mr' ? 'देणगीदार' : 'Donor');
+            const donorInitial = donorName ? donorName[0].toUpperCase() : '🙏';
+            const isCash = (item.paymentMode || 'cash').toLowerCase() === 'cash';
+
+            return (
+              <TouchableOpacity
+                style={styles.card}
+                activeOpacity={0.85}
+                onPress={() => setSelectedRecord(item)}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={[styles.avatarBox, { backgroundColor: avatarBg }]}>
+                    <Text style={styles.avatarText}>{donorInitial}</Text>
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.cardTitle} numberOfLines={1}>
+                      {donorName}
+                    </Text>
+                    <View style={styles.cardMetaRow}>
+                      <Text style={styles.cardSubtitle} numberOfLines={1}>
+                        {item.purpose || item.title || (language === 'mr' ? 'देणगी' : 'Donation')}
+                      </Text>
+                      {item.receiptNumber ? (
+                        <View style={styles.receiptPill}>
+                          <Text style={styles.receiptPillText}>#{item.receiptNumber}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={styles.cardAmount}>{inr(item.amount)}</Text>
+                    <View style={[styles.modePill, isCash ? styles.modePillCash : styles.modePillUpi]}>
+                      <Text style={[styles.modePillText, isCash ? styles.modePillTextCash : styles.modePillTextUpi]}>
+                        {isCash ? '💵 CASH' : '📱 UPI'}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
 
-              <View style={styles.cardFooter}>
-                <Text style={styles.cardDate}>{formatDateHeader(item.date || item.createdAt)}</Text>
-                {item.donorMobile ? <Text style={styles.cardMobile}>📱 {item.donorMobile}</Text> : null}
-                <Text style={styles.cardDetailsHint}>•••</Text>
-              </View>
-            </TouchableOpacity>
-          )}
+                <View style={styles.cardFooter}>
+                  <View style={styles.cardFooterLeft}>
+                    <Text style={styles.cardDate}>{formatDateHeader(item.date || item.createdAt)}</Text>
+                    {item.donorMobile ? <Text style={styles.cardMobile}> · 📱 {item.donorMobile}</Text> : null}
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.cardReceiptActionBtn}
+                    onPress={() => setReceiptToShow(item)}
+                    activeOpacity={0.78}
+                  >
+                    <Text style={styles.cardReceiptActionText}>🧾 {language === 'mr' ? 'पावती' : 'Receipt'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            );
+          }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconCircle}>
                 <Text style={styles.emptyIcon}>💰</Text>
               </View>
-              <Text style={styles.emptyTitle}>{t('collections.noCollectionsYet')}</Text>
-              <Text style={styles.emptySubtitle}>{t('collections.noCollectionsSub')}</Text>
+              <Text style={styles.emptyTitle}>
+                {searchQuery ? (language === 'mr' ? 'कोणतीही देणगी सापडली नाही' : 'No matching donations') : t('collections.noCollectionsYet')}
+              </Text>
+              <Text style={styles.emptySubtitle}>
+                {searchQuery
+                  ? (language === 'mr' ? 'दुसरा शब्द शोधून पहा किंवा फिल्टर बदला' : 'Try a different search term or filter')
+                  : t('collections.noCollectionsSub')}
+              </Text>
             </View>
           }
         />
@@ -346,7 +507,7 @@ export default function CollectionsScreen() {
                   setReceiptToShow(r);
                 }}
               >
-                <Text style={styles.actionBtnReceiptText}>🧾 {t('receipts.shareWhatsApp')}</Text>
+                <Text style={styles.actionBtnReceiptText}>🧾 Share</Text>
               </TouchableOpacity>
 
               {canManage && (
@@ -529,10 +690,9 @@ const styles = StyleSheet.create({
   /* 1. Header Card */
   headerCard: {
     backgroundColor: '#FFFFFF',
-    margin: 16,
-    marginBottom: 8,
+    marginBottom: 12,
     borderRadius: 22,
-    padding: 20,
+    padding: 18,
     borderWidth: 1,
     borderColor: 'rgba(23, 37, 84, 0.06)',
     shadowColor: '#172554',
@@ -548,15 +708,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   badgePill: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
     paddingHorizontal: 10,
-    paddingVertical: 3.5,
+    paddingVertical: 4,
     borderRadius: 8,
   },
   badgePillText: {
-    color: '#059669',
+    color: '#EA580C',
     fontWeight: '800',
     fontSize: 11,
+    letterSpacing: 0.5,
   },
   countPill: {
     color: '#64748B',
@@ -564,43 +725,187 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   headerTitle: {
-    fontSize: 13.5,
-    color: '#64748B',
-    fontWeight: '600',
+    fontSize: 18,
+    color: '#0F172A',
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    marginBottom: 4,
   },
-  headerAmount: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#059669',
-    letterSpacing: -0.5,
-    marginTop: 2,
+  headerSub: {
+    fontSize: 12.5,
+    color: '#64748B',
+    lineHeight: 18,
     marginBottom: 14,
   },
   headerAddBtn: {
-    backgroundColor: '#ECFDF5',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
+    backgroundColor: '#F97316',
     borderRadius: 12,
-    paddingVertical: 9,
+    paddingVertical: 10,
     alignItems: 'center',
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   headerAddBtnText: {
-    color: '#059669',
+    color: '#FFFFFF',
     fontWeight: '800',
     fontSize: 13.5,
   },
 
-  /* 2. List & Cards */
+  /* 2. Stat Cards */
+  statsContainer: {
+    marginBottom: 14,
+    gap: 10,
+  },
+  statCardFull: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.06)',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  statCardRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  statCardHalf: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.06)',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  accentBorderOrange: {
+    borderTopWidth: 3.5,
+    borderTopColor: '#F97316',
+  },
+  accentBorderGreen: {
+    borderTopWidth: 3.5,
+    borderTopColor: '#10B981',
+  },
+  accentBorderPurple: {
+    borderTopWidth: 3.5,
+    borderTopColor: '#8B5CF6',
+  },
+  statCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  statCardLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  statCountBadge: {
+    backgroundColor: '#FFF7ED',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  statCountBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#EA580C',
+  },
+  statCardAmount: {
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: -0.4,
+    marginVertical: 4,
+  },
+  statCardSub: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+
+  /* 3. Search & Filters */
+  searchFilterContainer: {
+    marginBottom: 14,
+    gap: 10,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    height: 44,
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.08)',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+  },
+  searchIcon: {
+    fontSize: 15,
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#0F172A',
+    height: '100%',
+  },
+  clearIcon: {
+    fontSize: 14,
+    color: '#94A3B8',
+    fontWeight: '700',
+    padding: 4,
+  },
+  filterPillsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  filterPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.08)',
+  },
+  filterPillActive: {
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
+  },
+  filterPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  filterPillTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+
+  /* 4. List & Cards */
   listContainer: {
     padding: 16,
-    paddingTop: 8,
+    paddingTop: 12,
     paddingBottom: 110,
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
-    padding: 16,
-    marginBottom: 12,
+    padding: 15,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: 'rgba(23, 37, 84, 0.06)',
     shadowColor: '#172554',
@@ -616,43 +921,68 @@ const styles = StyleSheet.create({
   avatarBox: {
     width: 42,
     height: 42,
-    borderRadius: 14,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#059669',
+    color: '#FFFFFF',
   },
   cardTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#172554',
+    color: '#0F172A',
+  },
+  cardMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
   },
   cardSubtitle: {
     fontSize: 12,
     color: '#64748B',
-    marginTop: 2,
     fontWeight: '500',
+  },
+  receiptPill: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 5,
+  },
+  receiptPillText: {
+    fontSize: 10,
+    color: '#475569',
+    fontWeight: '700',
   },
   cardAmount: {
     fontSize: 16.5,
-    fontWeight: '800',
+    fontWeight: '900',
     color: '#059669',
   },
   modePill: {
-    backgroundColor: '#F1F5F9',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 5,
     marginTop: 3,
   },
+  modePillCash: {
+    backgroundColor: '#ECFDF5',
+  },
+  modePillUpi: {
+    backgroundColor: '#F5F3FF',
+  },
   modePillText: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#475569',
+  },
+  modePillTextCash: {
+    color: '#059669',
+  },
+  modePillTextUpi: {
+    color: '#7C3AED',
   },
   cardFooter: {
     flexDirection: 'row',
@@ -662,6 +992,10 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: 'rgba(23, 37, 84, 0.04)',
+  },
+  cardFooterLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   cardDate: {
     fontSize: 11.5,
@@ -673,10 +1007,18 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '500',
   },
-  cardDetailsHint: {
-    color: '#CBD5E1',
+  cardReceiptActionBtn: {
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    paddingHorizontal: 9,
+    paddingVertical: 3.5,
+    borderRadius: 8,
+  },
+  cardReceiptActionText: {
+    color: '#EA580C',
+    fontSize: 11,
     fontWeight: '800',
-    fontSize: 12,
   },
 
   /* 3. FAB */

@@ -1,7 +1,8 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Dimensions } from 'react-native';
 import { HomeIcon, CollectionsIcon, ExpensesIcon, ReceiptsIcon, MandalIcon } from '../components/TabIcons';
+import { useLanguage } from '../context/LanguageContext';
 
 import DashboardScreen from '../screens/DashboardScreen';
 import CollectionsScreen from '../screens/CollectionsScreen';
@@ -10,56 +11,28 @@ import ReceiptsScreen from '../screens/ReceiptsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-function renderTabIcon(routeName, isFocused) {
-  const color = isFocused ? '#F97316' : '#64748B';
-  const size = 20;
-
-  switch (routeName) {
-    case 'HomeTab':
-      return <HomeIcon size={size} color={color} isFocused={isFocused} />;
-    case 'CollectionsTab':
-      return <CollectionsIcon size={size} color={color} isFocused={isFocused} />;
-    case 'ExpensesTab':
-      return <ExpensesIcon size={size} color={color} isFocused={isFocused} />;
-    case 'ReceiptsTab':
-      return <ReceiptsIcon size={size} color={color} isFocused={isFocused} />;
-    case 'ProfileTab':
-      return <MandalIcon size={size} color={color} isFocused={isFocused} />;
-    default:
-      return <HomeIcon size={size} color={color} isFocused={isFocused} />;
-  }
-}
-
-import { useLanguage } from '../context/LanguageContext';
+const TAB_ROUTES = [
+  { name: 'HomeTab',        labelKey: 'nav.home',       Icon: HomeIcon },
+  { name: 'CollectionsTab', labelKey: 'nav.collections', Icon: CollectionsIcon },
+  { name: 'ExpensesTab',    labelKey: 'nav.expenses',    Icon: ExpensesIcon },
+  { name: 'ReceiptsTab',    labelKey: 'nav.receipts',    Icon: ReceiptsIcon },
+  { name: 'ProfileTab',     labelKey: 'nav.mandal',      Icon: MandalIcon },
+];
 
 function FloatingTabBar({ state, descriptors, navigation }) {
   const { t } = useLanguage();
 
-  const getTabLabel = (routeName) => {
-    switch (routeName) {
-      case 'HomeTab':
-        return t('nav.home');
-      case 'CollectionsTab':
-        return t('nav.collections');
-      case 'ExpensesTab':
-        return t('nav.expenses');
-      case 'ReceiptsTab':
-        return t('nav.receipts');
-      case 'ProfileTab':
-        return t('nav.mandal');
-      default:
-        return routeName;
-    }
-  };
-
   return (
-    <View style={styles.floatingBarContainer}>
+    <View style={styles.outerWrapper}>
       <View style={styles.floatingBar}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const isFocused = state.index === index;
-          const label = getTabLabel(route.name);
+          const tabDef = TAB_ROUTES.find((r) => r.name === route.name);
+          const label = t(tabDef?.labelKey || 'nav.home');
+          const Icon = tabDef?.Icon || HomeIcon;
 
           const onPress = () => {
             const event = navigation.emit({
@@ -67,7 +40,6 @@ function FloatingTabBar({ state, descriptors, navigation }) {
               target: route.key,
               canPreventDefault: true,
             });
-
             if (!isFocused && !event.defaultPrevented) {
               navigation.navigate(route.name);
             }
@@ -78,20 +50,29 @@ function FloatingTabBar({ state, descriptors, navigation }) {
               key={route.key}
               accessibilityRole="button"
               accessibilityState={isFocused ? { selected: true } : {}}
-              accessibilityLabel={options.tabBarAccessibilityLabel}
+              accessibilityLabel={options.tabBarAccessibilityLabel || label}
               onPress={onPress}
-              style={[
-                styles.tabItem,
-                isFocused ? styles.tabItemFocused : styles.tabItemUnfocused
-              ]}
-              activeOpacity={0.78}
+              style={styles.tabItem}
+              activeOpacity={0.72}
             >
-              {renderTabIcon(route.name, isFocused)}
-              {isFocused ? (
-                <Text style={styles.tabLabelFocused} numberOfLines={1}>{label}</Text>
-              ) : (
-                <Text style={styles.tabLabelUnfocused} numberOfLines={1}>{label}</Text>
-              )}
+              {/* Active glow pill behind icon */}
+              {isFocused && <View style={styles.activePill} />}
+
+              {/* Icon */}
+              <View style={styles.iconWrap}>
+                <Icon size={21} color={isFocused ? '#F97316' : '#94A3B8'} isFocused={isFocused} />
+              </View>
+
+              {/* Label */}
+              <Text
+                style={[styles.tabLabel, isFocused ? styles.tabLabelActive : styles.tabLabelInactive]}
+                numberOfLines={1}
+              >
+                {label}
+              </Text>
+
+              {/* Active dot indicator */}
+              {isFocused && <View style={styles.activeDot} />}
             </TouchableOpacity>
           );
         })}
@@ -124,111 +105,114 @@ export default function MainTabNavigator() {
         },
       }}
     >
-      <Tab.Screen 
-        name="HomeTab" 
-        component={DashboardScreen} 
-        options={{ 
-          title: t('nav.home'),
-          headerTitle: t('nav.appTitle'),
-        }} 
+      <Tab.Screen
+        name="HomeTab"
+        component={DashboardScreen}
+        options={{ title: t('nav.home'), headerTitle: t('nav.appTitle') }}
       />
-      <Tab.Screen 
-        name="CollectionsTab" 
-        component={CollectionsScreen} 
-        options={{ 
-          title: t('nav.collections'),
-          headerTitle: t('collections.title'),
-        }} 
+      <Tab.Screen
+        name="CollectionsTab"
+        component={CollectionsScreen}
+        options={{ title: t('nav.collections'), headerTitle: t('collections.title') }}
       />
-      <Tab.Screen 
-        name="ExpensesTab" 
-        component={ExpensesScreen} 
-        options={{ 
-          title: t('nav.expenses'),
-          headerTitle: t('expenses.title'),
-        }} 
+      <Tab.Screen
+        name="ExpensesTab"
+        component={ExpensesScreen}
+        options={{ title: t('nav.expenses'), headerTitle: t('expenses.title') }}
       />
-      <Tab.Screen 
-        name="ReceiptsTab" 
-        component={ReceiptsScreen} 
-        options={{ 
-          title: t('nav.receipts'),
-          headerTitle: t('nav.donationReceipts'),
-        }} 
+      <Tab.Screen
+        name="ReceiptsTab"
+        component={ReceiptsScreen}
+        options={{ title: t('nav.receipts'), headerTitle: t('nav.donationReceipts') }}
       />
-      <Tab.Screen 
-        name="ProfileTab" 
-        component={ProfileScreen} 
-        options={{ 
-          title: t('nav.mandal'),
-          headerTitle: t('nav.profile'),
-        }} 
+      <Tab.Screen
+        name="ProfileTab"
+        component={ProfileScreen}
+        options={{ title: t('nav.mandal'), headerTitle: t('nav.profile') }}
       />
     </Tab.Navigator>
   );
 }
 
+const BAR_HEIGHT = 68;
+const ITEM_WIDTH = (SCREEN_WIDTH - 32) / 5; // 5 tabs, bar has 16px margin each side
+
 const styles = StyleSheet.create({
-  floatingBarContainer: {
+  outerWrapper: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 20 : 10,
-    left: 10,
-    right: 10,
+    bottom: Platform.OS === 'ios' ? 22 : 12,
+    left: 16,
+    right: 16,
     backgroundColor: 'transparent',
   },
   floatingBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
     backgroundColor: '#FFFFFF',
-    borderRadius: 26,
+    borderRadius: 28,
+    height: BAR_HEIGHT,
     paddingHorizontal: 4,
-    paddingVertical: 6,
-    height: 66,
     borderWidth: 1,
-    borderColor: 'rgba(23, 37, 84, 0.06)',
+    borderColor: 'rgba(23, 37, 84, 0.07)',
     shadowColor: '#172554',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.10,
+    shadowRadius: 20,
+    elevation: 14,
+    // subtle top highlight line
+    overflow: 'hidden',
   },
+
+  /* ── Each Tab Item ── */
   tabItem: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 18,
-    minWidth: 44,
+    height: BAR_HEIGHT,
+    position: 'relative',
+    paddingBottom: 4,
   },
-  tabItemFocused: {
-    flexDirection: 'row',
+
+  /* Orange glow capsule behind active icon */
+  activePill: {
+    position: 'absolute',
+    top: 10,
+    width: 42,
+    height: 36,
+    borderRadius: 14,
+    backgroundColor: 'rgba(249, 115, 22, 0.10)',
+  },
+
+  iconWrap: {
+    width: 24,
+    height: 24,
     alignItems: 'center',
-    backgroundColor: '#FFF1E7',
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-    gap: 4,
+    justifyContent: 'center',
+    marginBottom: 3,
+    zIndex: 1,
   },
-  tabItemUnfocused: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 5,
-    gap: 2,
+
+  tabLabel: {
+    fontSize: 10,
+    letterSpacing: 0.1,
+    zIndex: 1,
   },
-  tabIcon: {
-    fontSize: 17,
-  },
-  tabIconFocused: {
-    fontSize: 17,
-  },
-  tabLabelFocused: {
+  tabLabelActive: {
     color: '#F97316',
     fontWeight: '800',
-    fontSize: 11.5,
-    letterSpacing: -0.2,
   },
-  tabLabelUnfocused: {
-    color: '#64748B',
+  tabLabelInactive: {
+    color: '#94A3B8',
     fontWeight: '600',
-    fontSize: 9.5,
+  },
+
+  /* Small dot at the bottom of the active tab */
+  activeDot: {
+    position: 'absolute',
+    bottom: 7,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#F97316',
   },
 });

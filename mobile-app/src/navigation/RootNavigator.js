@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
+import WelcomeScreen from '../screens/WelcomeScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
@@ -65,7 +66,7 @@ export default function RootNavigator() {
     <NavigationContainer>
       <Stack.Navigator
         screenOptions={{
-          animation: 'fade',
+          animation: 'slide_from_right',
           headerStyle: { backgroundColor: '#172554' },
           headerTintColor: '#FFFFFF',
           headerTitleStyle: { fontWeight: '800', fontSize: 18 }
@@ -74,6 +75,7 @@ export default function RootNavigator() {
         {!user ? (
           // ── Auth Stack ──────────────────────────────────
           <>
+            <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
           </>
@@ -104,7 +106,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Receipts" component={ReceiptsScreen} options={{ title: t('nav.donationReceipts') }} />
             <Stack.Screen name="Expenses" component={ExpensesScreen} options={{ title: t('nav.expenses') }} />
             <Stack.Screen name="Approvals" component={ApprovalsScreen} options={{ title: t('nav.approvals') }} />
-            <Stack.Screen name="Chat" component={ChatScreen} options={{ title: t('nav.chat') }} />
+            <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false, animation: 'slide_from_right' }} />
             <Stack.Screen name="Events" component={EventsScreen} options={{ title: t('nav.events') }} />
           </>
         )}
