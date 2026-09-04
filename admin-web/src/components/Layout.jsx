@@ -76,55 +76,71 @@ export default function Layout({ children }) {
     navigate(path);
   };
 
+  const isSuperAdmin = user?.role === 'superadmin';
+
   return (
     <div className="app-shell">
       {/* ── Desktop Sidebar ── */}
       <aside className="desktop-sidebar">
-        <div className="brand" onClick={() => navigate('/')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="brand" onClick={() => navigate(isSuperAdmin ? '/superadmin' : '/')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
           <img
-            src={mandal?.logoBase64 || mandal?.logoUrl || '/logo.png'}
+            src={!isSuperAdmin && (mandal?.logoBase64 || mandal?.logoUrl) ? (mandal?.logoBase64 || mandal?.logoUrl) : '/logo.png'}
             alt="Apla Mandal Logo"
             style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'contain', background: '#FFFFFF', padding: 2, flexShrink: 0 }}
             onError={(e) => { e.target.src = '/logo.png'; }}
           />
           <div className="brand-text">
             Apla<span>Mandal</span>
-            <span className="brand-sub">{mandal?.name || 'Apla Mandal'}</span>
+            <span className="brand-sub">{isSuperAdmin ? 'SuperAdmin Console' : (mandal?.name || 'Apla Mandal')}</span>
           </div>
         </div>
 
         <nav>
-          {/* Main Dashboard Link */}
-          <NavLink to={dashboardLink.to} end={dashboardLink.end}>
-            <span>{dashboardLink.icon}</span> {language === 'mr' ? dashboardLink.labelMr : dashboardLink.labelEn}
-          </NavLink>
-
-          {/* Grouped Nav Sections */}
-          {navSections.map((section) => (
-            <div key={section.id} className="nav-group-wrapper">
+          {isSuperAdmin ? (
+            <div style={{ marginTop: 8 }}>
               <div className="sidebar-section-title">
-                {language === 'mr' ? section.titleMr : section.titleEn}
-              </div>
-              {section.items.map((item) => (
-                <NavLink key={item.to} to={item.to}>
-                  <span>{item.icon}</span> {language === 'mr' ? item.labelMr : item.labelEn}
-                </NavLink>
-              ))}
-            </div>
-          ))}
-
-          {/* Superadmin Section */}
-          {user?.role === 'superadmin' && (
-            <div style={{ marginTop: 16, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <div className="sidebar-section-title">
-                {language === 'mr' ? 'सुपरअ‍ॅडमिन' : 'Superadmin'}
+                {language === 'mr' ? 'सुपरअ‍ॅडमिन' : 'SUPERADMIN'}
               </div>
               <NavLink to="/superadmin">
-                <span>🛡️</span> Superadmin
+                <span>🛡️</span> {language === 'mr' ? 'सुपरअ‍ॅडमिन डॅशबोर्ड' : 'Superadmin Dashboard'}
               </NavLink>
             </div>
+          ) : (
+            <>
+              {/* Main Dashboard Link */}
+              <NavLink to={dashboardLink.to} end={dashboardLink.end}>
+                <span>{dashboardLink.icon}</span> {language === 'mr' ? dashboardLink.labelMr : dashboardLink.labelEn}
+              </NavLink>
+
+              {/* Grouped Nav Sections */}
+              {navSections.map((section) => (
+                <div key={section.id} className="nav-group-wrapper">
+                  <div className="sidebar-section-title">
+                    {language === 'mr' ? section.titleMr : section.titleEn}
+                  </div>
+                  {section.items.map((item) => (
+                    <NavLink key={item.to} to={item.to}>
+                      <span>{item.icon}</span> {language === 'mr' ? item.labelMr : item.labelEn}
+                    </NavLink>
+                  ))}
+                </div>
+              ))}
+            </>
           )}
         </nav>
+
+        {/* ── Sidebar Footer Branding ── */}
+        <div className="sidebar-footer-branding">
+          <span>Powered by </span>
+          <a
+            href="https://quantromind.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="sidebar-powered-link"
+          >
+            Quantromind Pvt Ltd
+          </a>
+        </div>
       </aside>
 
       <div className="main-area">
@@ -132,22 +148,28 @@ export default function Layout({ children }) {
         <header className="topbar">
           <div className="topbar-left">
             {/* Mobile Brand Logo & Name */}
-            <div className="topbar-brand-mobile" onClick={() => navigate('/')}>
+            <div className="topbar-brand-mobile" onClick={() => navigate(isSuperAdmin ? '/superadmin' : '/')}>
               <img
-                src={mandal?.logoBase64 || mandal?.logoUrl || '/logo.png'}
+                src={!isSuperAdmin && (mandal?.logoBase64 || mandal?.logoUrl) ? (mandal?.logoBase64 || mandal?.logoUrl) : '/logo.png'}
                 alt="Logo"
                 className="topbar-brand-logo"
                 onError={(e) => { e.target.src = '/logo.png'; }}
               />
               <span className="topbar-brand-title">
-                {mandal?.name || 'Apla Mandal'}
+                {isSuperAdmin ? 'SuperAdmin' : (mandal?.name || 'Apla Mandal')}
               </span>
             </div>
 
-            {/* Desktop Mandal Badge */}
-            <span className="topbar-mandal-badge">
-              🚩 {mandal?.name || 'श्री गणेश मित्र मंडळ'}
-            </span>
+            {/* Desktop Mandal Badge / SuperAdmin Badge */}
+            {isSuperAdmin ? (
+              <span className="topbar-mandal-badge" style={{ background: 'rgba(255, 107, 0, 0.1)', color: 'var(--primary, #FF6B00)', borderColor: 'rgba(255, 107, 0, 0.3)', fontWeight: 600 }}>
+                🛡️ {language === 'mr' ? 'सुपरअ‍ॅडमिन कन्सोल' : 'Superadmin Console'}
+              </span>
+            ) : (
+              <span className="topbar-mandal-badge">
+                🚩 {mandal?.name || 'श्री गणेश मित्र मंडळ'}
+              </span>
+            )}
           </div>
 
           <div className="topbar-right">
@@ -161,14 +183,18 @@ export default function Layout({ children }) {
               <span className="lang-text">{language === 'mr' ? 'English' : 'मराठी'}</span>
             </button>
 
-            <button className="btn btn-primary btn-quick-add" onClick={() => setShowQuickAdd(true)}>
-              + New
-            </button>
+            {!isSuperAdmin && (
+              <button className="btn btn-primary btn-quick-add" onClick={() => setShowQuickAdd(true)}>
+                + New
+              </button>
+            )}
 
-            <div className="avatar-chip" onClick={() => navigate('/profile')} title="My Profile">
-              <div className="avatar">{user?.name?.[0]?.toUpperCase() || 'M'}</div>
+            <div className="avatar-chip" onClick={() => navigate(isSuperAdmin ? '/superadmin' : '/profile')} title={isSuperAdmin ? 'Superadmin' : 'My Profile'}>
+              <div className="avatar" style={isSuperAdmin ? { background: '#FF6B00', color: '#fff' } : {}}>
+                {user?.name?.[0]?.toUpperCase() || 'S'}
+              </div>
               <div className="avatar-info-desktop">
-                <span className="avatar-name">{user?.name || 'Member'}</span>
+                <span className="avatar-name">{user?.name || (isSuperAdmin ? 'Super Admin' : 'Member')}</span>
                 <span className="avatar-role">{user?.role || 'volunteer'}</span>
               </div>
             </div>
@@ -181,10 +207,25 @@ export default function Layout({ children }) {
 
         {/* ── Content ── */}
         <div className="content">{children}</div>
+
+        {/* ── App Shell Subtle Footer ── */}
+        <footer className="app-shell-footer">
+          <span>
+            Powered by{' '}
+            <a
+              href="https://quantromind.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="powered-by-link"
+            >
+              Quantromind Pvt Ltd
+            </a>
+          </span>
+        </footer>
       </div>
 
       {/* Floating Chat Shortcut Button */}
-      {location.pathname !== '/chat' && (
+      {!isSuperAdmin && location.pathname !== '/chat' && (
         <button
           className="floating-chat-btn"
           onClick={() => navigate('/chat')}
@@ -196,57 +237,77 @@ export default function Layout({ children }) {
       )}
 
       {/* ── Mobile Bottom Navigation ── */}
-      <nav className="mobile-nav">
-        {/* 1. Home / Dashboard */}
-        <NavLink
-          to="/"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-          end
-        >
-          <span>🏠</span>
-          <span>{language === 'mr' ? 'मुख्यपृष्ठ' : 'Home'}</span>
-        </NavLink>
-
-        {/* 2. Collections */}
-        <NavLink
-          to="/collections"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <span>🚩</span>
-          <span>{language === 'mr' ? 'वर्गणी' : 'Collections'}</span>
-        </NavLink>
-
-        {/* 3. Floating Quick Action Center Button */}
-        <div className="nav-item nav-fab-wrapper">
-          <button
-            className="nav-fab"
-            onClick={() => setShowQuickAdd(true)}
-            aria-label="Quick Add"
+      {isSuperAdmin ? (
+        <nav className="mobile-nav" style={{ justifyContent: 'space-around' }}>
+          <NavLink
+            to="/superadmin"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
-            +
+            <span>🛡️</span>
+            <span>{language === 'mr' ? 'डॅशबोर्ड' : 'Dashboard'}</span>
+          </NavLink>
+          <button
+            className="nav-item"
+            onClick={handleLogout}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+          >
+            <span>🚪</span>
+            <span>{language === 'mr' ? 'लॉगआउट' : 'Logout'}</span>
           </button>
-        </div>
+        </nav>
+      ) : (
+        <nav className="mobile-nav">
+          {/* 1. Home / Dashboard */}
+          <NavLink
+            to="/"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            end
+          >
+            <span>🏠</span>
+            <span>{language === 'mr' ? 'मुख्यपृष्ठ' : 'Home'}</span>
+          </NavLink>
 
-        {/* 4. Chat */}
-        <NavLink
-          to="/chat"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <span>💬</span>
-          <span>{language === 'mr' ? 'संवाद' : 'Chat'}</span>
-        </NavLink>
+          {/* 2. Collections */}
+          <NavLink
+            to="/collections"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+          >
+            <span>🚩</span>
+            <span>{language === 'mr' ? 'वर्गणी' : 'Collections'}</span>
+          </NavLink>
 
-        {/* 5. More Menu Button */}
-        <button
-          className={`nav-item ${showMoreNav ? 'active' : ''}`}
-          onClick={() => setShowMoreNav(true)}
-          style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
-          aria-label="More Menu"
-        >
-          <span style={{ fontSize: 20 }}>☰</span>
-          <span>{language === 'mr' ? 'अधिक' : 'More'}</span>
-        </button>
-      </nav>
+          {/* 3. Floating Quick Action Center Button */}
+          <div className="nav-item nav-fab-wrapper">
+            <button
+              className="nav-fab"
+              onClick={() => setShowQuickAdd(true)}
+              aria-label="Quick Add"
+            >
+              +
+            </button>
+          </div>
+
+          {/* 4. Chat */}
+          <NavLink
+            to="/chat"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+          >
+            <span>💬</span>
+            <span>{language === 'mr' ? 'संवाद' : 'Chat'}</span>
+          </NavLink>
+
+          {/* 5. More Menu Button */}
+          <button
+            className={`nav-item ${showMoreNav ? 'active' : ''}`}
+            onClick={() => setShowMoreNav(true)}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+            aria-label="More Menu"
+          >
+            <span style={{ fontSize: 20 }}>☰</span>
+            <span>{language === 'mr' ? 'अधिक' : 'More'}</span>
+          </button>
+        </nav>
+      )}
 
       {/* ── Mobile More Drawer / Sheet ── */}
       {showMoreNav && (

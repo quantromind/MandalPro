@@ -14,8 +14,6 @@ const PLANS = [
 const Settings = () => {
   const { user, logout } = useAuth();
   const [mandal, setMandal] = useState(null);
-  const [saved, setSaved] = useState(false);
-
   // Upgrade Modal State
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [targetPlan, setTargetPlan] = useState('Pro');
@@ -30,17 +28,6 @@ const Settings = () => {
   const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => { api.get('/mandal').then((res) => setMandal(res.data)); }, []);
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    const { data } = await api.patch('/mandal', {
-      name: mandal.name, address: mandal.address, contactPhone: mandal.contactPhone,
-      contactEmail: mandal.contactEmail, upiId: mandal.upiId, receiptPrefix: mandal.receiptPrefix
-    });
-    setMandal(data);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
 
   const handleOpenDeleteModal = () => {
     setDeleteStep('warning');
@@ -100,114 +87,121 @@ const Settings = () => {
   return (
     <Layout>
       <div className="flex-between mb-4">
-        <h1 className="text-h1" style={{ fontSize: 24 }}>Settings</h1>
+        <div>
+          <h1 className="text-h1" style={{ fontSize: 24, margin: 0 }}>⚙️ Settings</h1>
+          <p className="text-muted" style={{ marginTop: 4, fontSize: 13.5 }}>
+            Subscription plan, legal compliance &amp; workspace management
+          </p>
+        </div>
+      </div>
+
+      {/* Quick link banner to Mandal Profile */}
+      <div 
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          background: '#FFF',
+          border: '1px solid var(--border)',
+          borderRadius: 12,
+          marginBottom: 20,
+          boxShadow: 'var(--shadow-sm)',
+          flexWrap: 'wrap',
+          gap: 12
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ fontSize: 28 }}>🏛️</div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-main)' }}>
+              Mandal Information &amp; Branding
+            </div>
+            <div className="text-muted" style={{ fontSize: 13, marginTop: 2 }}>
+              Mandal name, address, contact phone, email, logo, and payment credentials are managed in Mandal Profile.
+            </div>
+          </div>
+        </div>
+        <Link 
+          to="/profile" 
+          className="btn btn-primary btn-sm" 
+          style={{ textDecoration: 'none', whiteSpace: 'nowrap', fontWeight: 600, padding: '8px 16px' }}
+        >
+          Open Mandal Profile →
+        </Link>
       </div>
 
       <div className="grid grid-2">
+        {/* Subscription Plan */}
         <div className="card">
-          <h2 className="text-h2" style={{ fontSize: 18, marginBottom: 16 }}>Mandal Information</h2>
-          {saved && <div style={{ padding: 12, background: 'rgba(16,185,129,0.1)', color: 'var(--success)', borderRadius: 8, marginBottom: 16, fontWeight: 600 }}>✓ Settings saved successfully</div>}
-          
-          <form onSubmit={handleSave}>
-            <div className="field">
-              <label>Mandal Name</label>
-              <input value={mandal.name || ''} onChange={(e) => setMandal({ ...mandal, name: e.target.value })} />
+          <h2 className="text-h2" style={{ fontSize: 18, marginBottom: 16 }}>💎 Subscription Plan</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, background: 'rgba(255,107,0,0.05)', borderRadius: 8, border: '1px solid var(--primary)', marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)', marginBottom: 4 }}>{mandal.plan} Plan</div>
+              <div className="text-caption">Status: <strong style={{ color: mandal.planStatus === 'Active' ? 'var(--success)' : 'var(--danger)' }}>{mandal.planStatus || 'Active'}</strong></div>
             </div>
-            <div className="field">
-              <label>Address</label>
-              <textarea rows={2} value={mandal.address || ''} onChange={(e) => setMandal({ ...mandal, address: e.target.value })} />
-            </div>
-            
-            <div className="grid-2">
-              <div className="field">
-                <label>Contact Phone</label>
-                <input value={mandal.contactPhone || ''} onChange={(e) => setMandal({ ...mandal, contactPhone: e.target.value })} />
-              </div>
-              <div className="field">
-                <label>Contact Email</label>
-                <input type="email" value={mandal.contactEmail || ''} onChange={(e) => setMandal({ ...mandal, contactEmail: e.target.value })} />
-              </div>
-            </div>
-            
-            <h3 className="text-h3" style={{ fontSize: 15, marginTop: 24, marginBottom: 12 }}>Financials</h3>
-            
-            <div className="grid-2">
-              <div className="field">
-                <label>UPI ID</label>
-                <input value={mandal.upiId || ''} onChange={(e) => setMandal({ ...mandal, upiId: e.target.value })} />
-              </div>
-              <div className="field">
-                <label>Receipt Prefix</label>
-                <input value={mandal.receiptPrefix || ''} onChange={(e) => setMandal({ ...mandal, receiptPrefix: e.target.value })} placeholder="e.g. GU26" />
-              </div>
-            </div>
-
-            <button className="btn btn-primary" type="submit" style={{ marginTop: 12 }}>Save Changes</button>
-          </form>
-        </div>
-
-        <div>
-          <div className="card" style={{ marginBottom: 16 }}>
-            <h2 className="text-h2" style={{ fontSize: 18, marginBottom: 16 }}>Subscription Plan</h2>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, background: 'rgba(255,107,0,0.05)', borderRadius: 8, border: '1px solid var(--primary)' }}>
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)', marginBottom: 4 }}>{mandal.plan} Plan</div>
-                <div className="text-caption">Status: <strong style={{ color: mandal.planStatus === 'Active' ? 'var(--success)' : 'var(--danger)' }}>{mandal.planStatus || 'Active'}</strong></div>
-              </div>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() => {
-                  setTargetPlan(mandal.plan === 'Basic' ? 'Pro' : mandal.plan === 'Pro' ? 'Premium' : 'Pro');
-                  setShowUpgradeModal(true);
-                }}
-              >
-                ⭐ Upgrade Plan
-              </button>
-            </div>
-          </div>
-
-          <div className="card" style={{ marginBottom: 16 }}>
-            <h2 className="text-h2" style={{ fontSize: 18, marginBottom: 12 }}>Legal &amp; Compliance</h2>
-            <p className="text-sub mb-3" style={{ fontSize: 13 }}>
-              Apla Mandal platform policies, terms of service, and regulatory disclosures.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Link 
-                to="/privacy-policy" 
-                target="_blank" 
-                rel="noreferrer"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg)', borderRadius: 8, color: 'var(--text-main)', fontSize: 14, fontWeight: 500 }}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>🛡️</span> Privacy Policy
-                </span>
-                <span style={{ color: 'var(--primary)', fontSize: 13, fontWeight: 600 }}>View ↗</span>
-              </Link>
-              <Link 
-                to="/terms-and-conditions" 
-                target="_blank" 
-                rel="noreferrer"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg)', borderRadius: 8, color: 'var(--text-main)', fontSize: 14, fontWeight: 500 }}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>📜</span> Terms &amp; Conditions
-                </span>
-                <span style={{ color: 'var(--primary)', fontSize: 13, fontWeight: 600 }}>View ↗</span>
-              </Link>
-            </div>
-          </div>
-
-          <div className="card border-danger">
-            <h2 className="text-h2" style={{ fontSize: 18, marginBottom: 16, color: 'var(--danger)' }}>Danger Zone</h2>
-            <p className="text-sub mb-3">Irreversible and destructive actions. Permanently purge your Mandal workspace, donations, expenses, and records.</p>
             <button
-              className="btn btn-outline"
-              style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
-              onClick={handleOpenDeleteModal}
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                setTargetPlan(mandal.plan === 'Basic' ? 'Pro' : mandal.plan === 'Pro' ? 'Premium' : 'Pro');
+                setShowUpgradeModal(true);
+              }}
             >
-              Delete Workspace Permanently
+              ⭐ Upgrade Plan
             </button>
           </div>
+          <p className="text-sub" style={{ fontSize: 13, margin: 0, lineHeight: 1.5 }}>
+            Upgrade your plan for unlimited members, advanced analytics, and custom branding for your receipts.
+          </p>
+        </div>
+
+        {/* Legal & Compliance */}
+        <div className="card">
+          <h2 className="text-h2" style={{ fontSize: 18, marginBottom: 12 }}>📜 Legal &amp; Compliance</h2>
+          <p className="text-sub mb-3" style={{ fontSize: 13 }}>
+            Apla Mandal platform policies, terms of service, and regulatory disclosures.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Link 
+              to="/privacy-policy" 
+              target="_blank" 
+              rel="noreferrer"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg)', borderRadius: 8, color: 'var(--text-main)', fontSize: 14, fontWeight: 500 }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>🛡️</span> Privacy Policy
+              </span>
+              <span style={{ color: 'var(--primary)', fontSize: 13, fontWeight: 600 }}>View ↗</span>
+            </Link>
+            <Link 
+              to="/terms-and-conditions" 
+              target="_blank" 
+              rel="noreferrer"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg)', borderRadius: 8, color: 'var(--text-main)', fontSize: 14, fontWeight: 500 }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>📜</span> Terms &amp; Conditions
+              </span>
+              <span style={{ color: 'var(--primary)', fontSize: 13, fontWeight: 600 }}>View ↗</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Danger Zone */}
+      <div className="card border-danger" style={{ marginTop: 20 }}>
+        <h2 className="text-h2" style={{ fontSize: 18, marginBottom: 12, color: 'var(--danger)' }}>⚠️ Danger Zone</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+          <p className="text-sub" style={{ margin: 0, maxWidth: 600 }}>
+            Irreversible and destructive actions. Permanently purge your Mandal workspace, donations, expenses, and records.
+          </p>
+          <button
+            className="btn btn-outline"
+            style={{ borderColor: 'var(--danger)', color: 'var(--danger)', whiteSpace: 'nowrap' }}
+            onClick={handleOpenDeleteModal}
+          >
+            Delete Workspace Permanently
+          </button>
         </div>
       </div>
 

@@ -3,6 +3,8 @@ const router = express.Router();
 const { protect, protectSuperadmin } = require('../middleware/auth');
 const {
   getAllUsers,
+  updateUser,
+  deleteUser,
   getAllMandals,
   getMandalById,
   updateMandal,
@@ -14,6 +16,10 @@ router.use(protect, protectSuperadmin);
 
 router.route('/users')
   .get(getAllUsers);
+
+router.route('/users/:id')
+  .put(updateUser)
+  .delete(deleteUser);
 
 router.route('/mandals')
   .get(getAllMandals);

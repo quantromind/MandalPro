@@ -341,6 +341,19 @@ export default function Register() {
 
         <div className="auth-footer" style={{ marginTop: 24 }}>
           By creating an account, you agree to our <Link to="/terms-and-conditions">Terms &amp; Conditions</Link> and <Link to="/privacy-policy">Privacy Policy</Link>
+          <div style={{ marginTop: 10, fontSize: 11.5, color: 'var(--text-muted)' }}>
+            Powered by{' '}
+            <a
+              href="https://quantromind.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--primary, #FF6B00)', textDecoration: 'none', fontWeight: 600 }}
+              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+            >
+              Quantromind Pvt Ltd
+            </a>
+          </div>
         </div>
       </div>
     </div>

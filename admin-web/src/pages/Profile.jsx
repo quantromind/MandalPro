@@ -17,6 +17,9 @@ export default function Profile() {
   const [mandalName, setMandalName] = useState('');
   const [establishedYear, setEstablishedYear] = useState('2023');
   const [address, setAddress] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [receiptPrefix, setReceiptPrefix] = useState('RCPT');
   const [upiId, setUpiId] = useState('');
   const [logoPreview, setLogoPreview] = useState('');
   const [logoBase64, setLogoBase64] = useState('');
@@ -53,6 +56,9 @@ export default function Profile() {
       setMandalName(mandal.name || '');
       setEstablishedYear(mandal.establishedYear || '2023');
       setAddress(mandal.address || '');
+      setContactPhone(mandal.contactPhone || '');
+      setContactEmail(mandal.contactEmail || '');
+      setReceiptPrefix(mandal.receiptPrefix || 'RCPT');
       setUpiId(mandal.upiId || '');
       setLogoPreview(mandal.logoBase64 || mandal.logoUrl || '');
       setLogoBase64(mandal.logoBase64 || '');
@@ -97,11 +103,14 @@ export default function Profile() {
         name: mandalName,
         establishedYear,
         address,
+        contactPhone,
+        contactEmail,
         upiId,
+        receiptPrefix,
         logoBase64
       });
       if (setMandal) setMandal(data);
-      alert(language === 'mr' ? 'मंडळ माहिती, स्थापना वर्ष व लोगो अद्ययावत केला! ✅' : 'Profile, establishment year & logo updated successfully! ✅');
+      alert(language === 'mr' ? 'मंडळ माहिती व लोगो अद्ययावत केला! ✅' : 'Profile, details & logo updated successfully! ✅');
     } catch (err) {
       alert(err.response?.data?.message || 'Error updating profile');
     } finally {
@@ -306,8 +315,8 @@ export default function Profile() {
 
               <div className="form-group">
                 <label className="form-label">{t('profile.address')}</label>
-                <input
-                  type="text"
+                <textarea
+                  rows={2}
                   className="form-control"
                   placeholder="e.g. Shivaji Chowk, Pune"
                   value={address}
@@ -315,15 +324,58 @@ export default function Profile() {
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">{t('profile.upiId')}</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="e.g. mandal@upi"
-                  value={upiId}
-                  onChange={(e) => setUpiId(e.target.value)}
-                />
+              <div className="grid-2">
+                <div className="form-group">
+                  <label className="form-label">
+                    📞 {language === 'mr' ? 'संपर्क फोन' : 'Contact Phone'}
+                  </label>
+                  <input
+                    type="tel"
+                    className="form-control"
+                    placeholder="e.g. 9876543210"
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">
+                    ✉️ {language === 'mr' ? 'संपर्क ईमेल' : 'Contact Email'}
+                  </label>
+                  <input
+                    type="email"
+                    className="form-control"
+                    placeholder="e.g. contact@mandal.com"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid-2">
+                <div className="form-group">
+                  <label className="form-label">{t('profile.upiId')}</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. mandal@upi"
+                    value={upiId}
+                    onChange={(e) => setUpiId(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">
+                    🧾 {language === 'mr' ? 'पावती उपसर्ग (Receipt Prefix)' : 'Receipt Prefix'}
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. GU26, RCPT"
+                    value={receiptPrefix}
+                    onChange={(e) => setReceiptPrefix(e.target.value)}
+                  />
+                </div>
               </div>
 
               <button type="submit" className="btn btn-primary" disabled={saving}>

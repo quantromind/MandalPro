@@ -53,7 +53,11 @@ export default function Login() {
       localStorage.setItem('mandalpro_user', JSON.stringify(data.user));
       if (data.mandal) localStorage.setItem('mandalpro_mandal', JSON.stringify(data.mandal));
 
-      navigate('/');
+      if (data.user?.role === 'superadmin') {
+        navigate('/superadmin');
+      } else {
+        navigate('/');
+      }
       window.location.reload();
     } catch (err) {
       setError(err.response?.data?.message || (isMr ? 'अवैध OTP. कृपया पुन्हा तपासा.' : 'Invalid OTP. Please check again.'));
@@ -71,8 +75,12 @@ export default function Login() {
     setLoading(true);
     setError('');
     try {
-      await login(email.trim().toLowerCase(), password);
-      navigate('/');
+      const res = await login(email.trim().toLowerCase(), password);
+      if (res?.user?.role === 'superadmin') {
+        navigate('/superadmin');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err.response?.data?.message || (isMr ? 'लॉगिन अयशस्वी. ईमेल किंवा पासवर्ड तपासा.' : 'Login failed. Check your credentials.'));
     } finally {
@@ -407,6 +415,19 @@ export default function Login() {
           <Link to="/terms-and-conditions" style={{ color: '#64748B', textDecoration: 'underline' }}>Terms</Link>
           {' '}&amp;{' '}
           <Link to="/privacy-policy" style={{ color: '#64748B', textDecoration: 'underline' }}>Privacy Policy</Link>
+          <div style={{ marginTop: 10, fontSize: 11.5, color: '#94A3B8' }}>
+            Powered by{' '}
+            <a
+              href="https://quantromind.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#F97316', textDecoration: 'none', fontWeight: 600 }}
+              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+            >
+              Quantromind Pvt Ltd
+            </a>
+          </div>
         </div>
       </div>
     </div>

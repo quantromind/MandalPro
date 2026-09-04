@@ -11,6 +11,15 @@ const ProtectedRoute = ({ children }) => {
   if (!user) return <Navigate to="/login" replace />;
 
   const isSuperAdmin = user.role === 'superadmin';
+
+  // Superadmin should only see the superadmin console (unless viewing profile)
+  if (isSuperAdmin) {
+    if (location.pathname === '/profile') {
+      return children;
+    }
+    return <Navigate to="/superadmin" replace />;
+  }
+
   const isExpired = activeMandal?.planStatus === 'Expired' || activeMandal?.planStatus === 'expired';
   const isSubscription = location.pathname === '/subscription';
   const isOnboarding = location.pathname === '/onboarding';

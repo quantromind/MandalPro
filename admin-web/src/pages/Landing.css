@@ -707,6 +707,24 @@
   font-size: 13px;
 }
 
+.landing-footer-powered {
+  color: #94A3B8;
+  font-size: 13px;
+}
+
+.landing-footer-powered .powered-by-link {
+  color: #F97316;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.landing-footer-powered .powered-by-link:hover {
+  text-decoration: underline;
+  color: #FB923C;
+}
+
 /* ── Keyframe Animations ── */
 @keyframes fadeIn {
   from { opacity: 0; }

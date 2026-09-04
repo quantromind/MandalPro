@@ -242,6 +242,19 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
                     <Text style={styles.bottomChantText}>॥ गणपती बाप्पा मोरया ॥</Text>
                   </View>
 
+                  {/* 11. Subtle & Professional Powered by Attribution */}
+                  <View style={styles.poweredByContainer}>
+                    <Text style={styles.poweredByText}>
+                      Powered by{' '}
+                      <Text
+                        style={styles.poweredByLink}
+                        onPress={() => Linking.openURL('https://quantromind.com/')}
+                      >
+                        Quantromind Pvt Ltd
+                      </Text>
+                    </Text>
+                  </View>
+
                 </View>
               </View>
             </View>
@@ -625,6 +638,24 @@ const styles = StyleSheet.create({
     color: '#9A3412',
     textAlign: 'center',
     letterSpacing: 0.8
+  },
+  poweredByContainer: {
+    marginTop: 10,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#FED7AA',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  poweredByText: {
+    fontSize: 10.5,
+    color: '#94A3B8',
+    fontWeight: '500'
+  },
+  poweredByLink: {
+    color: '#EA580C',
+    fontWeight: '700',
+    textDecorationLine: 'underline'
   },
 
   /* Action Buttons */

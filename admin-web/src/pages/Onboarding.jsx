@@ -85,7 +85,7 @@ const STEPS = [
 
 const CHECKLIST_ITEMS = [
   { id: 'invite', icon: '👥', title: 'Invite your team', desc: 'Add members and assign roles', link: '/members', cta: 'Invite Members' },
-  { id: 'receipt', icon: '🧾', title: 'Set receipt numbering', desc: 'Configure your receipt format & serial', link: '/settings', cta: 'Configure' },
+  { id: 'receipt', icon: '🧾', title: 'Set receipt numbering', desc: 'Configure your receipt format & serial', link: '/profile', cta: 'Configure' },
   { id: 'donation', icon: '💰', title: 'Add first donation', desc: 'Record your first community donation', link: '/donations', cta: 'Add Donation' },
   { id: 'event', icon: '🎉', title: 'Create first event', desc: 'Set up your first event', link: '/events', cta: 'Create Event' }
 ];

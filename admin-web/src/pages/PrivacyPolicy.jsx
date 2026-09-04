@@ -151,6 +151,19 @@ const PrivacyPolicy = () => {
               <Link to="/terms-and-conditions">Terms &amp; Conditions</Link>
             </div>
             <p className="legal-copyright">&copy; {new Date().getFullYear()} Quantromind Pvt. Ltd. All rights reserved.</p>
+            <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-muted, #64748B)' }}>
+              Powered by{' '}
+              <a
+                href="https://quantromind.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: 'var(--primary, #FF6B00)', textDecoration: 'none', fontWeight: 600 }}
+                onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+              >
+                Quantromind Pvt Ltd
+              </a>
+            </p>
           </div>
         </div>
       </main>

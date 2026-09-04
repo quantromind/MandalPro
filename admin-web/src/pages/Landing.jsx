@@ -928,6 +928,17 @@ export default function Landing() {
 
         <div className="landing-footer-bottom">
           <div>© {new Date().getFullYear()} Apla Mandal. All Rights Reserved.</div>
+          <div className="landing-footer-powered">
+            Powered by{' '}
+            <a
+              href="https://quantromind.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="powered-by-link"
+            >
+              Quantromind Pvt Ltd
+            </a>
+          </div>
           <div>Made with ❤️ for Mandals in Maharashtra, India 🇮🇳</div>
         </div>
       </footer>

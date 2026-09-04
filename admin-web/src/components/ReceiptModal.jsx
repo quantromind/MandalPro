@@ -187,6 +187,10 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
             print-color-adjust: exact !important;
             color-adjust: exact !important;
           }
+          a {
+            text-decoration: none;
+            color: inherit;
+          }
           html, body {
             margin: 0;
             padding: 0;
@@ -668,6 +672,37 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
               }}
             >
               ॥ गणपती बाप्पा मोरया ॥
+            </div>
+
+            {/* 11. Subtle & Professional Powered by Attribution */}
+            <div
+              style={{
+                marginTop: 14,
+                paddingTop: 8,
+                borderTop: '1px solid #FED7AA',
+                textAlign: 'center',
+                fontSize: 11,
+                color: '#94A3B8',
+                letterSpacing: '0.2px',
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+              }}
+            >
+              Powered by{' '}
+              <a
+                href="https://quantromind.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: '#C2410C',
+                  textDecoration: 'none',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+              >
+                Quantromind Pvt Ltd
+              </a>
             </div>
           </div>
         </div>
