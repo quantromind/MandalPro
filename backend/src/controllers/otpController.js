@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const sendEmail = require('../utils/sendEmail');
 const Otp = require('../models/Otp');
 const User = require('../models/User');
+const { checkOtpSendRateLimit, recordOtpSent } = require('../utils/rateLimiter');
 
 // Demo / Reviewer accounts with static OTP for Google Play Console testing & app reviews
 const DEMO_EMAILS = [
@@ -26,7 +27,105 @@ const memoryOtpStore = new Map();
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
-// @desc  Send OTP to an email address
+// @desc  Send OTP for Forgot Password flow (with rate limiting & safe non-enumeration response)
+// @route POST /api/auth/forgot-password/send-otp
+const forgotPasswordSendOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      code: 'EMAIL_REQUIRED',
+      message: 'Email is required'
+    });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // Rate limiting check: 60s cooldown & 5 requests per 15m window
+  const rateLimit = checkOtpSendRateLimit(normalizedEmail);
+  if (!rateLimit.allowed) {
+    return res.status(429).json({
+      success: false,
+      code: rateLimit.reason,
+      waitSeconds: rateLimit.waitSeconds,
+      message: rateLimit.message
+    });
+  }
+
+  // Handle Demo accounts
+  if (isDemoAccount(normalizedEmail)) {
+    try {
+      await Otp.deleteMany({ email: normalizedEmail });
+      await Otp.create({ email: normalizedEmail, code: DEMO_OTP });
+    } catch (e) {}
+    memoryOtpStore.set(normalizedEmail, { code: DEMO_OTP, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
+    recordOtpSent(normalizedEmail);
+    return res.json({
+      success: true,
+      message: 'OTP sent successfully to email'
+    });
+  }
+
+  // Check account existence safely
+  const isSuperAdmin = normalizedEmail === 'quantromind@gmail.com';
+  const user = await User.findOne({ email: normalizedEmail });
+
+  // Anti-enumeration security: If account does not exist, return success without dispatching email
+  if (!user && !isSuperAdmin) {
+    recordOtpSent(normalizedEmail);
+    return res.json({
+      success: true,
+      message: 'If an account exists with this email, a verification code has been sent.'
+    });
+  }
+
+  const code = generateOTP();
+
+  // Persist to MongoDB (upsert latest code)
+  try {
+    await Otp.deleteMany({ email: normalizedEmail });
+    await Otp.create({ email: normalizedEmail, code });
+  } catch (dbErr) {
+    console.warn(`[OTP DB Warning] Could not persist to DB: ${dbErr.message}. Storing in memory.`);
+    memoryOtpStore.set(normalizedEmail, { code, expiresAt: Date.now() + OTP_TTL_MS });
+  }
+
+  recordOtpSent(normalizedEmail);
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`\n========================================\n[Forgot Password OTP] For: ${normalizedEmail} | Code: ${code}\n========================================\n`);
+  }
+
+  // Dispatch branded password reset email
+  sendEmail({
+    to: normalizedEmail,
+    subject: 'Apla Mandal - Password Reset Verification Code',
+    text: `Your password reset verification code is ${code}. It will expire in 10 minutes. If you did not request this, please ignore this email.`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 24px; max-width: 520px; margin: auto; border: 1px solid #E2E8F0; border-radius: 16px; background-color: #FFFFFF;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h2 style="color: #F97316; margin: 0; font-size: 24px; font-weight: 800;">Apla Mandal</h2>
+          <p style="color: #64748B; font-size: 13px; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Password Reset Request</p>
+        </div>
+        <p style="font-size: 15px; color: #1E293B; line-height: 1.5;">Hello,</p>
+        <p style="font-size: 14px; color: #475569; line-height: 1.5;">We received a request to reset the password for your Apla Mandal account. Use the one-time verification code below to proceed:</p>
+        <div style="background: #FFF7ED; border: 1.5px dashed #FDBA74; padding: 18px; border-radius: 12px; text-align: center; margin: 24px 0;">
+          <span style="font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #EA580C;">${code}</span>
+        </div>
+        <p style="font-size: 13px; color: #64748B; line-height: 1.5;">⏱️ <strong>This code is single-use and will expire in 10 minutes.</strong></p>
+        <p style="font-size: 12.5px; color: #94A3B8; margin-top: 20px; line-height: 1.4; border-top: 1px solid #F1F5F9; padding-top: 14px;">If you did not request a password reset, you can safely ignore this email. Your account remains secure.</p>
+      </div>
+    `
+  }).catch((emailErr) => {
+    console.error(`[Forgot Password OTP Error] Email send failed to ${normalizedEmail}: ${emailErr.message}`);
+  });
+
+  res.json({
+    success: true,
+    message: 'OTP sent successfully to email'
+  });
+});
+
 // @desc  Send OTP to an email address
 // @route POST /api/auth/send-otp
 const sendOtp = asyncHandler(async (req, res) => {
@@ -37,6 +136,11 @@ const sendOtp = asyncHandler(async (req, res) => {
       code: 'EMAIL_REQUIRED',
       message: 'email is required'
     });
+  }
+
+  // Delegate forgot password requests to forgotPasswordSendOtp
+  if (purpose === 'forgot-password' || purpose === 'reset-password') {
+    return forgotPasswordSendOtp(req, res);
   }
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -246,6 +350,7 @@ const testEmail = asyncHandler(async (req, res) => {
 module.exports = {
   checkEmail,
   sendOtp,
+  forgotPasswordSendOtp,
   verifyOtp,
   testEmail,
   validateAndConsumeOtp,

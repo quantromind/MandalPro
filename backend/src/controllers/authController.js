@@ -1,4 +1,5 @@
 const asyncHandler = require('express-async-handler');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Mandal = require('../models/Mandal');
 const Donation = require('../models/Donation');
@@ -15,6 +16,12 @@ const Otp = require('../models/Otp');
 const sendEmail = require('../utils/sendEmail');
 const { generateToken } = require('../utils/jwt');
 const { validateAndConsumeOtp, memoryOtpStore, isDemoAccount } = require('./otpController');
+const {
+  recordFailedAttempt,
+  clearAttempts,
+  isResetTokenUsed,
+  markResetTokenUsed
+} = require('../utils/rateLimiter');
 
 
 // @desc Register: creates a Mandal + first President user together (onboarding step 1-2)
@@ -474,6 +481,167 @@ const deleteAccountWithOtp = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc  Verify OTP for password reset and issue single-use short-lived reset token
+// @route POST /api/auth/forgot-password/verify-otp
+const verifyForgotPasswordOtp = asyncHandler(async (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email and verification code are required'
+    });
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // Failed attempts rate limiting (max 5 failed attempts before OTP invalidation)
+  const attemptInfo = recordFailedAttempt(normalizedEmail);
+  if (attemptInfo.isLocked) {
+    // Invalidate any active OTP in DB / memory
+    await Otp.deleteMany({ email: normalizedEmail }).catch(() => {});
+    memoryOtpStore.delete(normalizedEmail);
+    return res.status(429).json({
+      success: false,
+      message: 'Too many incorrect attempts. Your OTP has been invalidated for security. Please request a new OTP.'
+    });
+  }
+
+  try {
+    await validateAndConsumeOtp(normalizedEmail, code);
+    // Success: clear failed attempts
+    clearAttempts(normalizedEmail);
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      message: `${err.message || 'Invalid OTP'}. (${attemptInfo.attemptsLeft} attempt${attemptInfo.attemptsLeft === 1 ? '' : 's'} remaining)`
+    });
+  }
+
+  // Issue single-use 15-minute reset token
+  const jti = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+  const resetToken = jwt.sign(
+    {
+      email: normalizedEmail,
+      purpose: 'password_reset',
+      jti
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '15m' }
+  );
+
+  return res.json({
+    success: true,
+    resetToken,
+    message: 'OTP verified successfully'
+  });
+});
+
+// @desc  Reset password using verified resetToken
+// @route POST /api/auth/reset-password or POST /api/auth/forgot-password/reset-password
+const resetPassword = asyncHandler(async (req, res) => {
+  const { resetToken, newPassword, confirmPassword } = req.body;
+
+  if (!resetToken) {
+    return res.status(400).json({
+      success: false,
+      message: 'Reset token is required. Please verify your OTP first.'
+    });
+  }
+
+  if (!newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'New password is required'
+    });
+  }
+
+  if (newPassword.length < 8) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 8 characters long'
+    });
+  }
+
+  if (confirmPassword && newPassword !== confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'Passwords do not match'
+    });
+  }
+
+  // Verify reset token
+  let decoded;
+  try {
+    decoded = jwt.verify(resetToken, process.env.JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({
+      success: false,
+      message: 'Reset link or code has expired. Please request a new OTP.'
+    });
+  }
+
+  if (decoded.purpose !== 'password_reset' || !decoded.email) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid reset token'
+    });
+  }
+
+  // Check if token was already used (single use guarantee)
+  if (decoded.jti && isResetTokenUsed(decoded.jti)) {
+    return res.status(400).json({
+      success: false,
+      message: 'This reset token has already been used. Please request a new OTP.'
+    });
+  }
+
+  const normalizedEmail = decoded.email.toLowerCase().trim();
+
+  // Handle Demo accounts
+  if (isDemoAccount(normalizedEmail)) {
+    if (decoded.jti) markResetTokenUsed(decoded.jti);
+    return res.json({
+      success: true,
+      message: 'Password reset successfully.'
+    });
+  }
+
+  // Handle superadmin or regular user
+  let user = await User.findOne({ email: normalizedEmail });
+
+  // If superadmin user does not exist in DB yet, create it
+  if (!user && normalizedEmail === 'quantromind@gmail.com') {
+    const passwordHash = await User.hashPassword(newPassword);
+    user = await User.create({
+      name: 'Super Admin',
+      email: normalizedEmail,
+      passwordHash,
+      role: 'superadmin',
+      status: 'active'
+    });
+  } else if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User account not found'
+    });
+  } else {
+    // Update password hash
+    const passwordHash = await User.hashPassword(newPassword);
+    user.passwordHash = passwordHash;
+    await user.save();
+  }
+
+  // Invalidate token so it cannot be reused
+  if (decoded.jti) {
+    markResetTokenUsed(decoded.jti);
+  }
+
+  return res.json({
+    success: true,
+    message: 'Password reset successfully.'
+  });
+});
+
 module.exports = {
   register,
   login,
@@ -482,5 +650,7 @@ module.exports = {
   updateProfile,
   inviteMember,
   sendDeleteAccountOtp,
-  deleteAccountWithOtp
+  deleteAccountWithOtp,
+  verifyForgotPasswordOtp,
+  resetPassword
 };
