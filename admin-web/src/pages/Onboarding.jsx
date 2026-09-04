@@ -283,11 +283,55 @@ export default function Onboarding() {
     setLoading(true); setError('');
     try {
       const docs = Object.values(verifyDocs).filter(Boolean);
-      if (docs.length > 0) await api.post('/onboarding/verification-docs', { docs });
-      await api.patch('/onboarding/checklist/planSelected');
-      next();
-    } catch (e) { setError(e.response?.data?.message || 'Failed'); }
-    finally { setLoading(false); }
+      if (docs.length > 0) {
+        await api.post('/onboarding/verification-docs', { docs }).catch(() => {});
+      }
+      const { data: updatedMandal } = await api.patch('/onboarding/checklist/planSelected').catch(() => ({ data: null }));
+      if (updatedMandal) {
+        setActiveMandal(updatedMandal);
+      } else if (activeMandal) {
+        setActiveMandal({
+          ...activeMandal,
+          checklist: { ...activeMandal.checklist, planSelected: true }
+        });
+      }
+      navigate('/');
+    } catch (e) {
+      if (activeMandal) {
+        setActiveMandal({
+          ...activeMandal,
+          checklist: { ...activeMandal.checklist, planSelected: true }
+        });
+      }
+      navigate('/');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkipToDashboard = async () => {
+    setLoading(true);
+    try {
+      const { data: updatedMandal } = await api.patch('/onboarding/checklist/planSelected').catch(() => ({ data: null }));
+      if (updatedMandal) {
+        setActiveMandal(updatedMandal);
+      } else if (activeMandal) {
+        setActiveMandal({
+          ...activeMandal,
+          checklist: { ...activeMandal.checklist, planSelected: true }
+        });
+      }
+    } catch {
+      if (activeMandal) {
+        setActiveMandal({
+          ...activeMandal,
+          checklist: { ...activeMandal.checklist, planSelected: true }
+        });
+      }
+    } finally {
+      setLoading(false);
+      navigate('/');
+    }
   };
 
   /* ── Pricing calc ── */
@@ -306,16 +350,13 @@ export default function Onboarding() {
   const css = {
     page: {
       minHeight: '100vh',
-      display: 'flex',
       background: '#F8F8F6',
       fontFamily: "'Inter', 'Poppins', sans-serif"
     },
     sidebar: {
-      width: 260,
       background: '#17233C',
-      display: 'flex',
       flexDirection: 'column',
-      padding: '40px 24px',
+      padding: '36px 24px',
       position: 'sticky',
       top: 0,
       height: '100vh',
@@ -354,11 +395,11 @@ export default function Onboarding() {
     },
     main: {
       flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-      padding: '48px 24px', overflowY: 'auto'
+      overflowY: 'auto'
     },
     card: {
-      width: '100%', maxWidth: 620, background: '#fff', borderRadius: 20,
-      padding: '40px', boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+      background: '#fff',
+      boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
       border: '1px solid #F0F0EE'
     },
     stepHeader: {
@@ -414,12 +455,37 @@ export default function Onboarding() {
   const recommended = getRecommendedPlan(eventTypes);
 
   return (
-    <div style={css.page}>
+    <div style={css.page} className="onboarding-page">
+
+      {/* ── Mobile Top Header (< 860px) ── */}
+      <div className="onboarding-mobile-header">
+        <div className="onboarding-mobile-header-top">
+          <div className="onboarding-mobile-brand">
+            <img
+              src="/logo.png"
+              alt="Apla Mandal Logo"
+              style={{ width: 28, height: 28, borderRadius: 8, objectFit: 'contain', background: '#FFFFFF', padding: 2 }}
+            />
+            <span>Apla Mandal</span>
+          </div>
+          <span className="onboarding-mobile-step-tag">
+            Step {step} of 6
+          </span>
+        </div>
+        <div className="onboarding-mobile-step-title">
+          {STEPS.find(s => s.num === step)?.icon} {STEPS.find(s => s.num === step)?.label} · {STEPS.find(s => s.num === step)?.desc}
+        </div>
+      </div>
 
       {/* ── Left Sidebar (Desktop) ── */}
-      <aside style={css.sidebar}>
-        <div style={css.sidebarBrand}>
-          <span>🪔</span> Apla Mandal
+      <aside style={css.sidebar} className="onboarding-sidebar">
+        <div style={{ ...css.sidebarBrand, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <img
+            src="/logo.png"
+            alt="Apla Mandal Logo"
+            style={{ width: 38, height: 38, borderRadius: 10, objectFit: 'contain', background: '#FFFFFF', padding: 2 }}
+          />
+          <span>Apla Mandal</span>
         </div>
 
         {STEPS.map((s, i) => {
@@ -453,10 +519,10 @@ export default function Onboarding() {
       </aside>
 
       {/* ── Main Content ── */}
-      <main style={css.main}>
+      <main style={css.main} className="onboarding-main">
 
         {/* Mobile Step Bar */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 32, width: '100%', maxWidth: 620 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24, width: '100%', maxWidth: 620 }}>
           {STEPS.map(s => (
             <div key={s.num} style={{
               flex: 1, height: 4, borderRadius: 4,
@@ -466,7 +532,7 @@ export default function Onboarding() {
           ))}
         </div>
 
-        <div style={css.card}>
+        <div style={css.card} className="onboarding-card">
           {error && <div style={css.errorBox}>⚠️ {error}</div>}
 
           {/* ══════════════════════════════════════════════
@@ -528,7 +594,7 @@ export default function Onboarding() {
                 />
               </div>
 
-              <div style={css.grid2}>
+              <div className="onboarding-grid-2">
                 <div>
                   <label style={css.label}>Contact Phone</label>
                   <input style={css.input} placeholder="9876543210" value={profile.contactPhone} onChange={e => setProfile({ ...profile, contactPhone: e.target.value })} />
@@ -567,7 +633,7 @@ export default function Onboarding() {
                 </button>
                 {bankOpen && (
                   <div style={{ padding: '20px 18px', borderTop: '1px solid #E5E7EB' }}>
-                    <div style={css.grid2}>
+                    <div className="onboarding-grid-2">
                       <div>
                         <label style={css.label}>Account Name</label>
                         <input style={css.input} placeholder="Shri Ganesh Mandal" value={profile.accountName} onChange={e => setProfile({ ...profile, accountName: e.target.value })} />
@@ -589,8 +655,8 @@ export default function Onboarding() {
                 )}
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-                <button style={css.btnPrimary} onClick={handleProfileSubmit} disabled={loading}>
+              <div className="onboarding-btn-row" style={{ justifyContent: 'flex-end' }}>
+                <button style={{ ...css.btnPrimary, minWidth: 160 }} onClick={handleProfileSubmit} disabled={loading}>
                   {loading ? 'Saving…' : 'Continue →'}
                 </button>
               </div>
@@ -613,7 +679,7 @@ export default function Onboarding() {
                 <p style={css.sub}>Select up to 3 event types included in your Mandal plan. We'll auto-load starter templates, receipts, and roles for each.</p>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 24 }}>
+              <div className="onboarding-event-grid">
                 {EVENT_TYPES.map(t => {
                   const selected = eventTypes.includes(t.id);
                   return (
@@ -662,7 +728,7 @@ export default function Onboarding() {
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#FF6B00', marginBottom: 12 }}>
                     🎁 We'll prepare your workspace with:
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div className="onboarding-grid-2" style={{ gap: 10 }}>
                     {[
                       { icon: '🧾', label: `${eventTypes.reduce((a, id) => { const t = EVENT_TYPES.find(x => x.id === id); return a + (t?.templates.receipts || 0); }, 0)} Receipt Templates` },
                       { icon: '📊', label: `${eventTypes.reduce((a, id) => { const t = EVENT_TYPES.find(x => x.id === id); return a + (t?.templates.budgetCategories || 0); }, 0)} Budget Categories` },
@@ -683,7 +749,7 @@ export default function Onboarding() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+              <div className="onboarding-btn-row">
                 <button style={css.btnOutline} onClick={back}>← Back</button>
                 <button style={css.btnPrimary} onClick={handleEventTypesSubmit} disabled={loading || eventTypes.length === 0}>
                   {loading ? 'Saving…' : `Continue with ${eventTypes.length || 0} type${eventTypes.length !== 1 ? 's' : ''} →`}
@@ -765,7 +831,7 @@ export default function Onboarding() {
                         </div>
                         {isSelected && (
                           <div style={{ borderTop: '1px solid #F0F0EE', paddingTop: 14 }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                            <div className="onboarding-plan-features">
                               {plan.features.map(f => (
                                 <div key={f} style={{ fontSize: 13, color: '#374151', display: 'flex', gap: 6, alignItems: 'flex-start' }}>
                                   <span style={{ color: '#10B981', fontWeight: 700, flexShrink: 0 }}>✓</span> {f}
@@ -780,13 +846,16 @@ export default function Onboarding() {
                 })}
               </div>
 
-              <button
-                style={{ ...css.btnPrimary, width: '100%', padding: '16px', fontSize: 16 }}
-                onClick={handlePlanSubmit}
-                disabled={loading}
-              >
-                {loading ? 'Processing…' : selectedPlan === 'Enterprise' ? 'Contact Sales →' : `Choose ${selectedPlan} →`}
-              </button>
+              <div className="onboarding-btn-row">
+                <button style={css.btnOutline} onClick={back}>← Back</button>
+                <button
+                  style={{ ...css.btnPrimary, flex: 2, padding: '16px', fontSize: 16 }}
+                  onClick={handlePlanSubmit}
+                  disabled={loading}
+                >
+                  {loading ? 'Processing…' : selectedPlan === 'Enterprise' ? 'Contact Sales →' : `Choose ${selectedPlan} →`}
+                </button>
+              </div>
             </div>
           )}
 
@@ -881,7 +950,7 @@ export default function Onboarding() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+              <div className="onboarding-verify-grid">
                 {[
                   { key: 'cert', icon: '📄', title: 'Registration Certificate', desc: 'Trust deed, society reg., or charity certificate' },
                   { key: 'bank', icon: '🏦', title: 'Bank / Org Proof', desc: 'Bank passbook first page or cancelled cheque' }
@@ -910,11 +979,15 @@ export default function Onboarding() {
                 onClick={handleVerificationSubmit}
                 disabled={loading}
               >
-                {loading ? 'Submitting…' : 'Submit for Review →'}
+                {loading ? 'Submitting…' : 'Submit & Go to Dashboard →'}
               </button>
               <div style={{ textAlign: 'center' }}>
-                <button style={{ background: 'none', border: 'none', color: '#9CA3AF', fontSize: 14, cursor: 'pointer' }} onClick={() => { setStep(6); }}>
-                  Skip for now →
+                <button
+                  style={{ background: 'none', border: 'none', color: '#9CA3AF', fontSize: 14, cursor: 'pointer' }}
+                  onClick={handleSkipToDashboard}
+                  disabled={loading}
+                >
+                  Skip for now & Go to Dashboard →
                 </button>
               </div>
             </div>
@@ -938,12 +1011,10 @@ export default function Onboarding() {
                   return (
                     <div
                       key={item.id}
+                      className="onboarding-checklist-row"
                       style={{
-                        display: 'flex', alignItems: 'center', gap: 16,
-                        padding: '18px 20px', borderRadius: 14,
                         background: done ? 'rgba(16,185,129,0.06)' : '#F8F8F6',
-                        border: `1.5px solid ${done ? 'rgba(16,185,129,0.3)' : '#E5E7EB'}`,
-                        transition: 'all 0.2s'
+                        border: `1.5px solid ${done ? 'rgba(16,185,129,0.3)' : '#E5E7EB'}`
                       }}
                     >
                       <div style={{

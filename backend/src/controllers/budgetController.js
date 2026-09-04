@@ -28,13 +28,21 @@ const listBudgets = asyncHandler(async (req, res) => {
 
   const results = await Promise.all(
     budgets.map(async (b) => {
+      // Clean regex to match exact category or prefix (e.g. 'Pooja' matches 'Pooja & Aarti')
+      const firstWord = (b.category || '').split('&')[0].trim().split('/')[0].trim().split(' ')[0].trim();
+      const regex = firstWord ? new RegExp(firstWord, 'i') : null;
+
+      const categoryMatch = regex 
+        ? { $or: [{ category: b.category }, { category: { $regex: regex } }] }
+        : { category: b.category };
+
       const spendAgg = await Expense.aggregate([
         {
           $match: {
             mandalId: b.mandalId,
-            category: b.category,
             ...(b.eventId ? { eventId: b.eventId } : {}),
-            status: { $in: ['Approved', 'Paid', 'Reconciled'] }
+            status: { $nin: ['Rejected', 'Cancelled'] },
+            ...categoryMatch
           }
         },
         { $group: { _id: null, total: { $sum: '$amount' } } }
@@ -54,4 +62,16 @@ const listBudgets = asyncHandler(async (req, res) => {
   res.json(results);
 });
 
-module.exports = { upsertBudget, listBudgets };
+// @desc Delete a category budget
+// @route DELETE /api/budgets/:id
+const deleteBudget = asyncHandler(async (req, res) => {
+  const budget = await Budget.findOne({ _id: req.params.id, mandalId: req.mandalId });
+  if (!budget) {
+    res.status(404);
+    throw new Error('Budget not found');
+  }
+  await Budget.deleteOne({ _id: req.params.id, mandalId: req.mandalId });
+  res.json({ message: 'Budget deleted successfully' });
+});
+
+module.exports = { upsertBudget, listBudgets, deleteBudget };

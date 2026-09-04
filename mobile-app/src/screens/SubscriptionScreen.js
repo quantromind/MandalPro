@@ -10,38 +10,37 @@ import client, { API_URL } from '../api/client';
 
 const PLANS = [
   {
-    id: 'Basic', price: 199, label: '₹199', period: '/month', color: '#64748B',
-    tagline: 'Perfect to get started',
-    features: ['1 Mandal', 'Up to 5 events/year', 'Basic receipts', 'Up to 10 members', 'Dashboard & reports'],
-    cta: 'Choose Basic'
+    id: 'Silver', price: 199, label: '₹199', period: '/month', color: '#0EA5E9',
+    badge: 'Affordable',
+    tagline: 'सिल्व्हर योजना (१५ सदस्य)',
+    features: [
+      '१ मंडळ संपूर्ण व्यवस्थापन',
+      '१५ समिती सदस्य व स्वयंसेवक',
+      'अमर्यादित WhatsApp डिजिटल पावत्या',
+      'खर्च आणि अंदाजपत्रक (Budget) ट्रॅकिंग',
+      'समिती लाइव्ह ग्रुप चॅट'
+    ],
+    cta: 'सिल्व्हर योजना निवडा (₹199)'
   },
   {
-    id: 'Pro', price: 499, label: '₹499', period: '/month', color: '#FF6B00',
-    badge: 'Most Popular',
-    tagline: 'For active mandals',
-    features: ['1 Mandal', 'Unlimited events', 'Custom receipt branding', 'Up to 25 members', 'Verified badge', 'Priority support'],
-    cta: 'Choose Pro'
-  },
-  {
-    id: 'Premium', price: 999, label: '₹999', period: '/month', color: '#6C4DD9',
-    badge: 'Best Value',
-    tagline: 'For multi-mandal organizations',
-    features: ['3 Mandals', 'Unlimited events', 'Full branding', 'Unlimited members', 'Verified badge', 'Analytics export'],
-    cta: 'Choose Premium'
-  },
-  {
-    id: 'Enterprise', price: null, label: 'Custom', period: '', color: '#10B981',
-    tagline: 'For large trusts & federations',
-    features: ['Unlimited Mandals', 'Everything in Premium', 'White-label', 'API access', 'SLA support'],
-    cta: 'Contact Sales'
+    id: 'Gold', price: 299, label: '₹299', period: '/month', color: '#F59E0B',
+    badge: '🔥 सर्वाधिक पसंती',
+    tagline: 'गोल्ड मेंबरशिप (२५ सदस्य)',
+    features: [
+      '२ मंडळे / शाखा व्यवस्थापन',
+      '२५ समिती सदस्य व स्वयंसेवक',
+      'अधिकृत शिक्का व लोगो असलेली पावती',
+      'खर्च मंजुरी व बिलांचे फोटो साठवणूक',
+      'सीए ऑडिट-रेडी ताळेबंद अहवाल',
+      '२४/७ प्राधान्य WhatsApp सहाय्य'
+    ],
+    cta: 'गोल्ड मेंबरशिप निवडा (₹299)'
   }
 ];
 
 function getRecommendedPlan(mandal) {
-  const types = mandal?.eventTypes || [];
-  if (types.length >= 3) return 'Premium';
-  if (types.length >= 2) return 'Pro';
-  return 'Basic';
+  const count = mandal?.memberCount || 0;
+  return count > 15 ? 'Gold' : 'Silver';
 }
 
 import { useLanguage } from '../context/LanguageContext';
@@ -49,61 +48,6 @@ import { useLanguage } from '../context/LanguageContext';
 export default function SubscriptionScreen({ navigation }) {
   const { user, mandal, updateMandal, logout, refreshProfile } = useAuth();
   const { t } = useLanguage();
-
-  const PLANS = [
-    {
-      id: 'Basic', price: 199, label: '₹199', period: t('subscription.perMonth'), color: '#64748B',
-      tagline: t('subscription.plans.basicTagline'),
-      features: [
-        t('subscription.features.oneMandal'),
-        t('subscription.features.fiveEvents'),
-        t('subscription.features.basicReceipts'),
-        t('subscription.features.tenMembers'),
-        t('subscription.features.dashboardReports')
-      ],
-      cta: t('subscription.choosePlan', { plan: 'Basic' })
-    },
-    {
-      id: 'Pro', price: 499, label: '₹499', period: t('subscription.perMonth'), color: '#FF6B00',
-      badge: t('subscription.mostPopular'),
-      tagline: t('subscription.plans.proTagline'),
-      features: [
-        t('subscription.features.oneMandal'),
-        t('subscription.features.unlimitedEvents'),
-        t('subscription.features.customBranding'),
-        t('subscription.features.twentyFiveMembers'),
-        t('subscription.features.verifiedBadge'),
-        t('subscription.features.prioritySupport')
-      ],
-      cta: t('subscription.choosePlan', { plan: 'Pro' })
-    },
-    {
-      id: 'Premium', price: 999, label: '₹999', period: t('subscription.perMonth'), color: '#6C4DD9',
-      badge: t('subscription.bestValue'),
-      tagline: t('subscription.plans.premiumTagline'),
-      features: [
-        t('subscription.features.threeMandals'),
-        t('subscription.features.unlimitedEvents'),
-        t('subscription.features.fullBranding'),
-        t('subscription.features.unlimitedMembers'),
-        t('subscription.features.verifiedBadge'),
-        t('subscription.features.analyticsExport')
-      ],
-      cta: t('subscription.choosePlan', { plan: 'Premium' })
-    },
-    {
-      id: 'Enterprise', price: null, label: t('subscription.custom'), period: '', color: '#10B981',
-      tagline: t('subscription.plans.enterpriseTagline'),
-      features: [
-        t('subscription.features.unlimitedMandals'),
-        t('subscription.features.everythingPremium'),
-        t('subscription.features.whiteLabel'),
-        t('subscription.features.apiAccess'),
-        t('subscription.features.slaSupport')
-      ],
-      cta: t('subscription.contactSales')
-    }
-  ];
 
   const [selectedPlan, setSelectedPlan] = useState(getRecommendedPlan(mandal));
   const [annual, setAnnual] = useState(false);

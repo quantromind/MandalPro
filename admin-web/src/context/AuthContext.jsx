@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import api from '../api/axios';
 
 const AuthContext = createContext(null);
@@ -23,6 +23,17 @@ export const AuthProvider = ({ children }) => {
     setActiveMandalState(m);
   };
 
+  useEffect(() => {
+    const token = localStorage.getItem('mandalpro_token');
+    if (token) {
+      api.get('/mandal')
+        .then((res) => {
+          if (res.data) persistMandal(res.data);
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   const login = async (email, password) => {
     const { data } = await api.post('/auth/login', { email, password });
     localStorage.setItem('mandalpro_token', data.token);
@@ -43,6 +54,18 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = (updates) => persistUser({ ...user, ...updates });
 
+  const refreshMandal = async () => {
+    try {
+      const token = localStorage.getItem('mandalpro_token');
+      if (token) {
+        const { data } = await api.get('/mandal');
+        if (data) persistMandal(data);
+      }
+    } catch (err) {
+      // ignore
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('mandalpro_token');
     localStorage.removeItem('mandalpro_user');
@@ -52,7 +75,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, activeMandal, login, register, logout, setActiveMandal, updateUser }}>
+    <AuthContext.Provider value={{ user, activeMandal, mandal: activeMandal, login, register, logout, setActiveMandal, setMandal: setActiveMandal, updateUser, refreshMandal }}>
       {children}
     </AuthContext.Provider>
   );

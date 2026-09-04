@@ -111,7 +111,7 @@ const sendViaResend = async ({ to, subject, text, html }) => {
   if (!apiKey) return null;
 
   console.log('[Email] Sending via Resend HTTPS API...');
-  const fromAddress = process.env.RESEND_FROM || 'MandalPro <onboarding@resend.dev>';
+  const fromAddress = process.env.RESEND_FROM || 'Apla Mandal <onboarding@resend.dev>';
   
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -151,8 +151,8 @@ const sendViaBrevo = async ({ to, subject, text, html }) => {
     },
     body: JSON.stringify({
       sender: {
-        name: process.env.SMTP_FROM_NAME || 'MandalPro',
-        email: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@mandalpro.com'
+        name: process.env.SMTP_FROM_NAME || 'Apla Mandal',
+        email: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@aplamandal.com'
       },
       to: [{ email: to }],
       subject,

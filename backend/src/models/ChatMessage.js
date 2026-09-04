@@ -11,7 +11,7 @@ const chatMessageSchema = new mongoose.Schema(
     senderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true
+      required: false
     },
     senderName: {
       type: String,
@@ -25,6 +25,10 @@ const chatMessageSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true
+    },
+    isSystem: {
+      type: Boolean,
+      default: false
     }
   },
   { timestamps: true }

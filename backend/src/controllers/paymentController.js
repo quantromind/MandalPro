@@ -10,10 +10,17 @@ const razorpay = new Razorpay({
 
 // Plan pricing in paise (INR × 100)
 const PLAN_AMOUNTS = {
-  Basic:      19900,   // ₹199/month
-  Pro:        49900,   // ₹499/month
-  Premium:    99900,   // ₹999/month
-  Enterprise: 0        // Contact sales
+  free:       0,
+  silver:     19900,   // ₹199
+  gold:       29900,   // ₹299
+  platinum:   49900,   // ₹499
+  Basic:      19900,
+  Silver:     19900,   // ₹199
+  Gold:       29900,   // ₹299
+  Platinum:   49900,   // ₹499
+  Pro:        29900,
+  Premium:    49900,
+  Enterprise: 0
 };
 
 // @desc  Create Razorpay order for plan upgrade
@@ -21,14 +28,9 @@ const PLAN_AMOUNTS = {
 const createOrder = asyncHandler(async (req, res) => {
   const { plan } = req.body;
 
-  if (!PLAN_AMOUNTS[plan] && plan !== 'Basic') {
+  if (PLAN_AMOUNTS[plan] === undefined) {
     res.status(400);
     throw new Error(`Invalid plan: ${plan}`);
-  }
-
-  if (plan === 'Enterprise') {
-    res.status(400);
-    throw new Error('Enterprise plan requires contacting sales');
   }
 
   const mandal = await Mandal.findById(req.mandalId);
@@ -129,7 +131,7 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MandalPro Secure Checkout</title>
+  <title>Apla Mandal Secure Checkout</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -217,7 +219,7 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
 </head>
 <body>
   <div class="card">
-    <div class="brand">🪔 MandalPro</div>
+    <div class="brand">🪔 Apla Mandal</div>
     <div class="plan-title">Upgrading to <strong>${plan} Plan</strong></div>
     <div class="amount">₹${Number(amount) / 100}</div>
     
@@ -254,7 +256,7 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
       "key": "${keyId || process.env.RAZORPAY_KEY_ID}",
       "amount": "${amount}",
       "currency": "${currency}",
-      "name": "MandalPro",
+      "name": "Apla Mandal",
       "description": "${plan} Plan Subscription",
       "order_id": "${orderId}",
       "handler": function (response) {

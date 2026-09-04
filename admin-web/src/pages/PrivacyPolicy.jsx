@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 /*
  * =========================================================================
- * MANDALPRO - PRIVACY POLICY
+ * APLA MANDAL - PRIVACY POLICY
  * Public route: /privacy-policy (Zero auth, zero tenant context required)
  * Entity: Quantromind Pvt. Ltd.
  * Address: Wakad, Pimpri-Chinchwad, Maharashtra 411057

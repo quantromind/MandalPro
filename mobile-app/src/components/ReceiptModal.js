@@ -120,35 +120,26 @@ ${collectorName ? `✍️ *Issued By:* ${collectorName}\n` : ''}━━━━━�
               <View ref={receiptRef} collapsable={false} style={styles.receiptCard}>
                 <View style={styles.innerBorder}>
                   
-                  {/* 1. Top Header Row: Left Dengi Pawti (Small font) | Right Receipt No & Date (Reduced font size) */}
-                  <View style={styles.topHeaderRow}>
-                    <View style={styles.dengiPillBadge}>
-                      <Text style={styles.dengiPillText}>॥ देणगी पावती ॥</Text>
-                    </View>
-
-                    <View style={styles.topMetaRight}>
-                      <Text style={styles.metaText}>
-                        Receipt No.: <Text style={styles.metaValue}>#{receiptNo}</Text>
-                      </Text>
-                      <Text style={styles.metaText}>
-                        Date: <Text style={styles.metaValue}>{dateFormatted}</Text>
-                      </Text>
-                    </View>
+                  {/* 1. Top Sacred Row: Center Om Shri Ganesh | Right Sthapana */}
+                  <View style={styles.topAuspiciousRow}>
+                    <Text style={styles.topSacredCenterText}>॥ श्री गणेश ॥</Text>
+                    <Text style={styles.topSacredRightText}>स्थापना {toMarathiDigits(mandal?.establishedYear || '२०२३')}</Text>
                   </View>
 
-                  {/* 2. Center Sacred Chant & Enlarged Mandal Name (Logo replaced in place of Diya if uploaded) */}
+                  {/* 2. Mandal Header Section - Centered */}
                   <View style={styles.mandalHeaderSection}>
-                    <Text style={styles.topCenterChant}>॥ गणपती बाप्पा मोरया ॥</Text>
-                    <View style={styles.mandalTitleRow}>
-                      {logoUri ? (
-                        <Image
-                          source={{ uri: logoUri }}
-                          style={styles.mandalLogoImg}
-                          resizeMode="contain"
-                        />
-                      ) : (
+                    {logoUri ? (
+                      <Image
+                        source={{ uri: logoUri }}
+                        style={styles.mandalLogoImg}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.ganeshaCircle}>
                         <Text style={styles.ganeshaIcon}>🪔</Text>
-                      )}
+                      </View>
+                    )}
+                    <View style={styles.mandalTitleCol}>
                       <Text
                         style={styles.mandalTitleText}
                         numberOfLines={2}
@@ -157,100 +148,70 @@ ${collectorName ? `✍️ *Issued By:* ${collectorName}\n` : ''}━━━━━�
                       >
                         {mandalName}
                       </Text>
+                      <Text style={styles.mandalSubFestival}>
+                        आयोजित सार्वजनिक गणेशोत्सव {toMarathiDigits(new Date().getFullYear())}
+                      </Text>
+                      <Text style={styles.mandalLocationText} numberOfLines={1}>
+                        {mandal?.address || mandal?.city || 'सार्वजनिक उत्सव परिसर'}
+                      </Text>
                     </View>
                   </View>
 
-                  <View style={styles.dividerLine} />
-
-                  {/* 3. Body Section (Cleanly Structured Rows) */}
-                  <View style={styles.bodySection}>
-                    
-                    {/* Row 1: Donor Name */}
-                    <View style={styles.fieldRow}>
-                      <Text style={styles.fieldLabel}>Mr./Mrs.:</Text>
-                      <View style={styles.lineFill}>
-                        <Text style={styles.fieldValue} numberOfLines={1}>
-                          {donorName}
-                        </Text>
-                        <View style={styles.dotLine} />
-                      </View>
-                    </View>
-
-                    {/* Row 2: Mobile Number (New Dedicated Field) */}
-                    <View style={styles.fieldRow}>
-                      <Text style={styles.fieldLabel}>Mobile No.:</Text>
-                      <View style={styles.lineFill}>
-                        <Text style={styles.fieldValue} numberOfLines={1}>
-                          {donorMobile ? (donorMobile.startsWith('91') || donorMobile.startsWith('+') ? donorMobile : `+91 ${donorMobile}`) : '—'}
-                        </Text>
-                        <View style={styles.dotLine} />
-                      </View>
-                    </View>
-
-                    {/* Row 3: Purpose */}
-                    <View style={styles.fieldRow}>
-                      <Text style={styles.fieldLabel}>Purpose:</Text>
-                      <View style={styles.lineFill}>
-                        <Text style={styles.fieldValue} numberOfLines={1}>{purpose}</Text>
-                        <View style={styles.dotLine} />
-                      </View>
-                    </View>
-
-                    {/* Row 4: Donation Amount (Highlighted Box) */}
-                    <View style={styles.fieldRow}>
-                      <Text style={styles.fieldLabel}>Donation Amount:</Text>
-                      <View style={styles.amountBox}>
-                        <Text style={styles.amountBoxText}>₹ {amount.toLocaleString('en-IN')}/-</Text>
-                      </View>
-                    </View>
-
-                    {/* Row 5: Amount in Words */}
-                    <View style={styles.fieldRow}>
-                      <Text style={styles.fieldLabel}>Amount in Words:</Text>
-                      <View style={styles.lineFill}>
-                        <Text style={styles.fieldValueWords} numberOfLines={2}>
-                          {numberToWordsEn(amount)}
-                        </Text>
-                        <View style={styles.dotLine} />
-                      </View>
-                    </View>
-
-                    {/* Row 6: Payment Method (Cash and UPI / Online - Fits cleanly without overflowing) */}
-                    <View style={styles.fieldRow}>
-                      <Text style={styles.fieldLabel}>Payment Mode:</Text>
-                      <View style={styles.checkboxesRow}>
-                        <View style={styles.checkItem}>
-                          <View style={[styles.boxCheck, paymentMode === 'cash' && styles.boxCheckActive]}>
-                            {paymentMode === 'cash' && <Text style={styles.checkMark}>✓</Text>}
-                          </View>
-                          <Text style={styles.checkText}>Cash</Text>
-                        </View>
-
-                        <View style={styles.checkItem}>
-                          <View style={[styles.boxCheck, (paymentMode === 'upi' || paymentMode === 'card' || paymentMode === 'online' || paymentMode === 'netbanking') && styles.boxCheckActive]}>
-                            {(paymentMode === 'upi' || paymentMode === 'card' || paymentMode === 'online' || paymentMode === 'netbanking') && <Text style={styles.checkMark}>✓</Text>}
-                          </View>
-                          <Text style={styles.checkText}>UPI / Online</Text>
-                        </View>
-                      </View>
-                    </View>
-
-                    {/* Row 7: Txn / Ref No (if available) */}
-                    {receipt.idempotencyKey ? (
-                      <View style={styles.fieldRow}>
-                        <Text style={styles.fieldLabel}>Txn / Ref No.:</Text>
-                        <View style={styles.lineFill}>
-                          <Text style={styles.fieldValueSmall}>{receipt.idempotencyKey}</Text>
-                          <View style={styles.dotLine} />
-                        </View>
-                      </View>
-                    ) : null}
-
+                  {/* 3. Section Title Divider: ◆ देणगी पावती ◆ */}
+                  <View style={styles.pawtiDividerRow}>
+                    <View style={styles.pawtiLine} />
+                    <Text style={styles.pawtiBadgeText}>◆ देणगी पावती ◆</Text>
+                    <View style={styles.pawtiLine} />
                   </View>
 
-                  {/* 4. Footer (Bottom chant line removed) */}
-                  <View style={styles.footerSection}>
-                    <Text style={styles.thankYouText}>❖ Thank you for your generous contribution! ❖</Text>
+                  {/* 4. Receipt No & Date Row */}
+                  <View style={styles.metaRow}>
+                    <Text style={styles.metaLabelText}>
+                      पावती क्र. <Text style={styles.metaBoldText}>{receiptNo}</Text>
+                    </Text>
+                    <Text style={styles.metaLabelText}>
+                      दिनांक: <Text style={styles.metaBoldText}>{toMarathiDigits(dateFormatted)}</Text>
+                    </Text>
+                  </View>
+
+                  {/* 5. Donor Info Row */}
+                  <View style={styles.donorRow}>
+                    <Text style={styles.donorPrefix}>श्री./श्रीमती/मेसर्स </Text>
+                    <View style={styles.lineFill}>
+                      <Text style={styles.donorNameText} numberOfLines={1}>
+                        {donorName}
+                      </Text>
+                      <View style={styles.dotLine} />
+                    </View>
+                    <Text style={styles.donorPrefix}> यांजकडून</Text>
+                  </View>
+
+                  {/* 6. Contribution Line */}
+                  <Text style={styles.varganiText}>वर्गणी / देणगी रु.</Text>
+
+                  {/* 7. Highlight Amount Box */}
+                  <View style={styles.amountBoxContainer}>
+                    <View style={styles.amountBox}>
+                      <Text style={styles.amountBoxText}>
+                        ₹ {toMarathiDigits(amount.toLocaleString('en-IN'))}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* 8. Amount in Marathi Words */}
+                  <Text style={styles.amountInWordsText}>
+                    {numberToWordsMr(amount)}
+                  </Text>
+
+                  {/* 9. Payment Acknowledgement */}
+                  <Text style={styles.paymentAckText}>
+                    {paymentMode === 'cash' ? 'रोख (Cash) द्वारे मिळाले, धन्यवाद !' : 'UPI द्वारे मिळाले, धन्यवाद !'}
+                  </Text>
+
+                  {/* 10. Bottom Blessing */}
+                  <View style={styles.bottomBlessingSection}>
+                    <View style={styles.dashedFooterLine} />
+                    <Text style={styles.bottomChantText}>॥ गणपती बाप्पा मोरया ॥</Text>
                   </View>
 
                 </View>
@@ -302,14 +263,14 @@ ${collectorName ? `✍️ *Issued By:* ${collectorName}\n` : ''}━━━━━�
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(23, 35, 60, 0.94)',
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 10
   },
   container: {
     width: '100%',
-    maxHeight: '98%',
+    maxHeight: '98%'
   },
   scrollContent: {
     paddingVertical: 10,
@@ -324,257 +285,262 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 10,
     gap: 8,
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
     elevation: 3
   },
   successIcon: { fontSize: 14 },
   successText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 
-  /* ── Clean Receipt Card Styling ── */
+  /* ── Traditional Receipt Card Styling ── */
   receiptContainer: {
     width: '100%',
-    maxWidth: 380,
+    maxWidth: 390,
     alignItems: 'center',
     marginVertical: 4
   },
   receiptCard: {
     width: '100%',
     backgroundColor: '#FFFDF9',
-    borderRadius: 16,
-    padding: 8,
-    borderWidth: 2,
-    borderColor: '#781D1D',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5
+    borderRadius: 18,
+    padding: 6,
+    borderWidth: 2.5,
+    borderColor: '#C2410C',
+    elevation: 6
   },
   innerBorder: {
-    borderWidth: 1.2,
-    borderColor: '#781D1D',
-    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    borderRadius: 12,
     padding: 14,
     backgroundColor: '#FFFDF9'
   },
 
-  /* Top Header Row (Left: Dengi Pawti | Right: Meta) */
-  topHeaderRow: {
+  /* Top Sacred Row */
+  topAuspiciousRow: {
+    position: 'relative',
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 6
-  },
-  dengiPillBadge: {
-    backgroundColor: '#781D1D',
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-    alignSelf: 'flex-start'
-  },
-  dengiPillText: {
-    color: '#FFFDF9',
-    fontSize: 9.5,
-    fontWeight: '800',
-    letterSpacing: 0.3
-  },
-  topMetaRight: {
-    alignItems: 'flex-end'
-  },
-  metaText: {
-    fontSize: 9,
-    color: '#4B5563',
-    fontWeight: '600',
-    lineHeight: 13
-  },
-  metaValue: {
-    color: '#781D1D',
-    fontWeight: '800'
-  },
-
-  /* Mandal Header Section */
-  mandalHeaderSection: {
     alignItems: 'center',
-    marginTop: 2,
-    marginBottom: 4
+    justifyContent: 'center',
+    marginBottom: 8,
+    minHeight: 20
   },
-  topCenterChant: {
+  topSacredCenterText: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#9A3412',
+    textAlign: 'center'
+  },
+  topSacredRightText: {
+    position: 'absolute',
+    right: 0,
     fontSize: 11.5,
     fontWeight: '800',
-    color: '#781D1D',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-    marginBottom: 3
+    color: '#9A3412'
+  },
+
+  /* Mandal Header */
+  mandalHeaderSection: {
+    marginBottom: 8
   },
   mandalTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingHorizontal: 4
-  },
-  ganeshaIcon: {
-    fontSize: 22
+    gap: 10
   },
   mandalLogoImg: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
-    backgroundColor: '#fff',
-    borderWidth: 0.8,
-    borderColor: '#FED7AA'
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#EA580C',
+    backgroundColor: '#fff'
+  },
+  ganeshaCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#EA580C',
+    backgroundColor: '#FFF7ED',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  ganeshaIcon: {
+    fontSize: 24
+  },
+  mandalTitleCol: {
+    flex: 1
   },
   mandalTitleText: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#781D1D',
-    textAlign: 'center',
-    flexShrink: 1,
-    letterSpacing: 0.2
+    color: '#831843',
+    lineHeight: 22
+  },
+  mandalSubFestival: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#C2410C',
+    marginTop: 2
+  },
+  mandalLocationText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 1
   },
 
-  dividerLine: {
-    height: 1.2,
-    backgroundColor: '#F3E8E8',
-    marginVertical: 8
-  },
-
-  /* Body */
-  bodySection: {
-    gap: 10,
-    marginVertical: 2
-  },
-  fieldRow: {
+  /* Section Divider */
+  pawtiDividerRow: {
     flexDirection: 'row',
-    alignItems: 'center'
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+    gap: 8
   },
-  fieldLabel: {
-    fontSize: 11.5,
+  pawtiLine: {
+    flex: 1,
+    height: 1.5,
+    backgroundColor: '#FDBA74'
+  },
+  pawtiBadgeText: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#9A3412'
+  },
+
+  /* Meta Row */
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12
+  },
+  metaLabelText: {
+    fontSize: 12.5,
     fontWeight: '700',
-    color: '#1F2937',
-    marginRight: 6,
-    minWidth: 105
+    color: '#334155'
+  },
+  metaBoldText: {
+    fontWeight: '900',
+    color: '#0F172A'
+  },
+
+  /* Donor Row */
+  donorRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 8,
+    flexWrap: 'wrap'
+  },
+  donorPrefix: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155'
+  },
+  donorNameText: {
+    fontSize: 14.5,
+    fontWeight: '900',
+    color: '#0F172A',
+    paddingBottom: 2
   },
   lineFill: {
     flex: 1,
+    minWidth: 100,
     justifyContent: 'center',
     position: 'relative'
-  },
-  fieldValue: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#781D1D',
-    paddingBottom: 2
-  },
-  fieldValueWords: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#781D1D',
-    paddingBottom: 2,
-    lineHeight: 15
-  },
-  fieldValueSmall: {
-    fontSize: 10.5,
-    fontWeight: '600',
-    color: '#781D1D',
-    paddingBottom: 2
   },
   dotLine: {
     width: '100%',
     height: 1,
-    borderBottomWidth: 1,
-    borderBottomColor: '#9CA3AF',
+    borderBottomWidth: 1.2,
+    borderBottomColor: '#94A3B8',
     borderStyle: 'dashed',
-    marginTop: 2
+    marginTop: 1
+  },
+
+  varganiText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 6
+  },
+
+  /* Amount Box */
+  amountBoxContainer: {
+    alignItems: 'center',
+    marginVertical: 6
   },
   amountBox: {
-    borderWidth: 1.5,
-    borderColor: '#781D1D',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    backgroundColor: '#FFF7ED'
+    borderWidth: 2,
+    borderColor: '#EA580C',
+    borderRadius: 12,
+    paddingHorizontal: 22,
+    paddingVertical: 6,
+    backgroundColor: '#FFFFFF',
+    elevation: 2,
+    shadowColor: '#EA580C',
+    shadowOpacity: 0.12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4
   },
   amountBoxText: {
-    fontSize: 13.5,
+    fontSize: 26,
     fontWeight: '900',
-    color: '#781D1D'
+    color: '#9A3412',
+    letterSpacing: 0.5
   },
 
-  /* Checkboxes */
-  checkboxesRow: {
-    flexDirection: 'row',
-    gap: 14,
-    alignItems: 'center',
-    flex: 1,
-    flexWrap: 'wrap'
-  },
-  checkItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5
-  },
-  boxCheck: {
-    width: 14,
-    height: 14,
-    borderWidth: 1.2,
-    borderColor: '#781D1D',
-    borderRadius: 3,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff'
-  },
-  boxCheckActive: {
-    backgroundColor: '#781D1D'
-  },
-  checkMark: {
-    color: '#fff',
-    fontSize: 9,
-    fontWeight: '900'
-  },
-  checkText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#374151'
+  amountInWordsText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#475569',
+    textAlign: 'center',
+    marginBottom: 8
   },
 
-  /* Footer */
-  footerSection: {
-    marginTop: 10,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F3E8E8',
+  paymentAckText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1E293B',
+    textAlign: 'center',
+    marginBottom: 10
+  },
+
+  /* Bottom Blessing */
+  bottomBlessingSection: {
+    marginTop: 4,
     alignItems: 'center'
   },
-  thankYouText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#781D1D',
-    textAlign: 'center'
+  dashedFooterLine: {
+    width: '100%',
+    height: 1,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FED7AA',
+    borderStyle: 'dashed',
+    marginBottom: 8
+  },
+  bottomChantText: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#9A3412',
+    letterSpacing: 0.5
   },
 
   /* Action Buttons */
   actionContainer: {
     width: '100%',
-    maxWidth: 380,
+    maxWidth: 390,
     marginTop: 12,
     gap: 8
   },
   imageShareBtn: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#25D366',
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 13,
+    paddingVertical: 12,
     borderRadius: 12,
     gap: 8,
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
     elevation: 3
   },
   imageShareBtnText: {
@@ -583,7 +549,7 @@ const styles = StyleSheet.create({
     fontWeight: '800'
   },
   whatsappDirectBtn: {
-    backgroundColor: '#25D366',
+    backgroundColor: '#2563EB',
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -597,14 +563,16 @@ const styles = StyleSheet.create({
     fontWeight: '700'
   },
   doneBtn: {
-    backgroundColor: '#FF6B00',
-    paddingVertical: 12,
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 11,
     borderRadius: 12,
-    alignItems: 'center'
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#CBD5E1'
   },
   doneBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+    color: '#334155',
+    fontSize: 13.5,
     fontWeight: '700'
   },
   btnIcon: {

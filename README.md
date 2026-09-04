@@ -1,96 +1,201 @@
-# MandalPro — Full Stack Scaffold
+# Apla Mandal (आपला मंडळ) — Digital Festival & Community Trust Management Platform
 
-A working MERN + React Native implementation of the MandalPro spec, covering the **core flows**:
-Onboarding, Donations & Digital Receipts, Expense Approval, Budgets & Forecast, Events & Tasks,
-Dashboard, RBAC, Sponsors/Vendors, and Inventory. AI features (OCR, forecasting model, conversational
-assistant), payment gateway, and WhatsApp integration are stubbed/simplified — see "What's Not Built Yet" below.
+A modern, full-stack multi-tenant SaaS platform designed for Indian festivals (Ganeshotsav, Navratri, Shiv Jayanti, etc.) and community mandals/trusts. **Apla Mandal** digitizes the entire festival lifecycle — from donation collection with instant digital receipts to expense approval workflows, volunteer coordination, and CA-certified audit reports.
 
-## Structure
+---
 
-```
-mandalpro/
-├── backend/       Express.js + MongoDB API (JWT auth, RBAC, multi-tenant)
-├── admin-web/     React.js (Vite) admin dashboard for President/Treasurer/Secretary
-└── mobile-app/    React Native (Expo) app for collectors/volunteers
-```
+## 🏛️ Project Overview
 
-## 1. Backend Setup
+Traditional mandals rely on physical receipt books, manual cash counting, paper vouchers, and cumbersome post-festival audit preparation. **Apla Mandal** provides a streamlined, transparent, and paperless solution:
 
-```bash
-cd backend
-npm install
-npm run dev        # nodemon, or `npm start` for plain node
-```
+- **100% Paperless Collections**: Issue official digital receipts with mandal logo, sequential receipt numbers, QR codes, and instant WhatsApp delivery.
+- **Financial Governance**: Multi-level expense approvals (Volunteer → Treasurer → President) with photo bill attachments.
+- **Budgeting & Risk Analysis**: Real-time spend vs. budget tracking with variance analysis.
+- **Audit-Ready Reports**: 1-Click balance sheet and income-expenditure statements formatted for CA and Charity Commissioner audits.
+- **Bilingual Interface**: Seamless switching between **मराठी (Marathi)** and **English**.
+- **Role-Based Access Control (RBAC)**: Distinct permissions for Superadmin, President, Treasurer, Secretary, and Volunteers.
 
-The `.env` file already contains the MongoDB connection string you provided. **Important:**
-that connection string has a real password in it — since it was shared in this chat, consider
-rotating the database user's password in MongoDB Atlas before this goes anywhere near production,
-and never commit `.env` to a public repo (it's already in `.gitignore`).
+---
 
-Server runs on `http://localhost:5000`. Health check: `GET /api/health`.
+## 🏗️ Repository Architecture
 
-## 2. Admin Web Setup
-
-```bash
-cd admin-web
-npm install
-npm run dev
+```text
+MandalPro/
+├── backend/       # Node.js + Express.js REST API (JWT Auth, RBAC, Multi-tenant MongoDB)
+├── admin-web/     # React 18 + Vite Admin Dashboard (Responsive web portal)
+└── mobile-app/    # React Native (Expo) Mobile App (Offline collection & volunteer tools)
 ```
 
-Runs on `http://localhost:5173`. First-time use: go to **Register**, which creates a Mandal +
-your President account together (onboarding flow 2.1). `admin-web/.env` points at
-`http://localhost:5000/api` — change `VITE_API_URL` if your backend runs elsewhere.
+---
 
-## 3. Mobile App Setup (Expo)
+## 📦 Key Modules & Features
 
-```bash
-cd mobile-app
-npm install
-npx expo start
-```
+### 1. Multi-Tenant Architecture & Onboarding
+- Independent data isolation per Mandal using tenant-scoped queries (`mandalId`).
+- Automated onboarding flow with festival type selection, bank details, committee setup, and custom mandal logo upload.
 
-Scan the QR code with Expo Go (Android/iOS) or run on an emulator.
+### 2. Donations & Receipts
+- **Server-Side Sequential Numbering**: Race-condition-free receipt numbering per mandal per financial year (`FY 2026-27/REC-001`).
+- **Instant Digital Receipts**: Branded receipt cards with mandal seal, QR verification code, and one-tap WhatsApp sharing.
+- **Audit-Safe Cancellations**: No hard deletes; cancellations require a mandatory reason and are logged in audit trails.
 
-**Before testing on a physical device:** edit `mobile-app/src/api/client.js` and replace
-`http://localhost:5000` with your computer's LAN IP (e.g. `http://192.168.1.10:5000/api`) —
-`localhost` on a phone refers to the phone itself, not your dev machine.
+### 3. Expense Approvals & Cashflow
+- Multi-state expense lifecycle: `Draft` ➔ `Submitted` ➔ `Approved / Rejected` ➔ `Paid` ➔ `Reconciled`.
+- Bill/receipt camera and file uploads stored securely.
+- Configurable approval threshold routing high-value expenses directly to the President.
 
-## What's Implemented (Core Flows)
+### 4. Events, Tasks & Volunteers
+- Event scheduling (e.g., Aagman, Visarjan, Maha Aarti, Blood Donation Camps).
+- Task assignment with volunteer tracking and attendance logging.
+- Digital Committee & Volunteer ID cards with photos and QR codes.
 
-- **Auth & Multi-Tenancy**: JWT login, mandal-scoped data isolation, RBAC middleware
-  (president/treasurer/secretary/volunteer)
-- **Onboarding**: Register creates Mandal + President account, event-type selection
-- **Donations & Receipts**: trusted server-side sequential receipt numbering per mandal per
-  financial year, QR code generation, cancel/reverse with mandatory reason + audit log
-  (never hard-deleted)
-- **Offline Collection & Sync**: mobile app queues donations locally when offline
-  (AsyncStorage) with an idempotency key, and replays the queue on reconnect; server dedupes
-- **Expense Approval Workflow**: Draft → Submit → Approve/Reject → Paid → Reconciled, with a
-  configurable approval threshold routing large expenses to President
-- **Budgets & Forecast**: live spend-vs-budget aggregation with a simple pace-based risk flag
-  (on-track / at-risk / over)
-- **Events & Tasks**: event creation, task assignment, attendance marking, event closure with
-  an auto-generated collections/expenses/attendance summary
-- **Sponsors/Vendors & Inventory**: basic CRUD + payment/due tracking, QR-tagged assets with
-  issue/return tracking
-- **Audit Trail**: all cancellations, reversals, rejections, and approvals are logged
+### 5. Sponsors, Vendors & Inventory
+- Sponsor commitments, banner allocation, and payment receivables tracking.
+- Asset inventory management (sound systems, lights, stage equipment) with issue/return status.
 
-## What's Not Built Yet (flagged in the spec as AI/infra-heavy)
+### 6. Committee Chat & Announcements
+- Internal group messaging and broadcast channel for committee updates and emergency notices.
 
-These need real third-party services or ML infrastructure beyond a scaffold:
-- **AI Bill OCR** — needs a vision/OCR API (e.g. Google Vision, AWS Textract); the `ocrData`
-  field exists on the Expense model ready to receive it
-- **AI Financial Assistant (conversational)** — needs an LLM wired to the safe read-only query
-  set described in the spec
-- **AI anomaly detection & ML-based forecasting** — v1 budget risk uses a simple rules-based
-  pace check as the spec itself recommends; graduate to ML once you have transaction volume
-- **Payment gateway (Razorpay/Cashfree) & webhook-driven billing activation**
-- **WhatsApp Business API delivery** for receipts/notifications
-- **OTP-based signup** — current auth is email + password; OTP requires an SMS provider
-- **Document intelligence classification** (trust deeds, licenses, etc.)
+---
 
-## Security Note
+## 🚀 Getting Started
 
-The `.env` file in `backend/` contains a live MongoDB Atlas connection string with a password.
-Treat it as a secret: don't commit it to a public GitHub repo, and rotate the password if this
-project will be shared with anyone else.
+### Prerequisites
+- **Node.js**: v18.x or higher (v20+ recommended)
+- **npm**: v9.x or higher
+- **MongoDB**: Local MongoDB instance or MongoDB Atlas cluster
+
+---
+
+### 1. Backend Setup
+
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Configure environment variables:
+   Create a `.env` file in the `backend/` directory based on the following template:
+   ```env
+   PORT=3005
+   NODE_ENV=development
+   CLIENT_URL=http://localhost:5173
+
+   # Database Connection
+   MONGO_URI=mongodb+srv://<username>:<password>@<cluster-url>/<dbname>?retryWrites=true&w=majority
+
+   # JWT Authentication
+   JWT_SECRET=your_jwt_secret_key_change_in_production
+   JWT_EXPIRES_IN=7d
+
+   # Payment Gateway (Razorpay)
+   RAZORPAY_KEY_ID=your_razorpay_key_id
+   RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+
+   # Email Configuration (SMTP)
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=465
+   SMTP_USER=your_email@gmail.com
+   SMTP_PASS=your_email_app_password
+   SMTP_FROM=your_email@gmail.com
+   SMTP_FROM_NAME="Apla Mandal"
+   ```
+
+4. Run the backend server:
+   ```bash
+   # Development mode (with nodemon)
+   npm run dev
+
+   # Production mode
+   npm start
+   ```
+
+   Health check endpoint: `GET http://localhost:3005/api/health`
+
+---
+
+### 2. Admin Web Setup
+
+1. Navigate to the admin web directory:
+   ```bash
+   cd admin-web
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Configure environment variables:
+   Create a `.env` file in the `admin-web/` directory:
+   ```env
+   # Point to your local backend or remote API
+   VITE_API_URL=http://localhost:3005/api
+   ```
+
+4. Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
+   Open `http://localhost:5173` in your browser.
+
+5. Build for production:
+   ```bash
+   npm run build
+   ```
+   Production assets will be output to `admin-web/dist/`.
+
+---
+
+### 3. Mobile App Setup (Expo)
+
+1. Navigate to the mobile app directory:
+   ```bash
+   cd mobile-app
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the Expo development server:
+   ```bash
+   npx expo start
+   ```
+
+4. Scan the generated QR code using **Expo Go** on an Android or iOS device connected to the same local network.
+
+> **Note for Physical Devices**: Update the API base URL in `mobile-app/src/api/client.js` to your computer's local network IP (e.g. `http://192.168.1.10:3005/api`) rather than `localhost`.
+
+---
+
+## 🔒 Security & Best Practices
+
+- **Zero Secrets in Git**: Never commit `.env` or configuration files with real credentials. All sensitive files are listed in `.gitignore`.
+- **Tenant Isolation**: Every database operation enforces mandal ownership verification to prevent cross-tenant data leakage.
+- **DNS Resolution on Windows**: Backend utilizes explicit public DNS fallbacks for resilient MongoDB Atlas SRV lookups on local ISP networks.
+- **Audit Logging**: Sensitive mutations (canceling receipts, approving/rejecting funds, role modifications) maintain immutable audit log entries.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Frontend** | React 18, Vite, React Router 6, Recharts, Vanilla CSS |
+| **Backend** | Node.js, Express.js, Mongoose, JWT, Nodemailer, Razorpay SDK |
+| **Database** | MongoDB Atlas / MongoDB Server |
+| **Mobile** | React Native, Expo 54, React Navigation, AsyncStorage |
+| **Localization** | Custom bilingual i18n engine (Marathi & English) |
+
+---
+
+## 📄 License & Intellectual Property
+
+Copyright © 2026 **Apla Mandal** (Operated by Quantromind Pvt. Ltd.). All Rights Reserved.

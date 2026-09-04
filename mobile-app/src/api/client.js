@@ -2,8 +2,8 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 
-// Production backend URL on Render (used for standalone production/preview APK)
-const PROD_API_URL = 'https://mandalpro.onrender.com/api';
+// Production backend URL on Hostinger VPS (works on all devices & 4G/5G mobile data)
+const PROD_API_URL = 'https://aplamandal.quantromind.com/api';
 
 // Set to true only if you want Expo Go development client to point to local PC (port 5000)
 const USE_LOCAL_BACKEND = false;
