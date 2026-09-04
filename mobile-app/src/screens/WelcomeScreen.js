@@ -94,7 +94,7 @@ export default function WelcomeScreen({ navigation }) {
       {/* ── Top Header ── */}
       <View style={styles.header}>
         <View style={styles.brandRow}>
-          <Image source={require('../../assets/logo.jpg')} style={styles.logo} />
+          <Image source={require('../../assets/logo.png')} style={styles.logo} />
           <View>
             <Text style={styles.brandName}>
               Apla<Text style={{ color: '#F97316' }}>Mandal</Text>

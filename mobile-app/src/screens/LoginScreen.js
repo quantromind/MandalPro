@@ -178,7 +178,7 @@ export default function LoginScreen({ navigation, route }) {
         >
           {/* ── Brand Header ── */}
           <View style={styles.brandHeader}>
-            <Image source={require('../../assets/logo.jpg')} style={styles.logo} />
+            <Image source={require('../../assets/logo.png')} style={styles.logo} />
             <Text style={styles.title}>
               Apla<Text style={{ color: '#F97316' }}>Mandal</Text>
             </Text>

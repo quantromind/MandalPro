@@ -290,7 +290,7 @@ export default function RegisterScreen({ navigation, route }) {
 
           {/* Header */}
           <View style={s.header}>
-            <Image source={require('../../assets/logo.jpg')} style={s.logo} />
+            <Image source={require('../../assets/logo.png')} style={s.logo} />
             <Text style={s.title}>{t('nav.appTitle')}</Text>
             <View style={s.stepper}>
               {[1,2,3].map(n => (
