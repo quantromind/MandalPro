@@ -98,6 +98,7 @@ export default function Reports() {
           .sig-line { border-top: 1px solid #475569; width: 80%; margin: 0 auto 6px; }
           .sig-label { font-size: 12px; font-weight: 700; color: #334155; }
           .footer { text-align: center; margin-top: 32px; font-size: 11px; color: #94A3B8; border-top: 1px solid #F1F5F9; padding-top: 12px; }
+          .footer a { color: #EA580C; text-decoration: none; font-weight: 600; }
           .print-toolbar { position: fixed; top: 16px; right: 16px; background: #0F172A; padding: 10px 18px; border-radius: 99px; display: flex; gap: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.25); z-index: 999; }
           .print-btn { background: #EA580C; color: #FFF; border: none; padding: 8px 16px; border-radius: 99px; font-weight: 700; cursor: pointer; font-size: 13px; }
           @media print {
@@ -285,6 +286,9 @@ export default function Reports() {
 
           <div class="footer">
             ${mandalName} • Generated via Apla Mandal Digital Management System • Verified & Audited
+            <div style="font-size: 10px; color: #94A3B8; margin-top: 5px;">
+              Powered by <a href="https://quantromind.com/" target="_blank" rel="noopener noreferrer">Quantromind Pvt Ltd</a>
+            </div>
           </div>
         `;
         openPrintWindow(`Financial_Summary_${mandalName}`, html);
@@ -396,6 +400,13 @@ export default function Reports() {
             <div>
               <div class="sig-line"></div>
               <div class="sig-label">${isMr ? 'अध्यक्ष' : 'President'}</div>
+            </div>
+          </div>
+
+          <div class="footer">
+            ${mandalName} • Generated via Apla Mandal Digital Management System • Official Records
+            <div style="font-size: 10px; color: #94A3B8; margin-top: 5px;">
+              Powered by <a href="https://quantromind.com/" target="_blank" rel="noopener noreferrer">Quantromind Pvt Ltd</a>
             </div>
           </div>
         `;
@@ -558,6 +569,9 @@ export default function Reports() {
 
         <div class="footer">
           ${mandalName} • Officially Certified Event Closure Report • Apla Mandal
+          <div style="font-size: 10px; color: #94A3B8; margin-top: 5px;">
+            Powered by <a href="https://quantromind.com/" target="_blank" rel="noopener noreferrer">Quantromind Pvt Ltd</a>
+          </div>
         </div>
       `;
 

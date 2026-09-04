@@ -14,6 +14,86 @@ const getAllUsers = asyncHandler(async (req, res) => {
   res.json(users);
 });
 
+// @desc    Update user
+// @route   PUT /api/superadmin/users/:id
+// @access  Private/Superadmin
+const updateUser = asyncHandler(async (req, res) => {
+  const { name, mobile, role, status, mandalId, password } = req.body;
+
+  const targetUser = await User.findById(req.params.id);
+
+  if (!targetUser) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  // Prevent modifying role/status of primary superadmin account
+  if (targetUser.email === 'quantromind@gmail.com') {
+    if (role && role !== 'superadmin') {
+      res.status(400);
+      throw new Error('Cannot change role of primary superadmin');
+    }
+    if (status && status !== 'active') {
+      res.status(400);
+      throw new Error('Cannot deactivate primary superadmin');
+    }
+  }
+
+  if (name !== undefined) targetUser.name = name.trim();
+  if (mobile !== undefined) targetUser.mobile = mobile.trim();
+  if (role !== undefined) targetUser.role = role;
+  if (status !== undefined) targetUser.status = status;
+
+  if (mandalId !== undefined) {
+    if (!mandalId || mandalId === 'none' || mandalId === '') {
+      targetUser.mandalId = null;
+    } else {
+      targetUser.mandalId = mandalId;
+      if (!targetUser.mandalIds) targetUser.mandalIds = [];
+      if (!targetUser.mandalIds.includes(mandalId)) {
+        targetUser.mandalIds.push(mandalId);
+      }
+    }
+  }
+
+  if (password && password.trim().length >= 6) {
+    targetUser.passwordHash = await User.hashPassword(password.trim());
+  }
+
+  await targetUser.save();
+
+  const populated = await User.findById(targetUser._id)
+    .populate('mandalId', 'name plan')
+    .select('-passwordHash');
+
+  res.json(populated);
+});
+
+// @desc    Delete user
+// @route   DELETE /api/superadmin/users/:id
+// @access  Private/Superadmin
+const deleteUser = asyncHandler(async (req, res) => {
+  const targetUser = await User.findById(req.params.id);
+
+  if (!targetUser) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  if (targetUser.email === 'quantromind@gmail.com' || targetUser.role === 'superadmin') {
+    res.status(400);
+    throw new Error('Superadmin account cannot be deleted');
+  }
+
+  if (req.user && req.user._id.toString() === targetUser._id.toString()) {
+    res.status(400);
+    throw new Error('Cannot delete your own account');
+  }
+
+  await User.findByIdAndDelete(req.params.id);
+  res.json({ success: true, message: 'User deleted successfully' });
+});
+
 // @desc    Get all mandals
 // @route   GET /api/superadmin/mandals
 // @access  Private/Superadmin
@@ -95,6 +175,8 @@ const deleteMandal = asyncHandler(async (req, res) => {
 
 module.exports = {
   getAllUsers,
+  updateUser,
+  deleteUser,
   getAllMandals,
   getMandalById,
   updateMandal,
