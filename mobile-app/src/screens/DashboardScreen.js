@@ -78,14 +78,7 @@ export default function DashboardScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F97316']} tintColor="#F97316" />}
       >
-        {/* Top Mandal Pill (Website matching) */}
-        <View style={styles.topMandalPillContainer}>
-          <View style={styles.topMandalPill}>
-            <Text style={styles.topMandalPillText}>🚩 {mandal?.name || 'Apla Mandal'}</Text>
-          </View>
-        </View>
-
-        {/* Header Hero Banner (Website matching) */}
+        {/* Header Hero Banner (Image 2 matching) */}
         <View style={styles.headerCard}>
           <View style={styles.roleBadge}>
             <Text style={styles.roleBadgeText}>
@@ -94,42 +87,44 @@ export default function DashboardScreen({ navigation }) {
           </View>
 
           <Text style={styles.greeting}>
-            Namaste, {user?.name?.split(' ')[0] || 'Member'} 🪔
+            Namaste, {user?.name?.split(' ')[0] || 'Sakhee'} 🪔
           </Text>
           <Text style={styles.mandalSub}>
-            🚩 {mandal?.name || 'Apla Mandal'} • {language === 'mr' ? 'लाइव्ह मंडळ आकडेवारी' : 'Live Mandal statistics'}
+            🚩 {mandal?.name || 'Sakhee Mitra Mandal'} • {language === 'mr' ? 'लाइव्ह मंडळ आकडेवारी' : 'Live Mandal statistics'}
           </Text>
 
-          {/* Quick Action CTA Buttons inside Hero Banner */}
-          <View style={styles.heroActionRow}>
+          {/* Quick Action CTA Buttons inside Hero Banner matching Image 2 */}
+          <View style={styles.heroButtonContainer}>
             <TouchableOpacity
-              style={styles.heroPrimaryBtn}
+              style={styles.heroPrimaryBtnFull}
               onPress={() => navigation.navigate('Collection')}
               activeOpacity={0.88}
             >
-              <Text style={styles.heroPrimaryBtnText}>
-                ✨ + {language === 'mr' ? 'नवीन पावती' : 'Record New Donation'}
+              <Text style={styles.heroPrimaryBtnFullText}>
+                ✨ ✨ {language === 'mr' ? 'नवीन देणगी नोंदवा' : 'Record New Donation'}
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.heroSecondaryBtn}
-              onPress={() => navigation.navigate('Expenses')}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.heroSecondaryBtnText}>
-                💸 {language === 'mr' ? 'खर्च जोडा' : 'Add Expense'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.heroSecondaryRow}>
+              <TouchableOpacity
+                style={styles.heroExpenseBtn}
+                onPress={() => navigation.navigate('Expenses')}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.heroExpenseBtnText}>
+                  💸 {language === 'mr' ? 'खर्च जोडा' : 'Add Expense'}
+                </Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.heroChatIconBtn}
-              onPress={() => navigation.navigate('Chat')}
-              activeOpacity={0.85}
-              accessibilityLabel="Chat"
-            >
-              <Text style={styles.heroChatIconText}>💬</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.heroSyncBtn}
+                onPress={onRefresh}
+                activeOpacity={0.85}
+                accessibilityLabel="Sync"
+              >
+                <Text style={styles.heroSyncIcon}>🔄</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -143,9 +138,9 @@ export default function DashboardScreen({ navigation }) {
         <View style={styles.statCardsGrid}>
           {/* Card 1: Net Balance */}
           <View style={styles.statCard}>
-            <View style={[styles.statAccentLine, { backgroundColor: '#F97316' }]} />
+            <View style={[styles.statAccentLine, { backgroundColor: '#6366F1' }]} />
             <Text style={styles.statCardLabel}>🪙 {language === 'mr' ? 'शिल्लक रक्कम' : 'NET BALANCE - REMAINING'}</Text>
-            <Text style={[styles.statCardAmount, { color: netBalance >= 0 ? '#172554' : '#DC2626' }]}>
+            <Text style={[styles.statCardAmount, { color: netBalance >= 0 ? '#1E3A8A' : '#DC2626' }]}>
               {inr(netBalance)}
             </Text>
             <Text style={styles.statCardSub}>{language === 'mr' ? 'उपलब्ध निधी' : 'Available funds'}</Text>
@@ -155,7 +150,7 @@ export default function DashboardScreen({ navigation }) {
           <View style={styles.statCard}>
             <View style={[styles.statAccentLine, { backgroundColor: '#10B981' }]} />
             <Text style={styles.statCardLabel}>💰 {language === 'mr' ? 'जमा निधी' : 'INFLOW - COLLECTIONS'}</Text>
-            <Text style={[styles.statCardAmount, { color: '#15803D' }]}>
+            <Text style={[styles.statCardAmount, { color: '#059669' }]}>
               {inr(summary?.totalCollections)}
             </Text>
             <Text style={styles.statCardSub}>{language === 'mr' ? 'एकूण जमा नोंदी' : 'Total collections recorded'}</Text>
@@ -418,6 +413,17 @@ export default function DashboardScreen({ navigation }) {
         )}
       </ScrollView>
 
+      {/* Floating Purple Chat Pill Button matching Image 2 */}
+      <TouchableOpacity
+        style={styles.floatingChatPill}
+        onPress={() => navigation?.navigate('ChatTab')}
+        activeOpacity={0.85}
+        accessibilityLabel="Chat"
+      >
+        <Text style={styles.floatingChatIcon}>💬</Text>
+        <Text style={styles.floatingChatText}>{language === 'mr' ? 'चॅट' : 'Chat'}</Text>
+      </TouchableOpacity>
+
       {/* Language Selection Modal */}
       <LanguageModal
         visible={showLanguageModal}
@@ -470,7 +476,7 @@ const styles = StyleSheet.create({
     borderColor: '#FFF1E7',
   },
   container: { flex: 1, backgroundColor: '#F8F7F4' },
-  contentContainer: { padding: 16, paddingBottom: 100 },
+  contentContainer: { padding: 16, paddingBottom: 130 },
   topMandalPillContainer: {
     marginBottom: 10,
     alignItems: 'flex-start',
@@ -529,58 +535,91 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: '500',
   },
-  heroActionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+  heroButtonContainer: {
     marginTop: 16,
+    gap: 10,
   },
-  heroPrimaryBtn: {
-    flex: 1,
+  heroPrimaryBtnFull: {
     backgroundColor: '#F97316',
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    borderRadius: 24,
+    paddingVertical: 13,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#F97316',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  heroPrimaryBtnText: {
+  heroPrimaryBtnFullText: {
     color: '#FFFFFF',
-    fontSize: 12.5,
+    fontSize: 14.5,
     fontWeight: '800',
+    letterSpacing: 0.3,
   },
-  heroSecondaryBtn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.14)',
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 13,
+  heroSecondaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  heroExpenseBtn: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 20,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heroSecondaryBtnText: {
+  heroExpenseBtnText: {
     color: '#FFFFFF',
-    fontSize: 12.5,
+    fontSize: 13.5,
     fontWeight: '700',
   },
-  heroChatIconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+  heroSyncBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  heroChatIconText: {
+  heroSyncIcon: {
     fontSize: 18,
+    color: '#FFFFFF',
+  },
+  floatingChatPill: {
+    position: 'absolute',
+    bottom: 76,
+    right: 16,
+    backgroundColor: '#4F46E5',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
+    gap: 6,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
+    zIndex: 99,
+  },
+  floatingChatIcon: {
+    fontSize: 16,
+  },
+  floatingChatText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
   sectionTitleRow: { marginTop: 18, marginBottom: 12 },
   sectionHeader: { fontSize: 18, fontWeight: '800', color: '#172554', letterSpacing: -0.2 },

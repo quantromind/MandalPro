@@ -1,8 +1,9 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl,
   Image, Alert, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
@@ -16,6 +17,54 @@ export default function ProfileScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [showLangModal, setShowLangModal] = useState(false);
+
+  // Mandal Profile Details State matching reference screenshot
+  const [mandalName, setMandalName] = useState(mandal?.name || '');
+  const [establishedYear, setEstablishedYear] = useState(String(mandal?.establishedYear || '2023'));
+  const [address, setAddress] = useState(mandal?.address || '');
+  const [upiId, setUpiId] = useState(mandal?.upiId || '');
+  const [logoPreview, setLogoPreview] = useState(mandal?.logoBase64 || mandal?.logoUrl || '');
+  const [savingMandal, setSavingMandal] = useState(false);
+
+  useEffect(() => {
+    if (mandal) {
+      setMandalName(mandal.name || '');
+      setEstablishedYear(String(mandal.establishedYear || '2023'));
+      setAddress(mandal.address || '');
+      setUpiId(mandal.upiId || '');
+      setLogoPreview(mandal.logoBase64 || mandal.logoUrl || '');
+    }
+  }, [mandal]);
+
+  const handleSaveMandal = async () => {
+    try {
+      setSavingMandal(true);
+      const payload = {
+        name: mandalName.trim(),
+        establishedYear: establishedYear.trim(),
+        address: address.trim(),
+        upiId: upiId.trim(),
+      };
+      if (logoPreview && logoPreview.startsWith('data:')) {
+        payload.logoBase64 = logoPreview;
+      }
+      try {
+        const { data } = await client.patch('/mandal', payload);
+        await updateMandal(data || payload);
+      } catch (err1) {
+        const { data } = await client.put('/mandal', payload);
+        await updateMandal(data || payload);
+      }
+      Alert.alert(
+        language === 'mr' ? 'यशस्वी!' : 'Success!',
+        language === 'mr' ? 'मंडळ माहिती अद्ययावत केली! ✅' : 'Mandal details updated successfully! ✅'
+      );
+    } catch (err) {
+      Alert.alert('Error', err.response?.data?.message || 'Failed to update mandal details.');
+    } finally {
+      setSavingMandal(false);
+    }
+  };
 
   // Member Management State (For President)
   const [members, setMembers] = useState([]);
@@ -138,10 +187,20 @@ export default function ProfileScreen({ navigation }) {
           ? `data:image/jpeg;base64,${asset.base64}`
           : asset.uri;
 
+        setLogoPreview(base64Uri);
         setUploadingLogo(true);
-        await client.put('/mandal', { logoBase64: base64Uri });
-        await updateMandal({ logoBase64: base64Uri });
-        Alert.alert('Success!', t('profile.logoUpdated'));
+        try {
+          await client.put('/mandal', { logoBase64: base64Uri });
+          await updateMandal({ logoBase64: base64Uri });
+        } catch (e) {
+          try {
+            await client.patch('/mandal', { logoBase64: base64Uri });
+            await updateMandal({ logoBase64: base64Uri });
+          } catch (e2) {
+            // ignore
+          }
+        }
+        Alert.alert('Success!', t('profile.logoUpdated') || 'Logo updated!');
       }
     } catch (err) {
       Alert.alert('Upload Error', err.response?.data?.message || 'Failed to update logo.');
@@ -211,20 +270,136 @@ export default function ProfileScreen({ navigation }) {
   };
 
   return (
-    <>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView 
         style={styles.container} 
         contentContainerStyle={styles.contentContainer}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F97316']} tintColor="#F97316" />}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Page Header ── */}
-        <View style={styles.pageHeaderSection}>
-          <View style={styles.pageHeaderTitleRow}>
-            <View style={styles.orangeAccentBar} />
-            <Text style={styles.pageHeaderTitle}>{t('profile.title')}</Text>
-          </View>
-          <Text style={styles.pageHeaderSub}>{t('profile.mandalDetails')}</Text>
+        {/* ── Page Header matching user screenshot ── */}
+        <View style={styles.headerSection}>
+          <Text style={styles.screenMainTitle}>
+            🚩 Mandal Profile (मंडळ प्रोफाइल)
+          </Text>
+          <Text style={styles.screenMainSub}>
+            Mandal Branding & Details & Digital ID Cards
+          </Text>
+        </View>
+
+        {/* ── Mandal Details Card matching user screenshot ── */}
+        <View style={styles.mandalDetailsCard}>
+          <Text style={styles.cardHeaderTitle}>🏛️ Mandal Details</Text>
+
+          {/* Official Mandal Logo */}
+          <Text style={styles.fieldLabel}>
+            🚩 Official Mandal Logo (Printed on receipts)
+          </Text>
+          <TouchableOpacity
+            style={styles.logoUploadBox}
+            onPress={pickLogo}
+            activeOpacity={0.8}
+            disabled={uploadingLogo}
+          >
+            <View style={styles.logoCircleWrapper}>
+              {logoPreview ? (
+                <Image
+                  source={{ uri: logoPreview }}
+                  style={styles.logoCircleImg}
+                  resizeMode="contain"
+                />
+              ) : (
+                <Image
+                  source={require('../../assets/logo.png')}
+                  style={styles.logoCircleImg}
+                  resizeMode="contain"
+                />
+              )}
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Text style={styles.uploadTitle}>
+                {logoPreview ? 'Custom logo selected ✓' : 'Upload custom logo'}
+              </Text>
+              <Text style={styles.uploadSub}>
+                Click to select PNG, JPG or WEBP
+              </Text>
+            </View>
+
+            <View style={styles.browseBtn}>
+              {uploadingLogo ? (
+                <ActivityIndicator size="small" color="#F97316" />
+              ) : (
+                <Text style={styles.browseBtnText}>📁 Browse</Text>
+              )}
+            </View>
+          </TouchableOpacity>
+
+          {/* Mandal Name */}
+          <Text style={styles.fieldLabel}>Mandal Name</Text>
+          <TextInput
+            style={styles.inputField}
+            value={mandalName}
+            onChangeText={setMandalName}
+            placeholder="Mandal Name"
+            placeholderTextColor="#94A3B8"
+            editable={isPresident}
+          />
+
+          {/* Established Year */}
+          <Text style={styles.fieldLabel}>🚩 Established Year</Text>
+          <TextInput
+            style={styles.inputField}
+            value={establishedYear}
+            onChangeText={setEstablishedYear}
+            placeholder="e.g. 2023"
+            placeholderTextColor="#94A3B8"
+            keyboardType="numeric"
+            editable={isPresident}
+          />
+
+          {/* Address */}
+          <Text style={styles.fieldLabel}>Address</Text>
+          <TextInput
+            style={[styles.inputField, styles.textAreaField]}
+            value={address}
+            onChangeText={setAddress}
+            placeholder="e.g. Shivaji Chowk, Pune"
+            placeholderTextColor="#94A3B8"
+            multiline
+            numberOfLines={3}
+            editable={isPresident}
+          />
+
+          {/* UPI ID */}
+          <Text style={styles.fieldLabel}>💳 UPI ID (For Instant QR Code & Payments)</Text>
+          <TextInput
+            style={styles.inputField}
+            value={upiId}
+            onChangeText={setUpiId}
+            placeholder="e.g. mandal@upi"
+            placeholderTextColor="#94A3B8"
+            autoCapitalize="none"
+            editable={isPresident}
+          />
+
+          {/* Save Mandal Details Button */}
+          {isPresident && (
+            <TouchableOpacity
+              style={styles.saveMandalBtn}
+              onPress={handleSaveMandal}
+              activeOpacity={0.88}
+              disabled={savingMandal}
+            >
+              {savingMandal ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.saveMandalBtnText}>
+                  💾 {language === 'mr' ? 'माहिती जतन करा' : 'Save Mandal Details'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
         
         {/* ── Profile Hero Card ── */}
@@ -361,65 +536,7 @@ export default function ProfileScreen({ navigation }) {
           </View>
         )}
 
-        {/* President Management: Branding & Mandal Info */}
-        {isPresident && mandal && (
-          <View style={styles.card}>
-            <View style={styles.sectionHeaderRow}>
-              <View>
-                <Text style={styles.sectionTitle}>{t('profile.brandingAndDetails')}</Text>
-                <Text style={styles.sectionSub}>{t('profile.logoAndCredentials')}</Text>
-              </View>
-            </View>
 
-            {/* Logo Management */}
-            <View style={styles.logoSection}>
-              {mandal.logoBase64 || mandal.logoUrl ? (
-                <Image
-                  source={{ uri: mandal.logoBase64 || mandal.logoUrl }}
-                  style={styles.mandalLogoPreview}
-                  resizeMode="contain"
-                />
-              ) : (
-                <View style={styles.mandalLogoPlaceholder}>
-                  <Text style={styles.placeholderIcon}>🪔</Text>
-                </View>
-              )}
-
-              <View style={{ flex: 1, marginLeft: 14 }}>
-                <TouchableOpacity
-                  style={[styles.uploadBtn, uploadingLogo && { opacity: 0.7 }]}
-                  onPress={pickLogo}
-                  disabled={uploadingLogo}
-                  activeOpacity={0.85}
-                >
-                  {uploadingLogo ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <Text style={styles.uploadBtnText}>
-                      {mandal.logoBase64 ? t('profile.changeLogo') : t('profile.addLogo')}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <Text style={styles.logoHint}>{t('profile.logoHint')}</Text>
-              </View>
-            </View>
-            
-            <View style={styles.row}>
-              <Text style={styles.label}>{t('profile.mandalName')}</Text>
-              <Text style={styles.value}>{mandal.name}</Text>
-            </View>
-            
-            <View style={styles.row}>
-              <Text style={styles.label}>{t('profile.address')}</Text>
-              <Text style={styles.value}>{mandal.address || t('profile.notSpecified')}</Text>
-            </View>
-
-            <View style={styles.row}>
-              <Text style={styles.label}>{t('profile.upiId')}</Text>
-              <Text style={styles.value}>{mandal.upiId || t('profile.notSpecified')}</Text>
-            </View>
-          </View>
-        )}
 
         {/* President Management: Subscription & Upgrade Plan */}
         {isPresident && mandal && (
@@ -676,7 +793,7 @@ export default function ProfileScreen({ navigation }) {
         onClose={() => setShowLangModal(false)}
         canDismiss={true}
       />
-    </>
+    </SafeAreaView>
   );
 }
 
@@ -687,37 +804,143 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 18,
-    paddingBottom: 100,
+    paddingBottom: 130,
   },
 
-  /* ── Page Header ── */
-  pageHeaderSection: {
+  /* ── Page Header matching user screenshot ── */
+  headerSection: {
     marginBottom: 16,
-    paddingHorizontal: 4,
+    paddingTop: 4,
   },
-  pageHeaderTitleRow: {
+  screenMainTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: -0.4,
+    marginBottom: 4,
+  },
+  screenMainSub: {
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 18,
+    marginBottom: 4,
+  },
+
+  /* ── Mandal Details Card matching user screenshot ── */
+  mandalDetailsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 20,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(23, 37, 84, 0.06)',
+    shadowColor: '#172554',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  cardHeaderTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 12,
+  },
+  fieldLabel: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#334155',
+    marginTop: 14,
+    marginBottom: 8,
+  },
+  logoUploadBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    borderStyle: 'dashed',
+    borderRadius: 16,
+    backgroundColor: '#F8FAFC',
+    padding: 12,
+    gap: 12,
   },
-  orangeAccentBar: {
-    width: 4,
-    height: 20,
-    borderRadius: 2,
-    backgroundColor: '#F97316',
+  logoCircleWrapper: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: '#F97316',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
-  pageHeaderTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#172554',
-    letterSpacing: -0.3,
+  logoCircleImg: {
+    width: 48,
+    height: 48,
   },
-  pageHeaderSub: {
-    fontSize: 12.5,
+  uploadTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  uploadSub: {
+    fontSize: 11.5,
     color: '#64748B',
-    marginTop: 3,
+    marginTop: 2,
+  },
+  browseBtn: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  browseBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  inputField: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  textAreaField: {
+    minHeight: 74,
+    textAlignVertical: 'top',
+    fontSize: 14,
     fontWeight: '500',
-    marginLeft: 12,
+  },
+  saveMandalBtn: {
+    backgroundColor: '#F97316',
+    borderRadius: 16,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 18,
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.28,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  saveMandalBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14.5,
+    fontWeight: '800',
   },
 
   /* ── Profile Hero Card ── */

@@ -10,10 +10,9 @@ import { Text, View, StyleSheet } from 'react-native';
 
 const ICONS = {
   HomeTab:        { emoji: '🏠', label: 'Home' },
-  CollectionsTab: { emoji: '💰', label: 'Collections' },
-  ExpensesTab:    { emoji: '💸', label: 'Expenses' },
-  ReceiptsTab:    { emoji: '🧾', label: 'Receipts' },
-  ProfileTab:     { emoji: '🏛️', label: 'Mandal' },
+  CollectionsTab: { emoji: '🚩', label: 'Collections' },
+  ChatTab:        { emoji: '💬', label: 'Chat' },
+  MoreTab:        { emoji: '☰', label: 'More' },
 };
 
 function TabIcon({ emoji, isFocused }) {
@@ -31,7 +30,7 @@ export function HomeIcon({ isFocused }) {
 }
 
 export function CollectionsIcon({ isFocused }) {
-  return <TabIcon emoji="💰" isFocused={isFocused} />;
+  return <TabIcon emoji="🚩" isFocused={isFocused} />;
 }
 
 export function ExpensesIcon({ isFocused }) {
@@ -48,6 +47,10 @@ export function MandalIcon({ isFocused }) {
 
 export function ChatIcon({ isFocused }) {
   return <TabIcon emoji="💬" isFocused={isFocused} />;
+}
+
+export function MoreIcon({ isFocused }) {
+  return <TabIcon emoji="☰" isFocused={isFocused} />;
 }
 
 const styles = StyleSheet.create({

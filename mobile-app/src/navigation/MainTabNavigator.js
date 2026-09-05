@@ -1,218 +1,268 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Dimensions } from 'react-native';
-import { HomeIcon, CollectionsIcon, ExpensesIcon, ReceiptsIcon, MandalIcon } from '../components/TabIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { HomeIcon, CollectionsIcon, ChatIcon, MoreIcon } from '../components/TabIcons';
 import { useLanguage } from '../context/LanguageContext';
+import AppHeader from '../components/AppHeader';
+import QuickActionModal from '../components/QuickActionModal';
+import AllSectionsModal from '../components/AllSectionsModal';
+import LanguageModal from '../components/LanguageModal';
 
 import DashboardScreen from '../screens/DashboardScreen';
 import CollectionsScreen from '../screens/CollectionsScreen';
-import ExpensesScreen from '../screens/ExpensesScreen';
-import ReceiptsScreen from '../screens/ReceiptsScreen';
+import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const TAB_ROUTES = [
-  { name: 'HomeTab',        labelKey: 'nav.home',       Icon: HomeIcon },
-  { name: 'CollectionsTab', labelKey: 'nav.collections', Icon: CollectionsIcon },
-  { name: 'ExpensesTab',    labelKey: 'nav.expenses',    Icon: ExpensesIcon },
-  { name: 'ReceiptsTab',    labelKey: 'nav.receipts',    Icon: ReceiptsIcon },
-  { name: 'ProfileTab',     labelKey: 'nav.mandal',      Icon: MandalIcon },
-];
+function CustomTabBar({ state, descriptors, navigation, onOpenQuickAction, onOpenMoreSections, showMoreSections }) {
+  const { language } = useLanguage();
+  const insets = useSafeAreaInsets();
+  // Safe bottom offset to position tabs completely above the system navigation bar
+  const bottomOffset = Math.max(insets.bottom, Platform.OS === 'android' ? 16 : 10) + 6;
 
-function FloatingTabBar({ state, descriptors, navigation }) {
-  const { t } = useLanguage();
+  // Route keys: 0: HomeTab, 1: CollectionsTab, 2: ChatTab, 3: ProfileTab
+  const renderTabItem = (index, label, IconComponent) => {
+    const route = state.routes[index];
+    if (!route) return null;
+    const isFocused = state.index === index;
+
+    const onPress = () => {
+      const event = navigation.emit({
+        type: 'tabPress',
+        target: route.key,
+        canPreventDefault: true,
+      });
+      if (!isFocused && !event.defaultPrevented) {
+        navigation.navigate(route.name);
+      }
+    };
+
+    return (
+      <TouchableOpacity
+        key={route.key}
+        accessibilityRole="button"
+        accessibilityState={isFocused ? { selected: true } : {}}
+        onPress={onPress}
+        style={styles.tabItem}
+        activeOpacity={0.75}
+      >
+        <View style={styles.iconWrap}>
+          <IconComponent size={22} isFocused={isFocused} />
+        </View>
+        <Text
+          style={[styles.tabLabel, isFocused ? styles.tabLabelActive : styles.tabLabelInactive]}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <View style={styles.outerWrapper}>
+    <View style={[styles.outerWrapper, { bottom: bottomOffset }]}>
       <View style={styles.floatingBar}>
-        {state.routes.map((route, index) => {
-          const { options } = descriptors[route.key];
-          const isFocused = state.index === index;
-          const tabDef = TAB_ROUTES.find((r) => r.name === route.name);
-          const label = t(tabDef?.labelKey || 'nav.home');
-          const Icon = tabDef?.Icon || HomeIcon;
+        {/* 1. Home Tab */}
+        {renderTabItem(0, language === 'mr' ? 'होम' : 'Home', HomeIcon)}
 
-          const onPress = () => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
-            }
-          };
+        {/* 2. Collections Tab */}
+        {renderTabItem(1, language === 'mr' ? 'संकलन' : 'Collections', CollectionsIcon)}
 
-          return (
-            <TouchableOpacity
-              key={route.key}
-              accessibilityRole="button"
-              accessibilityState={isFocused ? { selected: true } : {}}
-              accessibilityLabel={options.tabBarAccessibilityLabel || label}
-              onPress={onPress}
-              style={styles.tabItem}
-              activeOpacity={0.72}
-            >
-              {/* Active glow pill behind icon */}
-              {isFocused && <View style={styles.activePill} />}
+        {/* 3. Center Elevated Orange (+) Button */}
+        <TouchableOpacity
+          style={styles.centerFab}
+          onPress={onOpenQuickAction}
+          activeOpacity={0.88}
+        >
+          <Text style={styles.fabPlusText}>+</Text>
+        </TouchableOpacity>
 
-              {/* Icon */}
-              <View style={styles.iconWrap}>
-                <Icon size={21} color={isFocused ? '#F97316' : '#94A3B8'} isFocused={isFocused} />
-              </View>
+        {/* 4. Chat Tab */}
+        {renderTabItem(2, language === 'mr' ? 'चॅट' : 'Chat', ChatIcon)}
 
-              {/* Label */}
-              <Text
-                style={[styles.tabLabel, isFocused ? styles.tabLabelActive : styles.tabLabelInactive]}
-                numberOfLines={1}
-              >
-                {label}
-              </Text>
-
-              {/* Active dot indicator */}
-              {isFocused && <View style={styles.activeDot} />}
-            </TouchableOpacity>
-          );
-        })}
+        {/* 5. More Tab (Opens All Sections bottom sheet modal) */}
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityState={showMoreSections ? { selected: true } : {}}
+          onPress={onOpenMoreSections}
+          style={styles.tabItem}
+          activeOpacity={0.75}
+        >
+          <View style={styles.iconWrap}>
+            <MoreIcon size={22} isFocused={showMoreSections} />
+          </View>
+          <Text
+            style={[styles.tabLabel, showMoreSections ? styles.tabLabelActive : styles.tabLabelInactive]}
+            numberOfLines={1}
+          >
+            {language === 'mr' ? 'अधिक' : 'More'}
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-export default function MainTabNavigator() {
-  const { t } = useLanguage();
+export default function MainTabNavigator({ navigation }) {
+  const [showQuickAction, setShowQuickAction] = useState(false);
+  const [showMoreSections, setShowMoreSections] = useState(false);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [activeRouteName, setActiveRouteName] = useState('HomeTab');
 
   return (
-    <Tab.Navigator
-      tabBar={(props) => <FloatingTabBar {...props} />}
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: '#FFFFFF',
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: 'rgba(23, 37, 84, 0.05)',
-          height: Platform.OS === 'ios' ? 92 : 64,
-        },
-        headerTintColor: '#172554',
-        headerTitleStyle: {
-          fontWeight: '800',
-          fontSize: 18,
-          color: '#172554',
-          letterSpacing: -0.3,
-        },
-      }}
-    >
-      <Tab.Screen
-        name="HomeTab"
-        component={DashboardScreen}
-        options={{ title: t('nav.home'), headerTitle: t('nav.appTitle') }}
+    <>
+      <Tab.Navigator
+        tabBar={(props) => {
+          const currentName = props.state.routes[props.state.index]?.name;
+          return (
+            <CustomTabBar
+              {...props}
+              onOpenQuickAction={() => setShowQuickAction(true)}
+              onOpenMoreSections={() => {
+                setActiveRouteName(currentName);
+                setShowMoreSections(true);
+              }}
+              showMoreSections={showMoreSections}
+            />
+          );
+        }}
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Tab.Screen
+          name="HomeTab"
+          component={DashboardScreen}
+          options={{
+            headerShown: true,
+            header: ({ navigation: nav }) => (
+              <AppHeader
+                navigation={nav}
+                onOpenQuickAction={() => setShowQuickAction(true)}
+                onOpenLanguage={() => setShowLanguageModal(true)}
+              />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="CollectionsTab"
+          component={CollectionsScreen}
+          options={{ headerShown: false }}
+        />
+        <Tab.Screen
+          name="ChatTab"
+          component={ChatScreen}
+          options={{ headerShown: false }}
+        />
+        <Tab.Screen
+          name="ProfileTab"
+          component={ProfileScreen}
+          options={{ headerShown: false }}
+        />
+      </Tab.Navigator>
+
+      {/* ⚡ Quick Action Bottom Sheet Modal (Image 4) */}
+      <QuickActionModal
+        visible={showQuickAction}
+        onClose={() => setShowQuickAction(false)}
+        navigation={navigation}
       />
-      <Tab.Screen
-        name="CollectionsTab"
-        component={CollectionsScreen}
-        options={{ title: t('nav.collections'), headerTitle: t('collections.title') }}
+
+      {/* ☰ All Sections Bottom Sheet Modal (More Tab) */}
+      <AllSectionsModal
+        visible={showMoreSections}
+        onClose={() => setShowMoreSections(false)}
+        navigation={navigation}
+        currentRoute={activeRouteName}
       />
-      <Tab.Screen
-        name="ExpensesTab"
-        component={ExpensesScreen}
-        options={{ title: t('nav.expenses'), headerTitle: t('expenses.title') }}
+
+      {/* Language Selection Modal */}
+      <LanguageModal
+        visible={showLanguageModal}
+        onClose={() => setShowLanguageModal(false)}
+        canDismiss={true}
       />
-      <Tab.Screen
-        name="ReceiptsTab"
-        component={ReceiptsScreen}
-        options={{ title: t('nav.receipts'), headerTitle: t('nav.donationReceipts') }}
-      />
-      <Tab.Screen
-        name="ProfileTab"
-        component={ProfileScreen}
-        options={{ title: t('nav.mandal'), headerTitle: t('nav.profile') }}
-      />
-    </Tab.Navigator>
+    </>
   );
 }
 
-const BAR_HEIGHT = 68;
-const ITEM_WIDTH = (SCREEN_WIDTH - 32) / 5; // 5 tabs, bar has 16px margin each side
+const BAR_HEIGHT = 64;
 
 const styles = StyleSheet.create({
   outerWrapper: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 22 : 12,
-    left: 16,
-    right: 16,
-    backgroundColor: 'transparent',
+    left: 14,
+    right: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.95)',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    elevation: 10,
   },
   floatingBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 28,
+    justifyContent: 'space-between',
+    backgroundColor: 'transparent',
     height: BAR_HEIGHT,
-    paddingHorizontal: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(23, 37, 84, 0.07)',
-    shadowColor: '#172554',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.10,
-    shadowRadius: 20,
-    elevation: 14,
-    // subtle top highlight line
-    overflow: 'hidden',
+    paddingHorizontal: 8,
   },
-
-  /* ── Each Tab Item ── */
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    height: BAR_HEIGHT,
-    position: 'relative',
-    paddingBottom: 4,
+    height: '100%',
   },
-
-  /* Orange glow capsule behind active icon */
-  activePill: {
-    position: 'absolute',
-    top: 10,
-    width: 42,
-    height: 36,
-    borderRadius: 14,
-    backgroundColor: 'rgba(249, 115, 22, 0.10)',
-  },
-
   iconWrap: {
-    width: 24,
-    height: 24,
+    width: 26,
+    height: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 3,
-    zIndex: 1,
+    marginBottom: 2,
   },
-
   tabLabel: {
-    fontSize: 10,
-    letterSpacing: 0.1,
-    zIndex: 1,
+    fontSize: 11,
+    fontWeight: '600',
   },
   tabLabelActive: {
     color: '#F97316',
     fontWeight: '800',
   },
   tabLabelInactive: {
-    color: '#94A3B8',
+    color: '#64748B',
     fontWeight: '600',
   },
 
-  /* Small dot at the bottom of the active tab */
-  activeDot: {
-    position: 'absolute',
-    bottom: 7,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+  /* Center Elevated Orange (+) Button */
+  centerFab: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: '#F97316',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -20,
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.38,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+  },
+  fabPlusText: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '800',
+    marginTop: -2,
+    lineHeight: 30,
   },
 });
+
