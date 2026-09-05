@@ -3,21 +3,24 @@ import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
+import { initiatePlanUpgrade } from '../utils/razorpay';
 
-const PLANS = [
-  { id: 'Basic', name: 'Basic', price: '₹199/mo', color: '#64748B', desc: '1 Mandal, Up to 5 events/year, Basic receipts, Up to 10 members' },
-  { id: 'Pro', name: 'Pro (Most Popular)', price: '₹499/mo', color: '#FF6B00', desc: '1 Mandal, Unlimited events, Custom receipt branding, Up to 25 members, Verified badge' },
-  { id: 'Premium', name: 'Premium (Best Value)', price: '₹999/mo', color: '#6C4DD9', desc: '3 Mandals, Unlimited events, Full branding, Unlimited members, Analytics export' },
-  { id: 'Enterprise', name: 'Enterprise', price: 'Custom', color: '#10B981', desc: 'Unlimited Mandals, White-label, Dedicated API & 24/7 SLA Support' }
+const FALLBACK_PLANS = [
+  { code: 'Silver', name: 'Silver Pro Plan', price: 199, tier: 1, color: '#0284C7', tagline: 'Ideal for local & community mandals', features: ['1 Mandal Management', 'Up to 15 Committee Members', 'Instant WhatsApp Receipts', 'Basic Financial Summary Report'] },
+  { code: 'Gold', name: 'Gold Pro Membership', price: 299, tier: 2, color: '#D97706', tagline: 'Complete financial & festival management for active mandals', features: ['2 Mandals Management', 'Up to 25 Committee Members', 'Branded WhatsApp Receipts', 'CA Audit-Ready Reports', '24/7 Priority Support'] }
 ];
 
 const Settings = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshMandal } = useAuth();
   const [mandal, setMandal] = useState(null);
+  const [availablePlans, setAvailablePlans] = useState(FALLBACK_PLANS);
+
   // Upgrade Modal State
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [targetPlan, setTargetPlan] = useState('Pro');
+  const [targetPlan, setTargetPlan] = useState('Gold');
   const [upgrading, setUpgrading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState('');
+  const [upgradeSuccess, setUpgradeSuccess] = useState('');
 
   // Deletion Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -27,59 +30,87 @@ const Settings = () => {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
-  useEffect(() => { api.get('/mandal').then((res) => setMandal(res.data)); }, []);
+  useEffect(() => {
+    api.get('/mandal').then((res) => {
+      setMandal(res.data);
+    });
 
-  const handleOpenDeleteModal = () => {
-    setDeleteStep('warning');
-    setDeleteOtp('');
-    setDeleteError('');
-    setShowDeleteModal(true);
+    api.get('/plans').then((res) => {
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setAvailablePlans(res.data);
+      }
+    }).catch(() => {
+      // Use fallback plans if endpoint is unreachable
+    });
+  }, []);
+
+  const handleOpenUpgradeModal = () => {
+    setUpgradeError('');
+    setUpgradeSuccess('');
+
+    // Default target plan to the first available higher plan
+    const currentTier = getCurrentPlanTier();
+    const higherPlan = availablePlans.find((p) => (p.tier || 1) > currentTier);
+    if (higherPlan) {
+      setTargetPlan(higherPlan.code);
+    } else {
+      setTargetPlan(availablePlans[0]?.code || 'Gold');
+    }
+
+    setShowUpgradeModal(true);
   };
 
-  const handleSendDeleteOtp = async () => {
-    setSendingDeleteOtp(true);
-    setDeleteError('');
-    try {
-      await api.post('/auth/delete-account/send-otp');
-      setDeleteStep('otp');
-    } catch (err) {
-      setDeleteError(err.response?.data?.message || 'Failed to send OTP. Please try again.');
-    } finally {
-      setSendingDeleteOtp(false);
+  const getCurrentPlanTier = () => {
+    if (!mandal || mandal.planStatus !== 'Active' || !mandal.plan || mandal.plan === 'None') {
+      return 0;
     }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!deleteOtp || deleteOtp.trim().length !== 6) {
-      setDeleteError('Please enter the 6-digit verification code.');
-      return;
-    }
-    setDeleting(true);
-    setDeleteError('');
-    try {
-      await api.post('/auth/delete-account', { code: deleteOtp.trim() });
-      setShowDeleteModal(false);
-      alert('Your account and workspace data have been permanently deleted.');
-      logout();
-    } catch (err) {
-      setDeleteError(err.response?.data?.message || 'Deletion failed. Please verify your OTP code.');
-    } finally {
-      setDeleting(false);
-    }
+    const current = availablePlans.find(
+      (p) => p.code.toLowerCase() === mandal.plan.toLowerCase()
+    );
+    return current?.tier || 1;
   };
 
   const handleUpgrade = async () => {
+    setUpgradeError('');
+    setUpgradeSuccess('');
     setUpgrading(true);
-    try {
-      await api.patch('/onboarding/plan', { plan: targetPlan });
-      setMandal((prev) => ({ ...prev, plan: targetPlan, planStatus: 'Active' }));
-      setShowUpgradeModal(false);
-      alert(`Subscription plan updated to ${targetPlan}! 🎉`);
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update subscription plan.');
-    } finally {
+
+    const planObj = availablePlans.find((p) => p.code === targetPlan);
+    const currentTier = getCurrentPlanTier();
+    const targetTier = planObj?.tier || 1;
+
+    if (mandal?.planStatus === 'Active' && targetTier <= currentTier) {
+      setUpgradeError('Downgrading or switching to the same plan is not permitted.');
       setUpgrading(false);
+      return;
     }
+
+    await initiatePlanUpgrade({
+      planCode: targetPlan,
+      user,
+      onSuccess: (verifyRes) => {
+        setUpgrading(false);
+        setMandal((prev) => ({
+          ...prev,
+          plan: verifyRes.plan || targetPlan,
+          planStatus: 'Active',
+          planRenewsAt: verifyRes.planRenewsAt
+        }));
+        if (refreshMandal) refreshMandal();
+        setUpgradeSuccess(`Plan successfully upgraded to ${verifyRes.planName || targetPlan}! 🎉`);
+        setTimeout(() => {
+          setShowUpgradeModal(false);
+        }, 1500);
+      },
+      onError: (err) => {
+        setUpgrading(false);
+        setUpgradeError(err.message || 'Payment failed. Plan was not upgraded.');
+      },
+      onCancel: (cancelMsg) => {
+        setUpgrading(false);
+        setUpgradeError(cancelMsg || 'Payment cancelled. Plan was not upgraded.');
+      }
+    });
   };
 
   if (!mandal) return <Layout><div className="flex-center" style={{ height: '50vh' }}><p>Loading…</p></div></Layout>;
@@ -140,15 +171,21 @@ const Settings = () => {
               <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)', marginBottom: 4 }}>{mandal.plan} Plan</div>
               <div className="text-caption">Status: <strong style={{ color: mandal.planStatus === 'Active' ? 'var(--success)' : 'var(--danger)' }}>{mandal.planStatus || 'Active'}</strong></div>
             </div>
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => {
-                setTargetPlan(mandal.plan === 'Basic' ? 'Pro' : mandal.plan === 'Pro' ? 'Premium' : 'Pro');
-                setShowUpgradeModal(true);
-              }}
-            >
-              ⭐ Upgrade Plan
-            </button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Link
+                to="/subscription"
+                className="btn btn-primary btn-sm"
+                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+              >
+                💎 Manage Subscription
+              </Link>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleOpenUpgradeModal}
+              >
+                ⭐ Upgrade Subscription Plan
+              </button>
+            </div>
           </div>
           <p className="text-sub" style={{ fontSize: 13, margin: 0, lineHeight: 1.5 }}>
             Upgrade your plan for unlimited members, advanced analytics, and custom branding for your receipts.
@@ -284,56 +321,166 @@ const Settings = () => {
       )}
       {/* ── Upgrade Plan Modal ── */}
       {showUpgradeModal && (
-        <div className="modal-backdrop" onClick={() => setShowUpgradeModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 640 }}>
+        <div className="modal-backdrop" onClick={() => !upgrading && setShowUpgradeModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 660 }}>
             <div className="flex-between mb-3">
               <h2 className="text-h2" style={{ fontSize: 20 }}>💎 Upgrade Subscription Plan</h2>
-              <button className="btn-icon" onClick={() => setShowUpgradeModal(false)}>✕</button>
+              <button className="btn-icon" onClick={() => !upgrading && setShowUpgradeModal(false)}>✕</button>
             </div>
             <p className="text-sub mb-3">
-              Select the plan that fits your Mandal needs. Current plan: <strong>{mandal.plan}</strong>
+              Select a higher plan to upgrade your mandal capabilities. Current plan: <strong>{mandal.plan} ({mandal.planStatus})</strong>
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-              {PLANS.map((p) => {
-                const isCurrent = mandal.plan === p.id;
-                const isSelected = targetPlan === p.id;
+            {upgradeError && (
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#DC2626',
+                padding: '10px 14px',
+                borderRadius: 8,
+                fontSize: 13,
+                marginBottom: 16
+              }}>
+                ⚠️ {upgradeError}
+              </div>
+            )}
+
+            {upgradeSuccess && (
+              <div style={{
+                background: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                color: '#059669',
+                padding: '10px 14px',
+                borderRadius: 8,
+                fontSize: 13,
+                marginBottom: 16,
+                fontWeight: 600
+              }}>
+                ✅ {upgradeSuccess}
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 14, marginBottom: 20 }}>
+              {availablePlans.map((p) => {
+                const currentTier = getCurrentPlanTier();
+                const isCurrent = mandal.plan?.toLowerCase() === p.code?.toLowerCase();
+                const currentPrice = (availablePlans.find(ap => ap.code.toLowerCase() === mandal.plan?.toLowerCase())?.price || 0);
+                const isDowngrade = mandal.planStatus === 'Active' && !isCurrent && (p.tier < currentTier || p.price < currentPrice);
+                const isSelected = targetPlan === p.code;
+
                 return (
                   <div
-                    key={p.id}
-                    onClick={() => setTargetPlan(p.id)}
+                    key={p.code}
+                    onClick={() => {
+                      if (!isCurrent && !isDowngrade && !upgrading) {
+                        setTargetPlan(p.code);
+                        setUpgradeError('');
+                      }
+                    }}
                     style={{
-                      padding: '16px',
-                      borderRadius: 12,
-                      border: `2px solid ${isSelected ? p.color : '#E5E7EB'}`,
-                      background: isSelected ? `${p.color}0D` : '#fff',
-                      cursor: 'pointer',
-                      position: 'relative'
+                      padding: '18px 16px',
+                      borderRadius: 14,
+                      border: `2px solid ${isSelected ? (p.color || '#FF6B00') : '#E2E8F0'}`,
+                      background: isSelected ? `${p.color || '#FF6B00'}0D` : '#fff',
+                      cursor: (isCurrent || isDowngrade || upgrading) ? 'not-allowed' : 'pointer',
+                      opacity: (isCurrent || isDowngrade) ? 0.7 : 1,
+                      position: 'relative',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      transition: 'all 0.2s ease'
                     }}
                   >
-                    {isCurrent && (
-                      <span style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, background: '#10B981', color: '#fff', padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>
-                        CURRENT
-                      </span>
-                    )}
-                    <div style={{ fontSize: 16, fontWeight: 800, color: p.color, marginBottom: 4 }}>{p.name}</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: '#17233C', marginBottom: 6 }}>{p.price}</div>
-                    <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.4 }}>{p.desc}</div>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <span style={{ fontSize: 16, fontWeight: 800, color: p.color || '#0F172A' }}>{p.name}</span>
+                        {isCurrent ? (
+                          <span style={{ fontSize: 10, background: '#10B981', color: '#fff', padding: '2px 8px', borderRadius: 10, fontWeight: 800 }}>
+                            CURRENT ACTIVE
+                          </span>
+                        ) : isDowngrade ? (
+                          <span style={{ fontSize: 10, background: '#F1F5F9', color: '#64748B', padding: '2px 8px', borderRadius: 10, fontWeight: 700, border: '1px solid #CBD5E1' }}>
+                            DOWNGRADE NOT PERMITTED
+                          </span>
+                        ) : p.badge ? (
+                          <span style={{ fontSize: 10, background: '#FEF3C7', color: '#B45309', padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>
+                            {p.badge}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div style={{ fontSize: 24, fontWeight: 900, color: '#0F172A', marginBottom: 6 }}>
+                        ₹{p.price}<span style={{ fontSize: 13, fontWeight: 500, color: '#64748B' }}>{p.period || '/month'}</span>
+                      </div>
+
+                      <div style={{ fontSize: 12, color: '#64748B', lineHeight: 1.4, marginBottom: 12 }}>
+                        {p.tagline || `${p.memberLimit || 15} Members supported`}
+                      </div>
+
+                      {Array.isArray(p.features) && p.features.length > 0 && (
+                        <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {p.features.slice(0, 3).map((f, idx) => (
+                            <div key={idx} style={{ fontSize: 12, color: '#334155', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ color: p.color || '#10B981', fontWeight: 800 }}>✓</span> {f}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ marginTop: 14 }}>
+                      {isCurrent ? (
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#10B981', textAlign: 'center' }}>
+                          ✓ Your Active Plan
+                        </div>
+                      ) : isDowngrade ? (
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#94A3B8', textAlign: 'center' }}>
+                          Downgrade not allowed
+                        </div>
+                      ) : isSelected ? (
+                        <div style={{ fontSize: 12, fontWeight: 800, color: p.color || '#FF6B00', textAlign: 'center' }}>
+                          ● Selected for Upgrade
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 12, color: '#64748B', textAlign: 'center' }}>
+                          Click to select
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
 
-            <div className="flex-end gap-2">
-              <button className="btn btn-outline" onClick={() => setShowUpgradeModal(false)}>Cancel</button>
-              <button
-                className="btn btn-primary"
-                onClick={handleUpgrade}
-                disabled={upgrading || targetPlan === mandal.plan}
-              >
-                {upgrading ? 'Upgrading…' : `Confirm & Activate ${targetPlan} Plan →`}
-              </button>
-            </div>
+            {(() => {
+              const selectedPlanObj = availablePlans.find((p) => p.code === targetPlan);
+              const currentTier = getCurrentPlanTier();
+              const isCurrent = mandal.plan?.toLowerCase() === targetPlan?.toLowerCase();
+              const currentPrice = (availablePlans.find(ap => ap.code.toLowerCase() === mandal.plan?.toLowerCase())?.price || 0);
+              const isDowngrade = mandal.planStatus === 'Active' && selectedPlanObj && (selectedPlanObj.tier < currentTier || selectedPlanObj.price < currentPrice);
+
+              return (
+                <div className="flex-end gap-2">
+                  <button className="btn btn-outline" onClick={() => setShowUpgradeModal(false)} disabled={upgrading}>
+                    Cancel
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleUpgrade}
+                    disabled={upgrading || isCurrent || isDowngrade || !selectedPlanObj}
+                    style={{ minWidth: 200 }}
+                  >
+                    {upgrading
+                      ? 'Opening Gateway…'
+                      : isCurrent
+                      ? 'Already On This Plan'
+                      : isDowngrade
+                      ? 'Downgrade Not Permitted'
+                      : `Upgrade with Payment (₹${selectedPlanObj?.price || 0}) →`}
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

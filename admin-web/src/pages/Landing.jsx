@@ -8,7 +8,6 @@ export default function Landing() {
   const { user } = useAuth();
   const { language, setLanguage } = useLanguage();
   const navigate = useNavigate();
-  const [billingCycle, setBillingCycle] = useState('annual');
   const [openFaq, setOpenFaq] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -92,71 +91,81 @@ export default function Landing() {
   const plans = [
     {
       id: 'silver',
-      nameMr: 'सिल्व्हर योजना (Silver Plan)',
-      nameEn: 'Silver Plan',
-      badgeMr: '⚡ परवडणारी योजना',
-      badgeEn: '⚡ AFFORDABLE',
-      priceAnnual: '₹१९९',
-      priceMonthly: '₹१९९',
+      nameMr: 'सिल्व्हर योजना (Silver Pro Plan)',
+      nameEn: 'Silver Pro Plan',
+      taglineMr: 'लहान व मध्यम आकाराच्या मंडळांसाठी',
+      taglineEn: 'Ideal for local & community mandals',
+      priceMr: '₹१९९',
+      priceEn: '₹199',
       periodMr: '/महिना',
       periodEn: '/month',
-      color: '#0EA5E9',
+      badgeMr: '⚡ परवडणारी योजना',
+      badgeEn: '⚡ AFFORDABLE',
       popular: false,
+      color: '#0284C7',
+      memberLimitMr: '१५ समिती सदस्य व स्वयंसेवक',
+      memberLimitEn: 'Up to 15 Committee Members',
       featuresMr: [
         '१ मंडळ संपूर्ण व्यवस्थापन',
-        '१५ समिती सदस्य व स्वयंसेवक (Member Limit)',
-        'अमर्यादित WhatsApp डिजिटल पावत्या',
+        'कमाल १५ समिती सदस्य व स्वयंसेवक जोडण्याची सोय',
+        'अमर्यादित WhatsApp डिजिटल पावत्या (QR कोडसह)',
+        'वर्गणी व देणगी हिशोब व्यवस्थापन',
         'खर्च आणि अंदाजपत्रक (Budget) ट्रॅकिंग',
         'समिती लाइव्ह ग्रुप चॅट',
         'डिजिटल सदस्य ओळखपत्रे (ID Cards)',
-        'उत्सव ताळेबंद अहवाल'
+        'उत्सव जमा-खर्च अहवाल'
       ],
       featuresEn: [
         '1 Complete Mandal Management',
         'Up to 15 Committee Members & Volunteers',
-        'Unlimited WhatsApp Digital Receipts',
+        'Unlimited WhatsApp Digital Receipts with QR',
+        'Collections & Donations Accounting',
         'Expense & Budget Tracking',
-        'Committee Live Chatroom',
+        'Committee Live Group Chat',
         'Digital Member ID Card Generator',
-        'Festival Balance Sheet'
+        'Festival Balance Sheet & Reports'
       ],
       ctaMr: 'सिल्व्हर योजना निवडा (₹199)',
-      ctaEn: 'Choose Silver Plan (₹199)'
+      ctaEn: 'Choose Silver Pro Plan (₹199)'
     },
     {
       id: 'gold',
-      nameMr: 'गोल्ड मेंबरशिप (Gold Membership)',
-      nameEn: 'Gold Membership',
-      badgeMr: '🔥 सर्वाधिक पसंती',
-      badgeEn: '🔥 MOST POPULAR',
-      priceAnnual: '₹२९९',
-      priceMonthly: '₹२९९',
+      nameMr: 'गोल्ड मेंबरशिप (Gold Pro Membership)',
+      nameEn: 'Gold Pro Membership',
+      taglineMr: 'मोठ्या उत्सव व प्रतिष्ठित मंडळांसाठी',
+      taglineEn: 'Best for large festive & public trusts',
+      priceMr: '₹२९९',
+      priceEn: '₹299',
       periodMr: '/महिना',
       periodEn: '/month',
-      color: '#F59E0B',
+      badgeMr: '🔥 सर्वाधिक पसंती • BEST VALUE',
+      badgeEn: '🔥 MOST POPULAR • BEST VALUE',
       popular: true,
+      color: '#D97706',
+      memberLimitMr: '२५ समिती सदस्य व स्वयंसेवक',
+      memberLimitEn: 'Up to 25 Committee Members',
       featuresMr: [
-        '२ मंडळे / शाखा व्यवस्थापन',
-        '२५ समिती सदस्य व स्वयंसेवक (Member Limit)',
-        'अधिकृत शिक्का व लोगो असलेली WhatsApp पावती',
-        'खर्च मंजुरी वर्कफ्लो व बिलांचे फोटो साठवणूक',
+        '२ मंडळे / शाखा संपूर्ण व्यवस्थापन',
+        'कमाल २५ समिती सदस्य व कार्यकर्ते जोडण्याची सोय',
+        'अधिकृत शिक्का व लोगो असलेली Branded WhatsApp पावती',
+        'खर्च मंजुरी वर्कफ्लो (Approval) व बिलांचे फोटो साठवणूक',
         'सीए ऑडिट-रेडी Excel व PDF ताळेबंद अहवाल',
-        'व्हेरिफाइड मंडळ ट्रस्ट बॅज',
-        '२४/७ प्राधान्य WhatsApp सहाय्य',
-        'सर्व प्रगत फीचर्स समाविष्ट'
+        'व्हेरिफाइड मंडळ ट्रस्ट बॅज (Verified Mandal Badge)',
+        '२४/७ प्राधान्य WhatsApp व फोन सहाय्य',
+        'भविष्यातील सर्व नवीन फीचर्सचा मोफत समावेश'
       ],
       featuresEn: [
-        '2 Mandals / Branches',
+        '2 Mandals / Branches Management',
         'Up to 25 Committee Members & Volunteers',
         'Official Logo & Seal Branded WhatsApp Receipts',
         'Expense Approval Workflow with Bill Photos',
-        'CA & Audit Ready PDF/Excel Exports',
+        'CA Audit-Ready Balance Sheet (Excel/PDF)',
         'Verified Mandal Trust Badge',
-        '24/7 Priority Support',
-        'All Advanced Features Included'
+        '24/7 Priority WhatsApp & Call Support',
+        'Free Access to All Future Pro Features'
       ],
       ctaMr: 'गोल्ड मेंबरशिप निवडा (₹299)',
-      ctaEn: 'Choose Gold Membership (₹299)'
+      ctaEn: 'Choose Gold Pro Membership (₹299)'
     }
   ];
 
@@ -679,94 +688,166 @@ export default function Landing() {
       {/* ── 6. Pricing Section ── */}
       <section id="pricing" className="landing-section" style={{ background: '#0B1120' }}>
         <div className="landing-container" style={{ textAlign: 'center' }}>
-          <span className="landing-section-badge" style={{ background: 'rgba(234, 179, 8, 0.12)', border: '1px solid rgba(234, 179, 8, 0.3)', color: '#FACC15' }}>
-            💎 {isMr ? 'किफायतशीर योजना' : 'SIMPLE PRICING'}
+          <span className="landing-section-badge" style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#FBBF24' }}>
+            💎 {isMr ? 'किफायतशीर मासिक योजना' : 'SIMPLE & TRANSPARENT MONTHLY PLANS'}
           </span>
           <h2 className="landing-section-title">
-            {isMr ? 'पारदर्शक व परवडणारे सदस्यत्व दर' : 'Transparent Plans for Every Size of Mandal'}
+            {isMr ? 'पारदर्शक व परवडणारे सदस्यत्व दर' : 'Transparent Monthly Plans for Every Mandal'}
           </h2>
-          <p className="landing-section-desc" style={{ marginBottom: 28 }}>
-            {isMr ? 'कोणतेही छुपे शुल्क नाही. तुमच्या गरजेनुसार योजना निवडा.' : 'No hidden fees. Pick the plan that suits your festival needs.'}
+          <p className="landing-section-desc" style={{ marginBottom: 36 }}>
+            {isMr
+              ? 'कोणतेही छुपे शुल्क नाही • कधीही रद्द करा • थेट एका क्लिकवर मंडळाची नोंदणी व अपग्रेड.'
+              : 'No hidden fees • Cancel anytime • Instant activation and onboarding for your mandal.'}
           </p>
 
-          {/* Billing Toggle */}
-          <div className="landing-pricing-toggle-wrap">
-            <button
-              className={`landing-pricing-toggle-btn ${billingCycle === 'annual' ? 'active' : ''}`}
-              onClick={() => setBillingCycle('annual')}
-            >
-              {isMr ? 'वार्षिक योजना (२०% सूट)' : 'Annual Plan (Save 20%)'}
-            </button>
-            <button
-              className={`landing-pricing-toggle-btn ${billingCycle === 'monthly' ? 'active' : ''}`}
-              onClick={() => setBillingCycle('monthly')}
-            >
-              {isMr ? 'मासिक (Monthly)' : 'Monthly'}
-            </button>
-          </div>
-
           {/* Pricing Grid */}
-          <div className="landing-pricing-grid">
+          <div
+            className="landing-pricing-grid"
+            style={{
+              maxWidth: 860,
+              margin: '0 auto',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: 28,
+              alignItems: 'stretch'
+            }}
+          >
             {plans.map((p) => {
-              const price = billingCycle === 'annual' ? p.priceAnnual : p.priceMonthly;
+              const price = isMr ? p.priceMr : p.priceEn;
               const period = isMr ? p.periodMr : p.periodEn;
+              const planName = isMr ? p.nameMr : p.nameEn;
+              const tagline = isMr ? p.taglineMr : p.taglineEn;
+              const memberLimit = isMr ? p.memberLimitMr : p.memberLimitEn;
+              const badgeText = isMr ? p.badgeMr : p.badgeEn;
 
               return (
                 <div
                   key={p.id}
                   className={`landing-pricing-card ${p.popular ? 'popular' : ''}`}
+                  style={{
+                    background: p.popular ? 'rgba(30, 41, 59, 0.95)' : 'rgba(30, 41, 59, 0.6)',
+                    border: p.popular
+                      ? '2px solid #F59E0B'
+                      : '1px solid rgba(255, 255, 255, 0.12)',
+                    boxShadow: p.popular
+                      ? '0 20px 45px -10px rgba(245, 158, 11, 0.25), 0 8px 20px -5px rgba(0, 0, 0, 0.4)'
+                      : '0 12px 30px -8px rgba(0, 0, 0, 0.3)',
+                    borderRadius: 22,
+                    padding: '36px 26px 26px',
+                    position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between'
+                  }}
                 >
-                  {(isMr ? p.badgeMr : p.badgeEn) && (
+                  {badgeText && (
                     <div style={{
                       position: 'absolute',
-                      top: -12,
-                      right: 18,
-                      background: '#F97316',
+                      top: -13,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: p.popular
+                        ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
+                        : 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)',
                       color: '#FFFFFF',
-                      fontSize: 11,
+                      fontSize: 11.5,
                       fontWeight: 800,
-                      padding: '4px 12px',
+                      padding: '5px 16px',
                       borderRadius: 999,
-                      boxShadow: '0 4px 10px rgba(249, 115, 22, 0.4)'
+                      boxShadow: p.popular ? '0 4px 14px rgba(217, 119, 6, 0.45)' : '0 4px 14px rgba(2, 132, 199, 0.4)',
+                      whiteSpace: 'nowrap',
+                      letterSpacing: 0.3
                     }}>
-                      {isMr ? p.badgeMr : p.badgeEn}
+                      {badgeText}
                     </div>
                   )}
 
                   <div>
-                    <h3 style={{ fontSize: 19, fontWeight: 800, color: p.color, margin: '0 0 10px' }}>
-                      {isMr ? p.nameMr : p.nameEn}
-                    </h3>
+                    {/* Header */}
+                    <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                      <h3 style={{ fontSize: 21, fontWeight: 800, color: p.color, margin: '0 0 6px' }}>
+                        {planName}
+                      </h3>
 
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 20 }}>
-                      <span style={{ fontSize: 34, fontWeight: 900, color: '#FFFFFF' }}>{price}</span>
-                      <span style={{ fontSize: 13.5, color: '#94A3B8' }}>{period}</span>
+                      <p style={{ fontSize: 13, color: '#94A3B8', margin: '0 0 16px' }}>
+                        {tagline}
+                      </p>
+
+                      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4, marginBottom: 14 }}>
+                        <span style={{ fontSize: 44, fontWeight: 900, color: '#FFFFFF', lineHeight: 1 }}>{price}</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: '#94A3B8' }}>{period}</span>
+                      </div>
+
+                      {/* Member Limit Pill */}
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        background: p.popular ? 'rgba(245, 158, 11, 0.15)' : 'rgba(2, 132, 199, 0.12)',
+                        border: p.popular ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid rgba(2, 132, 199, 0.25)',
+                        color: p.popular ? '#FBBF24' : '#38BDF8',
+                        padding: '6px 14px',
+                        borderRadius: 999,
+                        fontSize: 12.5,
+                        fontWeight: 700
+                      }}>
+                        <span>👥</span>
+                        <span>{memberLimit}</span>
+                      </div>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 26 }}>
-                      {(isMr ? p.featuresMr : p.featuresEn).map((feat, idx) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13.5, color: '#CBD5E1' }}>
-                          <span style={{ color: '#10B981', fontWeight: 900, flexShrink: 0 }}>✓</span>
-                          <span>{feat}</span>
-                        </div>
-                      ))}
+                    {/* Features */}
+                    <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: 20, marginBottom: 26 }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.8, color: '#64748B', marginBottom: 14, textAlign: 'left' }}>
+                        {isMr ? 'समाविष्ट वैशिष्ट्ये:' : 'Included Features:'}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+                        {(isMr ? p.featuresMr : p.featuresEn).map((feat, idx) => (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13.5, color: '#CBD5E1', lineHeight: 1.45 }}>
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: 17,
+                              height: 17,
+                              borderRadius: '50%',
+                              background: p.popular ? 'rgba(245, 158, 11, 0.2)' : 'rgba(2, 132, 199, 0.18)',
+                              color: p.color,
+                              fontSize: 10.5,
+                              fontWeight: 900,
+                              flexShrink: 0,
+                              marginTop: 2
+                            }}>✓</span>
+                            <span>{feat}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
                   <Link
                     to="/register"
-                    className={`landing-hero-btn-primary`}
+                    className="landing-hero-btn-primary"
                     style={{
                       width: '100%',
-                      padding: '12px',
+                      padding: '13px',
                       textAlign: 'center',
-                      fontSize: 14,
-                      background: p.popular ? 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)' : 'rgba(255, 255, 255, 0.08)',
-                      border: p.popular ? 'none' : '1px solid rgba(255, 255, 255, 0.16)',
-                      boxShadow: p.popular ? '0 4px 14px rgba(249, 115, 22, 0.35)' : 'none'
+                      fontSize: 14.5,
+                      fontWeight: 700,
+                      background: p.popular
+                        ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
+                        : 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)',
+                      border: 'none',
+                      boxShadow: p.popular
+                        ? '0 6px 18px rgba(245, 158, 11, 0.4)'
+                        : '0 6px 18px rgba(2, 132, 199, 0.35)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6
                     }}
                   >
-                    {isMr ? p.ctaMr : p.ctaEn} →
+                    <span>{isMr ? p.ctaMr : p.ctaEn}</span>
+                    <span>→</span>
                   </Link>
                 </div>
               );

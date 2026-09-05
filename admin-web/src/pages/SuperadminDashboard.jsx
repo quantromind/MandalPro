@@ -22,6 +22,31 @@ const SuperadminDashboard = () => {
   const [userRoleFilter, setUserRoleFilter] = useState('all');
   const [userStatusFilter, setUserStatusFilter] = useState('all');
 
+  // Plans Management State
+  const [plans, setPlans] = useState([]);
+  const [editingPlan, setEditingPlan] = useState(null); // 'new' | plan object | null
+  const [planFormData, setPlanFormData] = useState({
+    name: '',
+    nameMr: '',
+    code: '',
+    price: '',
+    period: '/month',
+    periodMr: '/महिना',
+    tier: 1,
+    memberLimit: 15,
+    tagline: '',
+    taglineMr: '',
+    badge: '',
+    badgeMr: '',
+    color: '#0284C7',
+    popular: false,
+    features: '',
+    featuresMr: '',
+    isActive: true
+  });
+  const [savingPlan, setSavingPlan] = useState(false);
+  const [planModalError, setPlanModalError] = useState('');
+
   // User Edit Modal State
   const [editingUser, setEditingUser] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -42,12 +67,14 @@ const SuperadminDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [mandalsRes, usersRes] = await Promise.all([
+      const [mandalsRes, usersRes, plansRes] = await Promise.all([
         api.get('/superadmin/mandals'),
-        api.get('/superadmin/users')
+        api.get('/superadmin/users'),
+        api.get('/superadmin/plans')
       ]);
       setMandals(mandalsRes.data);
       setUsers(usersRes.data);
+      setPlans(plansRes.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch data');
     } finally {
@@ -160,6 +187,129 @@ const SuperadminDashboard = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to delete user');
       setTimeout(() => setError(''), 4000);
+    }
+  };
+
+  // Plan Management Handlers
+  const handleOpenCreatePlan = () => {
+    setEditingPlan('new');
+    setPlanFormData({
+      name: '',
+      nameMr: '',
+      code: '',
+      price: '',
+      period: '/month',
+      periodMr: '/महिना',
+      tier: plans.length + 1,
+      memberLimit: 20,
+      tagline: '',
+      taglineMr: '',
+      badge: '',
+      badgeMr: '',
+      color: '#0284C7',
+      popular: false,
+      features: '',
+      featuresMr: '',
+      isActive: true
+    });
+    setPlanModalError('');
+  };
+
+  const handleOpenEditPlan = (plan) => {
+    setEditingPlan(plan);
+    setPlanFormData({
+      name: plan.name || '',
+      nameMr: plan.nameMr || '',
+      code: plan.code || '',
+      price: plan.price !== undefined ? String(plan.price) : '',
+      period: plan.period || '/month',
+      periodMr: plan.periodMr || '/महिना',
+      tier: plan.tier || 1,
+      memberLimit: plan.memberLimit || 15,
+      tagline: plan.tagline || '',
+      taglineMr: plan.taglineMr || '',
+      badge: plan.badge || '',
+      badgeMr: plan.badgeMr || '',
+      color: plan.color || '#0284C7',
+      popular: Boolean(plan.popular),
+      features: Array.isArray(plan.features) ? plan.features.join('\n') : '',
+      featuresMr: Array.isArray(plan.featuresMr) ? plan.featuresMr.join('\n') : '',
+      isActive: plan.isActive !== undefined ? Boolean(plan.isActive) : true
+    });
+    setPlanModalError('');
+  };
+
+  const handleTogglePlanStatus = async (plan) => {
+    const nextStatus = !plan.isActive;
+    try {
+      const res = await api.patch(`/superadmin/plans/${plan._id}/status`, { isActive: nextStatus });
+      setPlans(prev => prev.map(p => p._id === plan._id ? res.data : p));
+      setSuccessMsg(`Plan "${plan.name}" has been ${nextStatus ? 'Activated 🟢' : 'Deactivated 🔴'}.`);
+      setTimeout(() => setSuccessMsg(''), 3500);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to toggle plan status');
+      setTimeout(() => setError(''), 3500);
+    }
+  };
+
+  const handleSavePlan = async (e) => {
+    e.preventDefault();
+    if (!planFormData.name.trim() || !planFormData.code.trim() || planFormData.price === '') {
+      setPlanModalError('Name, Code, and Price are required.');
+      return;
+    }
+    setSavingPlan(true);
+    setPlanModalError('');
+
+    const payload = {
+      name: planFormData.name.trim(),
+      nameMr: planFormData.nameMr.trim(),
+      code: planFormData.code.trim(),
+      price: Number(planFormData.price),
+      period: planFormData.period,
+      periodMr: planFormData.periodMr,
+      tier: Number(planFormData.tier || 1),
+      memberLimit: Number(planFormData.memberLimit || 15),
+      tagline: planFormData.tagline.trim(),
+      taglineMr: planFormData.taglineMr.trim(),
+      badge: planFormData.badge.trim(),
+      badgeMr: planFormData.badgeMr.trim(),
+      color: planFormData.color,
+      popular: Boolean(planFormData.popular),
+      features: planFormData.features ? planFormData.features.split('\n').map(s => s.trim()).filter(Boolean) : [],
+      featuresMr: planFormData.featuresMr ? planFormData.featuresMr.split('\n').map(s => s.trim()).filter(Boolean) : [],
+      isActive: Boolean(planFormData.isActive)
+    };
+
+    try {
+      if (editingPlan && editingPlan !== 'new') {
+        const res = await api.put(`/superadmin/plans/${editingPlan._id}`, payload);
+        setPlans(prev => prev.map(p => p._id === editingPlan._id ? res.data : p));
+        setSuccessMsg(`Plan "${res.data.name}" updated successfully.`);
+      } else {
+        const res = await api.post('/superadmin/plans', payload);
+        setPlans(prev => [...prev, res.data]);
+        setSuccessMsg(`New plan "${res.data.name}" created successfully.`);
+      }
+      setEditingPlan(null);
+      setTimeout(() => setSuccessMsg(''), 3500);
+    } catch (err) {
+      setPlanModalError(err.response?.data?.message || 'Failed to save plan.');
+    } finally {
+      setSavingPlan(false);
+    }
+  };
+
+  const handleDeletePlan = async (plan) => {
+    if (!window.confirm(`Are you sure you want to delete or deactivate plan "${plan.name}"?`)) return;
+    try {
+      const res = await api.delete(`/superadmin/plans/${plan._id}`);
+      setPlans(prev => prev.filter(p => p._id !== plan._id));
+      setSuccessMsg(res.data.message || 'Plan deleted.');
+      setTimeout(() => setSuccessMsg(''), 3500);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete plan');
+      setTimeout(() => setError(''), 3500);
     }
   };
 
@@ -297,6 +447,24 @@ const SuperadminDashboard = () => {
             }}
           >
             <span>👥</span> All Users ({users.length})
+          </button>
+          <button 
+            onClick={() => setActiveTab('plans')}
+            style={{ 
+              padding: '16px 20px', 
+              background: 'none', 
+              border: 'none', 
+              borderBottom: activeTab === 'plans' ? '3px solid var(--primary, #FF6B00)' : '3px solid transparent', 
+              color: activeTab === 'plans' ? 'var(--primary, #FF6B00)' : 'var(--text-muted)', 
+              fontWeight: 700, 
+              cursor: 'pointer', 
+              fontSize: 15,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}
+          >
+            <span>💎</span> Subscription Plans ({plans.length})
           </button>
         </div>
 
@@ -593,6 +761,158 @@ const SuperadminDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* ──────────────── TAB 3: PLANS ──────────────── */}
+        {activeTab === 'plans' && (
+          <div style={{ padding: 20 }}>
+            {/* Header & Create Plan Action */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <h3 className="text-h3" style={{ margin: 0, fontSize: 18 }}>Subscription Plans Management</h3>
+                <p className="text-sub" style={{ margin: '4px 0 0', fontSize: 13 }}>
+                  Create, configure pricing, manage features, and activate or deactivate plans for all mandals.
+                </p>
+              </div>
+              <button 
+                className="btn btn-primary"
+                onClick={handleOpenCreatePlan}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#FF6B00', borderColor: '#FF6B00', fontWeight: 700 }}
+              >
+                <span>➕</span> Create New Plan
+              </button>
+            </div>
+
+            {/* Plans Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+              {plans.map((p) => {
+                return (
+                  <div
+                    key={p._id || p.code}
+                    className="card"
+                    style={{
+                      padding: 20,
+                      borderRadius: 16,
+                      border: p.isActive ? (p.popular ? '2px solid #F59E0B' : '1px solid var(--border)') : '1px dashed #CBD5E1',
+                      background: p.isActive ? '#FFFFFF' : '#F8FAFC',
+                      opacity: p.isActive ? 1 : 0.75,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      position: 'relative'
+                    }}
+                  >
+                    <div>
+                      {/* Top Bar with Tier & Status */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, background: '#F1F5F9', color: '#475569', padding: '3px 8px', borderRadius: 6 }}>
+                          TIER {p.tier || 1}
+                        </span>
+
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          {p.popular && (
+                            <span style={{ fontSize: 10, background: '#FEF3C7', color: '#B45309', padding: '2px 8px', borderRadius: 999, fontWeight: 800 }}>
+                              POPULAR
+                            </span>
+                          )}
+                          {p.isActive ? (
+                            <span style={{ fontSize: 11, background: '#DCFCE7', color: '#166534', border: '1px solid #BBF7D0', padding: '3px 8px', borderRadius: 999, fontWeight: 800 }}>
+                              🟢 ACTIVE
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 11, background: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA', padding: '3px 8px', borderRadius: 999, fontWeight: 800 }}>
+                              🔴 DEACTIVATED
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Plan Title & Code */}
+                      <h3 style={{ fontSize: 19, fontWeight: 800, color: p.color || '#0F172A', margin: '0 0 2px' }}>
+                        {p.name}
+                      </h3>
+                      {p.nameMr && (
+                        <div style={{ fontSize: 12.5, color: '#64748B', marginBottom: 6 }}>
+                          {p.nameMr}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#94A3B8', marginBottom: 10 }}>
+                        Code: <code style={{ color: '#0F172A', background: '#F1F5F9', padding: '2px 6px', borderRadius: 4 }}>{p.code}</code>
+                      </div>
+
+                      {/* Price */}
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 10 }}>
+                        <span style={{ fontSize: 28, fontWeight: 900, color: '#0F172A' }}>₹{p.price}</span>
+                        <span style={{ fontSize: 13, color: '#64748B', fontWeight: 600 }}>{p.period || '/month'}</span>
+                      </div>
+
+                      {/* Tagline & Member Limit */}
+                      <div style={{ fontSize: 12.5, color: '#475569', marginBottom: 12, lineHeight: 1.4 }}>
+                        {p.tagline || 'No tagline provided'}
+                      </div>
+
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#EFF6FF', color: '#1D4ED8', padding: '4px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700, marginBottom: 14 }}>
+                        <span>👥</span> {p.memberLimit || 15} Committee Members Limit
+                      </div>
+
+                      {/* Features List Snippet */}
+                      {Array.isArray(p.features) && p.features.length > 0 && (
+                        <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16 }}>
+                          {p.features.slice(0, 4).map((f, idx) => (
+                            <div key={idx} style={{ fontSize: 12, color: '#334155', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ color: p.color || '#10B981', fontWeight: 800 }}>✓</span> {f}
+                            </div>
+                          ))}
+                          {p.features.length > 4 && (
+                            <div style={{ fontSize: 11, color: '#94A3B8', paddingLeft: 14 }}>
+                              +{p.features.length - 4} more features
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions Toolbar */}
+                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14, display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center' }}>
+                      <button
+                        className="btn btn-outline btn-sm"
+                        onClick={() => handleTogglePlanStatus(p)}
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          borderColor: p.isActive ? '#FCD34D' : '#86EFAC',
+                          color: p.isActive ? '#B45309' : '#15803D',
+                          background: p.isActive ? '#FFFBEB' : '#F0FDF4'
+                        }}
+                        title={p.isActive ? 'Deactivate this plan so users cannot select it' : 'Activate this plan for all mandals'}
+                      >
+                        {p.isActive ? '⏸️ Deactivate' : '▶️ Activate'}
+                      </button>
+
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          className="btn btn-outline btn-sm"
+                          onClick={() => handleOpenEditPlan(p)}
+                          style={{ fontSize: 12 }}
+                          title="Edit plan configuration"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
+                          className="btn btn-outline btn-sm"
+                          onClick={() => handleDeletePlan(p)}
+                          style={{ fontSize: 12, color: '#DC2626', borderColor: '#FECACA' }}
+                          title="Delete or soft-deactivate plan"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ──────────────── EDIT USER MODAL ──────────────── */}
@@ -763,6 +1083,273 @@ const SuperadminDashboard = () => {
                   style={{ background: 'var(--primary, #FF6B00)', borderColor: 'var(--primary, #FF6B00)' }}
                 >
                   {savingUser ? 'Saving...' : 'Save User Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────── CREATE / EDIT PLAN MODAL ──────────────── */}
+      {editingPlan && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: 16
+          }}
+          onClick={() => !savingPlan && setEditingPlan(null)}
+        >
+          <div 
+            className="card"
+            style={{
+              width: '100%',
+              maxWidth: 620,
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: 24,
+              borderRadius: 16,
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div>
+                <h3 className="text-h3" style={{ margin: 0, fontSize: 18 }}>
+                  {editingPlan === 'new' ? '✨ Create Subscription Plan' : `✏️ Edit Plan: ${editingPlan.name}`}
+                </h3>
+                <p className="text-caption" style={{ margin: '4px 0 0', color: 'var(--text-muted)' }}>
+                  Configure pricing, member allowances, localization and tier order
+                </p>
+              </div>
+              <button 
+                className="btn btn-ghost btn-sm" 
+                onClick={() => !savingPlan && setEditingPlan(null)}
+                style={{ fontSize: 18, cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {planModalError && (
+              <div style={{ padding: '10px 14px', background: 'rgba(239, 68, 68, 0.1)', color: '#DC2626', borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
+                ⚠️ {planModalError}
+              </div>
+            )}
+
+            <form onSubmit={handleSavePlan}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div className="field">
+                  <label style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                    Plan Name (English) *
+                  </label>
+                  <input 
+                    type="text" 
+                    className="input" 
+                    placeholder="e.g. Platinum Elite" 
+                    value={planFormData.name} 
+                    onChange={e => setPlanFormData({ ...planFormData, name: e.target.value })} 
+                    required 
+                  />
+                </div>
+
+                <div className="field">
+                  <label style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                    Plan Name (Marathi)
+                  </label>
+                  <input 
+                    type="text" 
+                    className="input" 
+                    placeholder="उदा. प्लॅटिनम एलिट योजना" 
+                    value={planFormData.nameMr} 
+                    onChange={e => setPlanFormData({ ...planFormData, nameMr: e.target.value })} 
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div className="field">
+                  <label style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                    Code (Unique Identifier) *
+                  </label>
+                  <input 
+                    type="text" 
+                    className="input" 
+                    placeholder="e.g. Platinum" 
+                    value={planFormData.code} 
+                    onChange={e => setPlanFormData({ ...planFormData, code: e.target.value.replace(/\s+/g, '') })} 
+                    disabled={editingPlan !== 'new'}
+                    required 
+                  />
+                </div>
+
+                <div className="field">
+                  <label style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                    Price in INR (₹) *
+                  </label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    className="input" 
+                    placeholder="e.g. 499" 
+                    value={planFormData.price} 
+                    onChange={e => setPlanFormData({ ...planFormData, price: e.target.value })} 
+                    required 
+                  />
+                </div>
+
+                <div className="field">
+                  <label style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                    Tier Rank (Higher = Better) *
+                  </label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    className="input" 
+                    placeholder="e.g. 3" 
+                    value={planFormData.tier} 
+                    onChange={e => setPlanFormData({ ...planFormData, tier: e.target.value })} 
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div className="field">
+                  <label style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                    Member Limit
+                  </label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    className="input" 
+                    placeholder="e.g. 50" 
+                    value={planFormData.memberLimit} 
+                    onChange={e => setPlanFormData({ ...planFormData, memberLimit: e.target.value })} 
+                  />
+                </div>
+
+                <div className="field">
+                  <label style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                    Color Accent (Hex)
+                  </label>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input 
+                      type="color" 
+                      value={planFormData.color || '#0284C7'} 
+                      onChange={e => setPlanFormData({ ...planFormData, color: e.target.value })}
+                      style={{ width: 38, height: 38, padding: 0, border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                    />
+                    <input 
+                      type="text" 
+                      className="input" 
+                      value={planFormData.color} 
+                      onChange={e => setPlanFormData({ ...planFormData, color: e.target.value })} 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div className="field">
+                  <label style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                    Badge (English)
+                  </label>
+                  <input 
+                    type="text" 
+                    className="input" 
+                    placeholder="e.g. ⚡ BEST VALUE" 
+                    value={planFormData.badge} 
+                    onChange={e => setPlanFormData({ ...planFormData, badge: e.target.value })} 
+                  />
+                </div>
+
+                <div className="field">
+                  <label style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                    Badge (Marathi)
+                  </label>
+                  <input 
+                    type="text" 
+                    className="input" 
+                    placeholder="उदा. 🔥 सर्वाधिक पसंती" 
+                    value={planFormData.badgeMr} 
+                    onChange={e => setPlanFormData({ ...planFormData, badgeMr: e.target.value })} 
+                  />
+                </div>
+              </div>
+
+              <div className="field" style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                  Tagline (English)
+                </label>
+                <input 
+                  type="text" 
+                  className="input" 
+                  placeholder="e.g. Complete solution for premium festival trusts" 
+                  value={planFormData.tagline} 
+                  onChange={e => setPlanFormData({ ...planFormData, tagline: e.target.value })} 
+                />
+              </div>
+
+              <div className="field" style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                  Features (One feature per line)
+                </label>
+                <textarea 
+                  className="input" 
+                  rows={4}
+                  placeholder="Unlimited WhatsApp receipts&#10;Up to 50 committee members&#10;Priority 24/7 Call Support" 
+                  value={planFormData.features} 
+                  onChange={e => setPlanFormData({ ...planFormData, features: e.target.value })} 
+                  style={{ fontFamily: 'inherit', resize: 'vertical' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 20, marginBottom: 18, padding: '10px 14px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                  <input 
+                    type="checkbox" 
+                    checked={planFormData.isActive} 
+                    onChange={e => setPlanFormData({ ...planFormData, isActive: e.target.checked })} 
+                  />
+                  <span>Active for New Subscriptions</span>
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                  <input 
+                    type="checkbox" 
+                    checked={planFormData.popular} 
+                    onChange={e => setPlanFormData({ ...planFormData, popular: e.target.checked })} 
+                  />
+                  <span>Mark as Most Popular Badge</span>
+                </label>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-outline" 
+                  onClick={() => setEditingPlan(null)}
+                  disabled={savingPlan}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary" 
+                  disabled={savingPlan}
+                  style={{ background: 'var(--primary, #FF6B00)', borderColor: 'var(--primary, #FF6B00)' }}
+                >
+                  {savingPlan ? 'Saving Plan...' : (editingPlan === 'new' ? 'Create Plan →' : 'Save Plan Changes')}
                 </button>
               </div>
             </form>

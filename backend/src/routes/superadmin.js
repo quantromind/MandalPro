@@ -8,7 +8,12 @@ const {
   getAllMandals,
   getMandalById,
   updateMandal,
-  deleteMandal
+  deleteMandal,
+  getAllPlans,
+  createPlan,
+  updatePlan,
+  togglePlanStatus,
+  deletePlan
 } = require('../controllers/superadminController');
 
 // All routes are protected and require superadmin role
@@ -28,5 +33,16 @@ router.route('/mandals/:id')
   .get(getMandalById)
   .put(updateMandal)
   .delete(deleteMandal);
+
+router.route('/plans')
+  .get(getAllPlans)
+  .post(createPlan);
+
+router.route('/plans/:id')
+  .put(updatePlan)
+  .delete(deletePlan);
+
+router.route('/plans/:id/status')
+  .patch(togglePlanStatus);
 
 module.exports = router;

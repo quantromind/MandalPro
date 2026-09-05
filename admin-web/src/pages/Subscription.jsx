@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import Layout from '../components/Layout';
+import { initiatePlanUpgrade } from '../utils/razorpay';
 
-const PLANS = [
+const DEFAULT_PLANS = [
   {
-    id: 'silver',
+    id: 'Silver',
+    code: 'Silver',
+    tier: 1,
     nameMr: 'सिल्व्हर योजना (Silver Plan)',
     nameEn: 'Silver Pro Plan',
     taglineMr: 'लहान व मध्यम आकाराच्या मंडळांसाठी',
@@ -42,7 +45,9 @@ const PLANS = [
     ]
   },
   {
-    id: 'gold',
+    id: 'Gold',
+    code: 'Gold',
+    tier: 2,
     nameMr: 'गोल्ड मेंबरशिप (Gold Membership)',
     nameEn: 'Gold Pro Membership',
     taglineMr: 'मोठ्या उत्सव व प्रतिष्ठित मंडळांसाठी',
@@ -81,27 +86,79 @@ const PLANS = [
 
 export default function Subscription() {
   const [activating, setActivating] = useState(null);
-  const [activePlan, setActivePlan] = useState('silver');
+  const [plans, setPlans] = useState(DEFAULT_PLANS);
 
-  const { mandal, refreshMandal } = useAuth();
+  const { user, mandal, refreshMandal } = useAuth();
   const { language } = useLanguage();
   const isMr = language === 'mr';
 
-  const handleActivate = async (planId) => {
-    try {
-      setActivating(planId);
-      await client.post('/payments/create-order', {
-        plan: planId === 'silver' ? 'Silver' : 'Gold'
-      }).catch(() => ({ data: { success: true } }));
+  useEffect(() => {
+    client.get('/plans')
+      .then((res) => {
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          const mapped = res.data.map((p) => ({
+            id: p.code || p.id,
+            code: p.code || p.id,
+            tier: p.tier || 1,
+            nameMr: p.nameMr || p.name,
+            nameEn: p.name,
+            taglineMr: p.taglineMr || p.tagline,
+            taglineEn: p.tagline,
+            price: p.price,
+            periodMr: p.periodMr || '/महिना',
+            periodEn: p.period || '/month',
+            badgeMr: p.badgeMr || p.badge,
+            badgeEn: p.badge,
+            popular: Boolean(p.popular),
+            color: p.color || '#0284C7',
+            memberLimitMr: p.memberLimitMr || `${p.memberLimit || 15} सदस्य`,
+            memberLimitEn: p.memberLimitEn || `Up to ${p.memberLimit || 15} Members`,
+            featuresMr: p.featuresMr && p.featuresMr.length > 0 ? p.featuresMr : p.features,
+            featuresEn: p.features || []
+          }));
+          setPlans(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
-      setActivePlan(planId);
-      alert(isMr ? 'योजना यशस्वीरित्या सक्रिय झाली! 🎉' : 'Plan activated successfully! 🎉');
-      if (refreshMandal) refreshMandal();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Error updating subscription');
-    } finally {
-      setActivating(null);
+  const getCurrentTier = () => {
+    if (!mandal || mandal.planStatus !== 'Active' || !mandal.plan || mandal.plan === 'None') {
+      return 0;
     }
+    const current = plans.find((p) => (p.code || p.id).toLowerCase() === mandal.plan.toLowerCase());
+    return current?.tier || 1;
+  };
+
+  const handleActivate = async (planCode) => {
+    const targetPlan = plans.find((p) => (p.code || p.id) === planCode);
+    if (!targetPlan) return;
+
+    const currentTier = getCurrentTier();
+    if (mandal?.planStatus === 'Active' && targetPlan.tier <= currentTier) {
+      alert(isMr ? 'कमी योजना किंवा सध्याची योजना निवडता येत नाही.' : 'Downgrading or re-selecting your active plan is not permitted.');
+      return;
+    }
+
+    setActivating(planCode);
+
+    await initiatePlanUpgrade({
+      planCode,
+      user,
+      onSuccess: (verifyRes) => {
+        setActivating(null);
+        alert(isMr ? `योजना यशस्वीरित्या अपग्रेड झाली: ${verifyRes.planName || planCode}! 🎉` : `Plan upgraded successfully to ${verifyRes.planName || planCode}! 🎉`);
+        if (refreshMandal) refreshMandal();
+      },
+      onError: (err) => {
+        setActivating(null);
+        alert(err.message || (isMr ? 'पेमेंट अयशस्वी झाले. योजना अपग्रेड झाली नाही.' : 'Payment failed. Plan was not upgraded.'));
+      },
+      onCancel: (cancelMsg) => {
+        setActivating(null);
+        alert(cancelMsg || (isMr ? 'पेमेंट रद्द केले. योजना अपग्रेड झाली नाही.' : 'Payment was cancelled. Plan was not upgraded.'));
+      }
+    });
   };
 
   return (
@@ -169,17 +226,20 @@ export default function Subscription() {
             alignItems: 'stretch'
           }}
         >
-          {PLANS.map((p) => {
-            const isCurrent = activePlan === p.id;
-            const planName = isMr ? p.nameMr : p.nameEn;
-            const tagline = isMr ? p.taglineMr : p.taglineEn;
-            const badgeText = isMr ? p.badgeMr : p.badgeEn;
-            const periodText = isMr ? p.periodMr : p.periodEn;
-            const memberLimitText = isMr ? p.memberLimitMr : p.memberLimitEn;
+          {plans.map((p) => {
+            const currentTier = getCurrentTier();
+            const isCurrent = mandal?.planStatus === 'Active' && mandal?.plan?.toLowerCase() === (p.code || p.id).toLowerCase();
+            const currentPrice = plans.find(ap => (ap.code || ap.id).toLowerCase() === mandal?.plan?.toLowerCase())?.price || 0;
+            const isDowngrade = mandal?.planStatus === 'Active' && !isCurrent && ((p.tier || 1) < currentTier || p.price < currentPrice);
+            const planName = isMr ? (p.nameMr || p.nameEn) : (p.nameEn || p.name);
+            const tagline = isMr ? (p.taglineMr || p.taglineEn) : (p.taglineEn || p.tagline);
+            const badgeText = isMr ? (p.badgeMr || p.badgeEn) : (p.badgeEn || p.badge);
+            const periodText = isMr ? (p.periodMr || p.periodEn) : (p.periodEn || p.period);
+            const memberLimitText = isMr ? (p.memberLimitMr || p.memberLimitEn) : (p.memberLimitEn || p.memberLimitMr);
 
             return (
               <div
-                key={p.id}
+                key={p.code || p.id}
                 style={{
                   background: '#FFFFFF',
                   borderRadius: 22,
@@ -346,15 +406,15 @@ export default function Subscription() {
                 {/* Card CTA Action */}
                 <div style={{ paddingTop: 16, borderTop: '1px solid #F1F5F9' }}>
                   <button
-                    onClick={() => handleActivate(p.id)}
-                    disabled={activating === p.id || isCurrent}
+                    onClick={() => !isCurrent && !isDowngrade && handleActivate(p.code || p.id)}
+                    disabled={activating === (p.code || p.id) || isCurrent || isDowngrade}
                     style={{
                       width: '100%',
                       padding: '14px 20px',
                       borderRadius: 12,
                       fontSize: 15,
                       fontWeight: 800,
-                      cursor: isCurrent ? 'default' : 'pointer',
+                      cursor: (isCurrent || isDowngrade) ? 'not-allowed' : 'pointer',
                       border: 'none',
                       transition: 'all 0.2s ease',
                       display: 'flex',
@@ -366,6 +426,12 @@ export default function Subscription() {
                             background: '#F1F5F9',
                             color: '#059669',
                             border: '1px solid #A7F3D0'
+                          }
+                        : isDowngrade
+                        ? {
+                            background: '#F8FAFC',
+                            color: '#94A3B8',
+                            border: '1px solid #E2E8F0'
                           }
                         : p.popular
                         ? {
@@ -380,14 +446,16 @@ export default function Subscription() {
                           })
                     }}
                   >
-                    {activating === p.id ? (
-                      <span>⏳ {isMr ? 'सक्रिय होत आहे...' : 'Activating...'}</span>
+                    {activating === (p.code || p.id) ? (
+                      <span>⏳ {isMr ? 'गेटवे उघडत आहे...' : 'Opening Gateway...'}</span>
                     ) : isCurrent ? (
                       <span>✓ {isMr ? 'सध्याची सक्रिय योजना' : 'Current Active Plan'}</span>
+                    ) : isDowngrade ? (
+                      <span>🚫 {isMr ? 'कमी योजना निवडता येत नाही (Downgrade Not Permitted)' : 'Downgrade Not Permitted'}</span>
                     ) : (
                       <span>
                         {p.popular ? '⚡ ' : ''}
-                        {isMr ? `${planName} निवडा (₹${p.price}) →` : `Choose ${p.nameEn} (₹${p.price}) →`}
+                        {isMr ? `${planName} अपग्रेड करा (₹${p.price}) →` : `Upgrade to ${planName} (₹${p.price}) →`}
                       </span>
                     )}
                   </button>

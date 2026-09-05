@@ -98,35 +98,11 @@ const updateChecklist = asyncHandler(async (req, res) => {
   res.json({ checklist: mandal.checklist, onboardingComplete: mandal.onboardingComplete });
 });
 
-// @desc  Upgrade plan (simulated Razorpay confirmation)
+// @desc  Upgrade plan (deprecated: direct activation without payment is disallowed)
 // @route PATCH /api/onboarding/plan
 const upgradePlan = asyncHandler(async (req, res) => {
-  const { plan, razorpayPaymentId } = req.body;
-  const VALID_PLANS = ['Basic', 'Pro', 'Premium', 'Enterprise'];
-
-  if (!VALID_PLANS.includes(plan)) {
-    res.status(400);
-    throw new Error(`Invalid plan: ${plan}`);
-  }
-
-  const renewsAt = new Date();
-  renewsAt.setFullYear(renewsAt.getFullYear() + 1);
-
-  const mandal = await Mandal.findByIdAndUpdate(
-    req.mandalId,
-    {
-      plan,
-      planStatus: 'Active',
-      planRenewsAt: renewsAt,
-      onboardingComplete: true,
-      'checklist.planSelected': true,
-      // Store payment ref if provided
-      ...(razorpayPaymentId && { lastPaymentId: razorpayPaymentId })
-    },
-    { new: true }
-  );
-
-  res.json({ plan: mandal.plan, planStatus: mandal.planStatus, planRenewsAt: mandal.planRenewsAt });
+  res.status(400);
+  throw new Error('Direct plan activation without payment is disabled. Please upgrade through the payment gateway.');
 });
 
 // @desc  Upload verification documents (Pro+)

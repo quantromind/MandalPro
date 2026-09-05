@@ -26,6 +26,7 @@ app.use('/api/dashboard', require('./src/routes/dashboard'));
 app.use('/api/members', require('./src/routes/member'));
 app.use('/api/sponsors', require('./src/routes/sponsor'));
 app.use('/api/inventory', require('./src/routes/inventory'));
+app.use('/api/plans', require('./src/routes/plan'));
 app.use('/api/payments', require('./src/routes/payment'));
 app.use('/api/chat', require('./src/routes/chat'));
 app.use('/api/superadmin', require('./src/routes/superadmin'));

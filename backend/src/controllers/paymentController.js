@@ -2,35 +2,85 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const asyncHandler = require('express-async-handler');
 const Mandal = require('../models/Mandal');
+const Plan = require('../models/Plan');
+const { seedDefaultPlansIfEmpty } = require('./planController');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
-// Plan pricing in paise (INR × 100)
-const PLAN_AMOUNTS = {
-  free:       0,
-  silver:     19900,   // ₹199
-  gold:       29900,   // ₹299
-  platinum:   49900,   // ₹499
-  Basic:      19900,
-  Silver:     19900,   // ₹199
-  Gold:       29900,   // ₹299
-  Platinum:   49900,   // ₹499
-  Pro:        29900,
-  Premium:    49900,
-  Enterprise: 0
+// Helper to resolve plan from DB
+const resolvePlan = async (planIdentifier) => {
+  if (!planIdentifier) return null;
+  await seedDefaultPlansIfEmpty();
+
+  let plan = await Plan.findOne({
+    $or: [
+      { code: planIdentifier },
+      { code: new RegExp(`^${planIdentifier}$`, 'i') },
+      { name: planIdentifier },
+      { name: new RegExp(`^${planIdentifier}$`, 'i') }
+    ]
+  });
+
+  return plan;
+};
+
+// Helper to check if upgrade is allowed (downgrade prevention)
+const checkPlanUpgradeAllowed = async (mandal, targetPlan) => {
+  // If mandal is not currently on an active paid plan, any active plan is allowed
+  if (mandal.planStatus !== 'Active' || !mandal.plan || mandal.plan === 'None' || mandal.plan === 'free') {
+    return { allowed: true };
+  }
+
+  const currentPlan = await resolvePlan(mandal.plan);
+  if (!currentPlan) {
+    return { allowed: true };
+  }
+
+  // If selecting the exact same plan that is already active
+  if (currentPlan.code.toLowerCase() === targetPlan.code.toLowerCase()) {
+    return {
+      allowed: false,
+      message: `You are already subscribed to the ${currentPlan.name}.`
+    };
+  }
+
+  // Downgrade check: target tier must be strictly greater than current tier
+  const currentTier = currentPlan.tier || 1;
+  const targetTier = targetPlan.tier || 1;
+
+  if (targetTier < currentTier || targetPlan.price < currentPlan.price) {
+    return {
+      allowed: false,
+      message: `Downgrading is not permitted. You are already on the higher ${currentPlan.name} (₹${currentPlan.price}). You cannot switch to ${targetPlan.name} (₹${targetPlan.price}).`
+    };
+  }
+
+  return { allowed: true };
 };
 
 // @desc  Create Razorpay order for plan upgrade
 // @route POST /api/payments/create-order
 const createOrder = asyncHandler(async (req, res) => {
-  const { plan } = req.body;
+  const { plan: planInput } = req.body;
 
-  if (PLAN_AMOUNTS[plan] === undefined) {
+  if (!planInput) {
     res.status(400);
-    throw new Error(`Invalid plan: ${plan}`);
+    throw new Error('Plan is required');
+  }
+
+  const targetPlan = await resolvePlan(planInput);
+  if (!targetPlan) {
+    res.status(400);
+    throw new Error(`Plan "${planInput}" not found`);
+  }
+
+  // 1. Check if plan is active
+  if (targetPlan.isActive === false) {
+    res.status(400);
+    throw new Error(`The plan "${targetPlan.name}" is currently deactivated and not available for new subscriptions.`);
   }
 
   const mandal = await Mandal.findById(req.mandalId);
@@ -39,14 +89,24 @@ const createOrder = asyncHandler(async (req, res) => {
     throw new Error('Mandal not found');
   }
 
+  // 2. Prevent downgrade
+  const upgradeCheck = await checkPlanUpgradeAllowed(mandal, targetPlan);
+  if (!upgradeCheck.allowed) {
+    res.status(400);
+    throw new Error(upgradeCheck.message);
+  }
+
+  const amountPaise = Math.round(targetPlan.price * 100);
+
   const order = await razorpay.orders.create({
-    amount: PLAN_AMOUNTS[plan],
+    amount: amountPaise,
     currency: 'INR',
     receipt: `rcpt_${req.mandalId}_${Date.now()}`,
     notes: {
       mandalId: req.mandalId.toString(),
       mandalName: mandal.name,
-      plan
+      planCode: targetPlan.code,
+      planName: targetPlan.name
     }
   });
 
@@ -55,7 +115,8 @@ const createOrder = asyncHandler(async (req, res) => {
     amount: order.amount,
     currency: order.currency,
     keyId: process.env.RAZORPAY_KEY_ID,
-    plan,
+    plan: targetPlan.code,
+    planName: targetPlan.name,
     mandalName: mandal.name
   });
 });
@@ -63,14 +124,14 @@ const createOrder = asyncHandler(async (req, res) => {
 // @desc  Verify Razorpay payment signature and activate plan
 // @route POST /api/payments/verify
 const verifyPayment = asyncHandler(async (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan } = req.body;
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan: planInput } = req.body;
 
   if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
     res.status(400);
-    throw new Error('Missing payment verification fields');
+    throw new Error('Missing payment verification fields (order ID, payment ID, signature)');
   }
 
-  // Verify signature
+  // 1. Verify signature
   const expectedSig = crypto
     .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
     .update(`${razorpay_order_id}|${razorpay_payment_id}`)
@@ -81,28 +142,50 @@ const verifyPayment = asyncHandler(async (req, res) => {
     throw new Error('Payment verification failed: invalid signature');
   }
 
-  // Activate plan
+  // 2. Validate plan
+  const targetPlan = await resolvePlan(planInput);
+  if (!targetPlan) {
+    res.status(400);
+    throw new Error(`Plan "${planInput}" not found`);
+  }
+
+  if (targetPlan.isActive === false) {
+    res.status(400);
+    throw new Error(`The plan "${targetPlan.name}" is deactivated and cannot be activated.`);
+  }
+
+  const mandal = await Mandal.findById(req.mandalId);
+  if (!mandal) {
+    res.status(404);
+    throw new Error('Mandal not found');
+  }
+
+  const upgradeCheck = await checkPlanUpgradeAllowed(mandal, targetPlan);
+  if (!upgradeCheck.allowed) {
+    res.status(400);
+    throw new Error(upgradeCheck.message);
+  }
+
+  // 3. Activate plan upon successful verification
   const renewsAt = new Date();
-  renewsAt.setFullYear(renewsAt.getFullYear() + 1);
+  renewsAt.setMonth(renewsAt.getMonth() + 1); // 1 month validity
 
-  const mandal = await Mandal.findByIdAndUpdate(
-    req.mandalId,
-    {
-      plan,
-      planStatus: 'Active',
-      planRenewsAt: renewsAt,
-      onboardingComplete: true,
-      lastPaymentId: razorpay_payment_id,
-      'checklist.planSelected': true
-    },
-    { new: true }
-  );
+  mandal.plan = targetPlan.code;
+  mandal.planStatus = 'Active';
+  mandal.planRenewsAt = renewsAt;
+  mandal.onboardingComplete = true;
+  mandal.lastPaymentId = razorpay_payment_id;
+  if (!mandal.checklist) mandal.checklist = {};
+  mandal.checklist.planSelected = true;
 
-  console.log(`[Payment] ✅ Plan ${plan} activated for mandal ${mandal.name} | Payment: ${razorpay_payment_id}`);
+  await mandal.save();
+
+  console.log(`[Payment] ✅ Plan "${targetPlan.name}" (${targetPlan.code}) activated for mandal "${mandal.name}" | Payment ID: ${razorpay_payment_id}`);
 
   res.json({
     success: true,
     plan: mandal.plan,
+    planName: targetPlan.name,
     planStatus: mandal.planStatus,
     planRenewsAt: mandal.planRenewsAt,
     paymentId: razorpay_payment_id
