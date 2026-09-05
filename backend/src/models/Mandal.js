@@ -16,9 +16,10 @@ const mandalSchema = new mongoose.Schema(
       bankName: String
     },
     eventTypes: [{ type: String, enum: ['Ganesh Utsav', 'Navratri', 'Jayanti', 'Diwali', 'Wedding/Hall', 'Custom'] }],
-    plan: { type: String, enum: ['None', 'Basic', 'Silver', 'Gold', 'Platinum', 'Pro', 'Premium', 'Enterprise', 'free', 'silver', 'gold', 'platinum'], default: 'None' },
+    plan: { type: String, default: 'None' },
     planStatus: { type: String, enum: ['Inactive', 'Active', 'GracePeriod', 'Expired'], default: 'Inactive' },
     planRenewsAt: { type: Date },
+    lastPaymentId: { type: String },
     verified: { type: Boolean, default: false },
     verificationDocs: [{ type: String }],    // base64 encoded docs
     receiptPrefix: { type: String, default: 'RCPT' },

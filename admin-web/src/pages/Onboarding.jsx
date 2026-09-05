@@ -45,32 +45,50 @@ const EVENT_TYPES = [
 
 const PLANS = [
   {
-    id: 'Basic', price: 199, label: '₹199', period: '/month', color: '#64748B',
-    tagline: 'Perfect to get started',
-    features: ['1 Mandal', 'Up to 5 events/year', 'Basic receipts', 'Up to 10 members', 'Dashboard & reports'],
-    missing: ['Custom branding', 'Priority support', 'Verified badge'],
-    cta: 'Choose Basic'
+    id: 'Silver',
+    name: 'Silver Pro Plan',
+    price: 199,
+    label: '₹199',
+    period: '/month',
+    color: '#0284C7',
+    badge: '⚡ AFFORDABLE',
+    popular: false,
+    tagline: 'Ideal for local & community mandals',
+    memberLimit: 'Up to 15 Committee Members',
+    features: [
+      '1 Complete Mandal Management',
+      'Up to 15 Committee Members & Volunteers',
+      'Unlimited WhatsApp Digital Receipts with QR',
+      'Collections & Donations Accounting',
+      'Expense & Budget Tracking',
+      'Committee Live Group Chat',
+      'Digital Member ID Card Generator',
+      'Festival Balance Sheet & Reports'
+    ],
+    cta: 'Choose Silver Pro Plan (₹199)'
   },
   {
-    id: 'Pro', price: 499, label: '₹499', period: '/month', color: '#FF6B00', badge: 'Most Popular',
-    tagline: 'For active mandals',
-    features: ['1 Mandal', 'Unlimited events', 'Custom receipt branding', 'Up to 25 members', 'Verified Mandal badge', 'Priority support'],
-    missing: ['Multiple mandals', 'Analytics export'],
-    cta: 'Choose Pro'
-  },
-  {
-    id: 'Premium', price: 999, label: '₹999', period: '/month', color: '#6C4DD9', badge: 'Best Value',
-    tagline: 'For multi-mandal organizations',
-    features: ['3 Mandals', 'Unlimited events', 'Full branding', 'Unlimited members', 'Verified badge', 'Analytics export', 'Dedicated support'],
-    missing: ['API access', 'White-label'],
-    cta: 'Choose Premium'
-  },
-  {
-    id: 'Enterprise', price: null, label: 'Custom', period: '', color: '#10B981',
-    tagline: 'For large trusts & federations',
-    features: ['Unlimited Mandals', 'Everything in Premium', 'White-label option', 'API access', 'SLA support', 'Custom integrations'],
-    missing: [],
-    cta: 'Contact Sales'
+    id: 'Gold',
+    name: 'Gold Pro Membership',
+    price: 299,
+    label: '₹299',
+    period: '/month',
+    color: '#D97706',
+    badge: '🔥 MOST POPULAR • BEST VALUE',
+    popular: true,
+    tagline: 'Best for large festive & public trusts',
+    memberLimit: 'Up to 25 Committee Members',
+    features: [
+      '2 Mandals / Branches Management',
+      'Up to 25 Committee Members & Volunteers',
+      'Official Logo & Seal Branded WhatsApp Receipts',
+      'Expense Approval Workflow with Bill Photos',
+      'CA Audit-Ready Balance Sheet (Excel/PDF)',
+      'Verified Mandal Trust Badge',
+      '24/7 Priority WhatsApp & Call Support',
+      'Free Access to All Future Pro Features'
+    ],
+    cta: 'Choose Gold Pro Membership (₹299)'
   }
 ];
 
@@ -92,9 +110,8 @@ const CHECKLIST_ITEMS = [
 
 /* ─── Helper ─────────────────────────────────────────────────── */
 function getRecommendedPlan(types) {
-  if (types.length >= 3) return 'Premium';
-  if (types.length >= 2) return 'Pro';
-  return 'Basic';
+  if (types.length >= 2) return 'Gold';
+  return 'Silver';
 }
 
 /* ─── Main Component ──────────────────────────────────────────── */
@@ -146,8 +163,8 @@ export default function Onboarding() {
   const [eventTypes, setEventTypes] = useState([]);
 
   // ── Step 3 State ──
-  const [selectedPlan, setSelectedPlan] = useState('Pro');
-  const [billing, setBilling] = useState('monthly'); // 'monthly' | 'annual'
+  const [selectedPlan, setSelectedPlan] = useState('Gold');
+  const [billing, setBilling] = useState('monthly'); // 'monthly'
 
   // ── Step 4 State ──
   const [paymentDone, setPaymentDone] = useState(false);
@@ -219,11 +236,7 @@ export default function Onboarding() {
 
   /* ── Step 3 Submit ── */
   const handlePlanSubmit = async () => {
-    if (selectedPlan === 'Enterprise') {
-      window.open('mailto:contact@quantromind.com?subject=Enterprise Plan Enquiry', '_blank');
-    } else {
-      next(); // All plans go to payment
-    }
+    next(); // All plans go to payment
   };
 
   /* ── Step 4 Payment ── */
@@ -267,7 +280,7 @@ export default function Onboarding() {
         rzp.open();
       });
     } catch (e) {
-      if (e.message !== 'Payment cancelled') setError(e.response?.data?.message || e.message || 'Payment failed');
+      setError(e.message === 'Payment cancelled' ? 'Payment was cancelled. Please complete payment to activate your plan.' : (e.response?.data?.message || e.message || 'Payment failed'));
     } finally { setPaymentLoading(false); }
   };
 
@@ -771,30 +784,18 @@ export default function Onboarding() {
 
               {/* Recommendation Banner */}
               {eventTypes.length > 0 && (
-                <div style={{ background: 'rgba(255,107,0,0.08)', border: '1px solid rgba(255,107,0,0.2)', borderRadius: 12, padding: '14px 18px', display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 24 }}>
+                <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 12, padding: '14px 18px', display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 24 }}>
                   <span style={{ fontSize: 20 }}>🎯</span>
                   <div>
-                    <div style={{ fontWeight: 700, color: '#FF6B00', fontSize: 14, marginBottom: 2 }}>Recommended for you</div>
-                    <div style={{ fontSize: 13, color: '#374151' }}>You selected {eventTypes.length} event type{eventTypes.length !== 1 ? 's' : ''}. We recommend the <strong>{recommended}</strong> plan for your needs.</div>
+                    <div style={{ fontWeight: 700, color: '#D97706', fontSize: 14, marginBottom: 2 }}>Recommended for you</div>
+                    <div style={{ fontSize: 13, color: '#374151' }}>
+                      You selected {eventTypes.length} event type{eventTypes.length !== 1 ? 's' : ''}. We recommend the <strong>{recommended === 'Gold' ? 'Gold Pro Membership' : 'Silver Pro Plan'}</strong> for your needs.
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Billing Toggle */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 24 }}>
-                <span style={{ fontSize: 14, color: billing === 'monthly' ? '#17233C' : '#9CA3AF', fontWeight: billing === 'monthly' ? 700 : 500 }}>Monthly</span>
-                <div
-                  onClick={() => setBilling(b => b === 'monthly' ? 'annual' : 'monthly')}
-                  style={{ width: 44, height: 24, borderRadius: 12, background: billing === 'annual' ? '#FF6B00' : '#D1D5DB', cursor: 'pointer', position: 'relative', transition: '0.3s' }}
-                >
-                  <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, left: billing === 'annual' ? 23 : 3, transition: '0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
-                </div>
-                <span style={{ fontSize: 14, color: billing === 'annual' ? '#17233C' : '#9CA3AF', fontWeight: billing === 'annual' ? 700 : 500 }}>
-                  Annual <span style={{ fontSize: 11, background: '#10B981', color: '#fff', padding: '2px 6px', borderRadius: 10, marginLeft: 4 }}>Save 20%</span>
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 28 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 28 }}>
                 {PLANS.map(plan => {
                   const isSelected = selectedPlan === plan.id;
                   const isRec = plan.id === recommended;
@@ -803,43 +804,132 @@ export default function Onboarding() {
                       key={plan.id}
                       onClick={() => setSelectedPlan(plan.id)}
                       style={{
-                        borderRadius: 16, border: `2px solid ${isSelected ? plan.color : isRec ? `${plan.color}40` : '#E5E7EB'}`,
-                        background: isSelected ? '#fff' : '#FAFAFA',
-                        cursor: 'pointer', transition: 'all 0.2s', position: 'relative',
-                        boxShadow: isSelected ? `0 8px 24px ${plan.color}18` : 'none',
-                        overflow: 'hidden'
+                        borderRadius: 18,
+                        border: isSelected
+                          ? `2px solid ${plan.color}`
+                          : isRec
+                            ? `2px solid ${plan.color}50`
+                            : '1.5px solid #E2E8F0',
+                        background: '#FFFFFF',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        position: 'relative',
+                        boxShadow: isSelected
+                          ? `0 12px 30px -6px ${plan.color}30, 0 4px 12px rgba(15,23,42,0.06)`
+                          : '0 4px 14px rgba(15,23,42,0.04)',
+                        padding: '28px 22px 22px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between'
                       }}
                     >
-                      {(plan.badge || isRec) && (
+                      {/* Top Badge */}
+                      {plan.badge && (
                         <div style={{
-                          position: 'absolute', top: 0, right: 0,
-                          background: plan.color, color: '#fff',
-                          fontSize: 11, fontWeight: 700, padding: '4px 14px',
-                          borderBottomLeftRadius: 10
-                        }}>{plan.badge || '⭐ Recommended'}</div>
+                          position: 'absolute',
+                          top: -12,
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          background: plan.popular
+                            ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
+                            : 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)',
+                          color: '#fff',
+                          fontSize: 11,
+                          fontWeight: 800,
+                          padding: '4px 14px',
+                          borderRadius: 999,
+                          boxShadow: `0 3px 10px ${plan.color}40`,
+                          whiteSpace: 'nowrap',
+                          letterSpacing: 0.3
+                        }}>
+                          {plan.badge}
+                        </div>
                       )}
-                      <div style={{ padding: '18px 20px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isSelected ? 14 : 0 }}>
-                          <div>
-                            <div style={{ fontSize: 16, fontWeight: 800, color: plan.color, marginBottom: 2 }}>{plan.id}</div>
-                            <div style={{ fontSize: 12, color: '#9CA3AF' }}>{plan.tagline}</div>
+
+                      <div>
+                        {/* Header */}
+                        <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
+                            <span style={{ fontSize: 18, fontWeight: 800, color: plan.color }}>
+                              {plan.name}
+                            </span>
+                            <span style={{
+                              width: 18,
+                              height: 18,
+                              borderRadius: '50%',
+                              border: isSelected ? `5px solid ${plan.color}` : '2px solid #CBD5E1',
+                              background: '#fff',
+                              display: 'inline-block'
+                            }} />
                           </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: 22, fontWeight: 800, color: '#17233C' }}>{planPrice(plan)}</div>
-                            {plan.price !== null && <div style={{ fontSize: 12, color: '#9CA3AF' }}>{billing === 'annual' ? '/month (billed annually)' : '/month'}</div>}
+                          <div style={{ fontSize: 12.5, color: '#64748B', minHeight: 34 }}>{plan.tagline}</div>
+
+                          {/* Price */}
+                          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 2, margin: '12px 0 10px' }}>
+                            <span style={{ fontSize: 20, fontWeight: 700, color: '#0F172A' }}>₹</span>
+                            <span style={{ fontSize: 38, fontWeight: 900, color: '#0F172A', lineHeight: 1 }}>{plan.price}</span>
+                            <span style={{ fontSize: 13.5, fontWeight: 600, color: '#64748B', marginLeft: 4 }}>{plan.period}</span>
+                          </div>
+
+                          {/* Member Limit Pill */}
+                          <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            background: plan.popular ? 'rgba(245, 158, 11, 0.12)' : 'rgba(2, 132, 199, 0.08)',
+                            border: plan.popular ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(2, 132, 199, 0.2)',
+                            color: plan.popular ? '#B45309' : '#0369A1',
+                            padding: '4px 12px',
+                            borderRadius: 999,
+                            fontSize: 12,
+                            fontWeight: 700
+                          }}>
+                            <span>👥</span>
+                            <span>{plan.memberLimit}</span>
                           </div>
                         </div>
-                        {isSelected && (
-                          <div style={{ borderTop: '1px solid #F0F0EE', paddingTop: 14 }}>
-                            <div className="onboarding-plan-features">
-                              {plan.features.map(f => (
-                                <div key={f} style={{ fontSize: 13, color: '#374151', display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                                  <span style={{ color: '#10B981', fontWeight: 700, flexShrink: 0 }}>✓</span> {f}
-                                </div>
-                              ))}
-                            </div>
+
+                        {/* Feature List */}
+                        <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: 16, marginBottom: 16 }}>
+                          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.7, color: '#94A3B8', marginBottom: 10 }}>
+                            Included Features:
                           </div>
-                        )}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {plan.features.map((f, idx) => (
+                              <div key={idx} style={{ fontSize: 12.5, color: '#334155', display: 'flex', gap: 8, alignItems: 'flex-start', lineHeight: 1.4 }}>
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: 16,
+                                  height: 16,
+                                  borderRadius: '50%',
+                                  background: plan.popular ? 'rgba(245, 158, 11, 0.15)' : 'rgba(2, 132, 199, 0.12)',
+                                  color: plan.color,
+                                  fontSize: 10,
+                                  fontWeight: 900,
+                                  flexShrink: 0,
+                                  marginTop: 1
+                                }}>✓</span>
+                                <span>{f}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Select state banner */}
+                      <div style={{
+                        padding: '8px',
+                        borderRadius: 10,
+                        textAlign: 'center',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        background: isSelected ? `${plan.color}15` : '#F8FAFC',
+                        color: isSelected ? plan.color : '#64748B',
+                        border: isSelected ? `1px solid ${plan.color}30` : '1px solid transparent'
+                      }}>
+                        {isSelected ? '✓ Selected Plan' : 'Click to Select'}
                       </div>
                     </div>
                   );
@@ -849,11 +939,19 @@ export default function Onboarding() {
               <div className="onboarding-btn-row">
                 <button style={css.btnOutline} onClick={back}>← Back</button>
                 <button
-                  style={{ ...css.btnPrimary, flex: 2, padding: '16px', fontSize: 16 }}
+                  style={{
+                    ...css.btnPrimary,
+                    flex: 2,
+                    padding: '16px',
+                    fontSize: 16,
+                    background: (PLANS.find(p => p.id === selectedPlan) || PLANS[1]).popular
+                      ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
+                      : 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)'
+                  }}
                   onClick={handlePlanSubmit}
                   disabled={loading}
                 >
-                  {loading ? 'Processing…' : selectedPlan === 'Enterprise' ? 'Contact Sales →' : `Choose ${selectedPlan} →`}
+                  {loading ? 'Processing…' : `${(PLANS.find(p => p.id === selectedPlan) || PLANS[1]).cta} →`}
                 </button>
               </div>
             </div>
@@ -872,24 +970,22 @@ export default function Onboarding() {
 
               {/* Order Summary */}
               {(() => {
-                const plan = PLANS.find(p => p.id === selectedPlan);
-                const price = billing === 'annual' ? Math.round((plan?.price || 0) * 0.8) : (plan?.price || 0);
-                const gst = Math.round(price * 0.18);
-                const total = price + gst;
+                const plan = PLANS.find(p => p.id === selectedPlan) || PLANS[1];
+                const price = plan.price;
                 return (
-                  <div style={{ background: '#F8F8F6', borderRadius: 16, padding: 24, marginBottom: 28, border: '1px solid #E5E7EB' }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#17233C', marginBottom: 16 }}>Order Summary</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontSize: 14, color: '#6b7280' }}>
-                      <span>{selectedPlan} Plan ({billing === 'annual' ? 'Annual' : 'Monthly'})</span>
-                      <span style={{ fontWeight: 600, color: '#17233C' }}>₹{price}/mo</span>
+                  <div style={{ background: '#F8FAFC', borderRadius: 16, padding: 24, marginBottom: 28, border: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', marginBottom: 16 }}>Order Summary</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontSize: 14, color: '#475569' }}>
+                      <span style={{ fontWeight: 600, color: '#0F172A' }}>{plan.name}</span>
+                      <span style={{ fontWeight: 700, color: '#0F172A' }}>₹{price}/month</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, fontSize: 14, color: '#6b7280', paddingBottom: 16, borderBottom: '1px solid #E5E7EB' }}>
-                      <span>GST (18%)</span>
-                      <span style={{ fontWeight: 600, color: '#17233C' }}>₹{gst}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, fontSize: 13, color: '#0284C7', paddingBottom: 16, borderBottom: '1px solid #E2E8F0' }}>
+                      <span>👥 {plan.memberLimit}</span>
+                      <span style={{ color: '#16A34A', fontWeight: 600 }}>Instant Activation ✓</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: '#17233C' }}>
-                      <span>Total</span>
-                      <span style={{ color: '#FF6B00' }}>₹{total}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: '#0F172A' }}>
+                      <span>Total Payable</span>
+                      <span style={{ color: plan.popular ? '#D97706' : '#0284C7' }}>₹{price}</span>
                     </div>
                   </div>
                 );
