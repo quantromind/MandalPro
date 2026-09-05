@@ -63,13 +63,13 @@ function CustomTabBar({ state, descriptors, navigation, onOpenQuickAction, onOpe
   };
 
   return (
-    <View style={[styles.outerWrapper, { bottom: bottomOffset }]}>
+    <View style={[styles.outerWrapper, { paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 6 : 4) }]}>
       <View style={styles.floatingBar}>
         {/* 1. Home Tab */}
-        {renderTabItem(0, language === 'mr' ? 'होम' : 'Home', HomeIcon)}
+        {renderTabItem(0, language === 'mr' ? 'मुख्यपृष्ठ' : 'Home', HomeIcon)}
 
         {/* 2. Collections Tab */}
-        {renderTabItem(1, language === 'mr' ? 'संकलन' : 'Collections', CollectionsIcon)}
+        {renderTabItem(1, language === 'mr' ? 'वर्गणी' : 'Collections', CollectionsIcon)}
 
         {/* 3. Center Elevated Orange (+) Button */}
         <TouchableOpacity
@@ -81,7 +81,7 @@ function CustomTabBar({ state, descriptors, navigation, onOpenQuickAction, onOpe
         </TouchableOpacity>
 
         {/* 4. Chat Tab */}
-        {renderTabItem(2, language === 'mr' ? 'चॅट' : 'Chat', ChatIcon)}
+        {renderTabItem(2, language === 'mr' ? 'संवाद' : 'Chat', ChatIcon)}
 
         {/* 5. More Tab (Opens All Sections bottom sheet modal) */}
         <TouchableOpacity
@@ -194,25 +194,26 @@ const BAR_HEIGHT = 64;
 const styles = StyleSheet.create({
   outerWrapper: {
     position: 'absolute',
-    left: 14,
-    right: 14,
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: '#FFFFFF',
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.95)',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.14,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 10,
+    zIndex: 90,
   },
   floatingBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'transparent',
+    backgroundColor: '#FFFFFF',
     height: BAR_HEIGHT,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
   },
   tabItem: {
     flex: 1,

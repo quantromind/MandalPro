@@ -78,8 +78,10 @@ export default function DashboardScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F97316']} tintColor="#F97316" />}
       >
-        {/* Header Hero Banner (Image 2 matching) */}
+        {/* Header Hero Banner (Festival Card matching Screenshot) */}
         <View style={styles.headerCard}>
+          <Text style={styles.heroWatermark}>🪔</Text>
+
           <View style={styles.roleBadge}>
             <Text style={styles.roleBadgeText}>
               {user?.role === 'president' ? '👑 PRESIDENT WORKSPACE' : '👥 COMMITTEE WORKSPACE'}
@@ -93,7 +95,7 @@ export default function DashboardScreen({ navigation }) {
             🚩 {mandal?.name || 'Sakhee Mitra Mandal'} • {language === 'mr' ? 'लाइव्ह मंडळ आकडेवारी' : 'Live Mandal statistics'}
           </Text>
 
-          {/* Quick Action CTA Buttons inside Hero Banner matching Image 2 */}
+          {/* Quick Action CTA Buttons inside Hero Banner matching Screenshot */}
           <View style={styles.heroButtonContainer}>
             <TouchableOpacity
               style={styles.heroPrimaryBtnFull}
@@ -101,7 +103,7 @@ export default function DashboardScreen({ navigation }) {
               activeOpacity={0.88}
             >
               <Text style={styles.heroPrimaryBtnFullText}>
-                ✨ ✨ {language === 'mr' ? 'नवीन देणगी नोंदवा' : 'Record New Donation'}
+                ✨ {language === 'mr' ? 'नवीन देणगी नोंदवा' : 'Record New Donation'}
               </Text>
             </TouchableOpacity>
 
@@ -134,53 +136,87 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.sectionSub}>{t('dashboard.liveMandalStats')}</Text>
         </View>
 
-        {/* 4 Website-Aligned Stat Cards with Colored Top Accent Lines */}
-        <View style={styles.statCardsGrid}>
-          {/* Card 1: Net Balance */}
-          <View style={styles.statCard}>
-            <View style={[styles.statAccentLine, { backgroundColor: '#6366F1' }]} />
-            <Text style={styles.statCardLabel}>🪙 {language === 'mr' ? 'शिल्लक रक्कम' : 'NET BALANCE - REMAINING'}</Text>
+        {/* Full-Width Stacked Stat Cards matching DevTools Mobile View */}
+        <View style={styles.stackedStatCards}>
+          {/* Card 1: Net Balance (शिल्लक - एकूण बाकी) */}
+          <TouchableOpacity
+            style={styles.stackedStatCard}
+            onPress={() => navigation.navigate('Receipts')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.statCardLabel}>
+              ⚖️ {language === 'mr' ? 'शिल्लक - एकूण बाकी' : 'NET BALANCE - REMAINING'}
+            </Text>
             <Text style={[styles.statCardAmount, { color: netBalance >= 0 ? '#1E3A8A' : '#DC2626' }]}>
               {inr(netBalance)}
             </Text>
-            <Text style={styles.statCardSub}>{language === 'mr' ? 'उपलब्ध निधी' : 'Available funds'}</Text>
-          </View>
+            <Text style={styles.statCardSub}>
+              {language === 'mr'
+                ? (netBalance >= 0 ? 'उपलब्ध शिल्लक निधी' : 'तुटवडा / Deficit')
+                : (netBalance >= 0 ? 'Available funds' : 'Deficit')}
+            </Text>
+            <View style={[styles.statBottomAccent, { backgroundColor: '#10B981' }]} />
+          </TouchableOpacity>
 
-          {/* Card 2: Inflow - Collections */}
-          <View style={styles.statCard}>
-            <View style={[styles.statAccentLine, { backgroundColor: '#10B981' }]} />
-            <Text style={styles.statCardLabel}>💰 {language === 'mr' ? 'जमा निधी' : 'INFLOW - COLLECTIONS'}</Text>
-            <Text style={[styles.statCardAmount, { color: '#059669' }]}>
+          {/* Card 2: Inflow (आवक - जमा) */}
+          <TouchableOpacity
+            style={styles.stackedStatCard}
+            onPress={() => navigation.navigate('Receipts')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.statCardLabel}>
+              🔥 {language === 'mr' ? 'आवक - जमा' : 'INFLOW - COLLECTIONS'}
+            </Text>
+            <Text style={[styles.statCardAmount, { color: '#10B981' }]}>
               {inr(summary?.totalCollections)}
             </Text>
-            <Text style={styles.statCardSub}>{language === 'mr' ? 'एकूण जमा नोंदी' : 'Total collections recorded'}</Text>
-          </View>
-        </View>
+            <Text style={styles.statCardSub}>
+              {language === 'mr' ? 'एकूण जमा नोंदी' : 'Total collections recorded'}
+            </Text>
+            <View style={[styles.statBottomAccent, { backgroundColor: '#EF4444' }]} />
+          </TouchableOpacity>
 
-        <View style={styles.statCardsGrid}>
-          {/* Card 3: Outflow - Expenses */}
-          <View style={styles.statCard}>
-            <View style={[styles.statAccentLine, { backgroundColor: '#EF4444' }]} />
-            <Text style={styles.statCardLabel}>💸 {language === 'mr' ? 'खर्च निधी' : 'OUTFLOW - EXPENSES'}</Text>
-            <Text style={[styles.statCardAmount, { color: '#DC2626' }]}>
+          {/* Card 3: Outflow (जावक - खर्च) */}
+          <TouchableOpacity
+            style={styles.stackedStatCard}
+            onPress={() => navigation.navigate('Expenses')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.statCardLabel}>
+              💸 {language === 'mr' ? 'जावक - खर्च' : 'OUTFLOW - EXPENSES'}
+            </Text>
+            <Text style={[styles.statCardAmount, { color: '#EF4444' }]}>
               {inr(summary?.totalExpenses)}
             </Text>
-            <Text style={styles.statCardSub}>{language === 'mr' ? 'मंजूर खर्च' : '0 approved expenditures'}</Text>
-          </View>
-
-          {/* Card 4: Pending Approvals */}
-          <View style={styles.statCard}>
-            <View style={[styles.statAccentLine, { backgroundColor: '#F59E0B' }]} />
-            <Text style={styles.statCardLabel}>⏳ {language === 'mr' ? 'प्रलंबित मंजुऱ्या' : 'PENDING APPROVALS'}</Text>
-            <Text style={[styles.statCardAmount, { color: '#B45309' }]}>
-              {summary?.pendingApprovals ?? 0}
-            </Text>
             <Text style={styles.statCardSub}>
-              {Number(summary?.pendingApprovals || 0) === 0
-                ? (language === 'mr' ? 'सर्व मंजूर ✓' : 'All clear ✓')
-                : (language === 'mr' ? `${summary?.pendingApprovals} प्रलंबित` : `${summary?.pendingApprovals} pending review`)}
+              {language === 'mr'
+                ? `${summary?.expenseCount || 0} मंजूर खर्च`
+                : `${summary?.expenseCount || 0} approved expenditures`}
             </Text>
-          </View>
+            <View style={[styles.statBottomAccent, { backgroundColor: '#F59E0B' }]} />
+          </TouchableOpacity>
+
+          {/* Card 4: Pending Approvals (प्रलंबित मंजुऱ्या) */}
+          {(Number(summary?.pendingApprovals || 0) > 0 || isPresident) && (
+            <TouchableOpacity
+              style={styles.stackedStatCard}
+              onPress={() => navigation.navigate('Approvals')}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.statCardLabel}>
+                ⏳ {language === 'mr' ? 'प्रलंबित मंजुऱ्या' : 'PENDING APPROVALS'}
+              </Text>
+              <Text style={[styles.statCardAmount, { color: '#F59E0B' }]}>
+                {summary?.pendingApprovals ?? 0}
+              </Text>
+              <Text style={styles.statCardSub}>
+                {Number(summary?.pendingApprovals || 0) === 0
+                  ? (language === 'mr' ? 'सर्व मंजूर ✓' : 'All clear ✓')
+                  : (language === 'mr' ? `${summary?.pendingApprovals} प्रलंबित मंजुऱ्या` : `${summary?.pendingApprovals} pending review`)}
+              </Text>
+              <View style={[styles.statBottomAccent, { backgroundColor: '#6366F1' }]} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Quick Action Tools (6 Tools matching Website Screenshot 1) */}
@@ -413,7 +449,7 @@ export default function DashboardScreen({ navigation }) {
         )}
       </ScrollView>
 
-      {/* Floating Purple Chat Pill Button matching Image 2 */}
+      {/* Floating Purple Chat Pill Button matching Screenshot */}
       <TouchableOpacity
         style={styles.floatingChatPill}
         onPress={() => navigation?.navigate('ChatTab')}
@@ -421,7 +457,7 @@ export default function DashboardScreen({ navigation }) {
         accessibilityLabel="Chat"
       >
         <Text style={styles.floatingChatIcon}>💬</Text>
-        <Text style={styles.floatingChatText}>{language === 'mr' ? 'चॅट' : 'Chat'}</Text>
+        <Text style={styles.floatingChatText}>{language === 'mr' ? 'संवाद' : 'Chat'}</Text>
       </TouchableOpacity>
 
       {/* Language Selection Modal */}
@@ -475,7 +511,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#FFF1E7',
   },
-  container: { flex: 1, backgroundColor: '#F8F7F4' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
   contentContainer: { padding: 16, paddingBottom: 130 },
   topMandalPillContainer: {
     marginBottom: 10,
@@ -495,7 +531,7 @@ const styles = StyleSheet.create({
     color: '#9A3412',
   },
   headerCard: {
-    backgroundColor: '#0F172A',
+    backgroundColor: '#1E1B4B',
     borderRadius: 22,
     padding: 18,
     marginBottom: 16,
@@ -597,16 +633,16 @@ const styles = StyleSheet.create({
   },
   floatingChatPill: {
     position: 'absolute',
-    bottom: 76,
-    right: 16,
-    backgroundColor: '#4F46E5',
+    bottom: 74,
+    right: 14,
+    backgroundColor: '#6366F1',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 24,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 22,
     gap: 6,
-    shadowColor: '#4F46E5',
+    shadowColor: '#6366F1',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
@@ -614,59 +650,66 @@ const styles = StyleSheet.create({
     zIndex: 99,
   },
   floatingChatIcon: {
-    fontSize: 16,
+    fontSize: 15,
   },
   floatingChatText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '700',
+  },
+  heroWatermark: {
+    position: 'absolute',
+    right: -10,
+    bottom: -15,
+    fontSize: 90,
+    opacity: 0.08,
   },
   sectionTitleRow: { marginTop: 18, marginBottom: 12 },
   sectionHeader: { fontSize: 18, fontWeight: '800', color: '#172554', letterSpacing: -0.2 },
   sectionSub: { fontSize: 12.5, color: '#64748B', marginTop: 2, fontWeight: '500' },
-  statCardsGrid: {
-    flexDirection: 'row',
+  stackedStatCards: {
     gap: 12,
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  statCard: {
-    flex: 1,
+  stackedStatCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 14,
-    paddingTop: 16,
+    padding: 16,
+    paddingBottom: 18,
     borderWidth: 1,
-    borderColor: 'rgba(23, 37, 84, 0.06)',
-    shadowColor: '#172554',
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 2,
     position: 'relative',
     overflow: 'hidden',
   },
-  statAccentLine: {
+  statBottomAccent: {
     position: 'absolute',
-    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
     height: 3.5,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
   },
   statCardLabel: {
-    fontSize: 10.5,
-    fontWeight: '800',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#64748B',
     marginBottom: 6,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   statCardAmount: {
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: '800',
-    letterSpacing: -0.4,
-    marginBottom: 2,
+    letterSpacing: -0.5,
+    marginBottom: 3,
   },
   statCardSub: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#94A3B8',
     fontWeight: '500',
   },
