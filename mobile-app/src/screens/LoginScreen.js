@@ -11,7 +11,8 @@ import {
   Platform,
   ScrollView,
   Keyboard,
-  Linking
+  Linking,
+  StatusBar
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
@@ -146,6 +147,7 @@ export default function LoginScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="#0B1120" />
       {/* ── Top Bar with Back & Language Switcher ── */}
       <View style={styles.topBar}>
         <TouchableOpacity
@@ -441,7 +443,7 @@ export default function LoginScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8F7F4',
+    backgroundColor: '#0B1120',
   },
   topBar: {
     flexDirection: 'row',
@@ -449,7 +451,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#F8F7F4',
+    backgroundColor: '#0B1120',
   },
   backBtn: {
     flexDirection: 'row',
@@ -460,20 +462,20 @@ const styles = StyleSheet.create({
   },
   backBtnArrow: {
     fontSize: 20,
-    color: '#172554',
+    color: '#FFFFFF',
     fontWeight: '800',
   },
   backBtnText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#172554',
+    color: '#FFFFFF',
   },
   langPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF7ED',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: '#FED7AA',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 20,
@@ -485,14 +487,14 @@ const styles = StyleSheet.create({
   langText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#C2410C',
+    color: '#F97316',
   },
   langSub: {
     fontSize: 9.5,
     fontWeight: '700',
     color: '#F97316',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 4,
+    backgroundColor: 'rgba(249, 115, 22, 0.15)',
+    paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 8,
   },
@@ -501,7 +503,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
     paddingBottom: 30,
-    backgroundColor: '#F8F7F4',
+    backgroundColor: '#0B1120',
   },
   brandHeader: {
     alignItems: 'center',
@@ -514,72 +516,74 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 18,
     borderWidth: 2,
-    borderColor: 'rgba(249, 115, 22, 0.25)',
+    borderColor: 'rgba(249, 115, 22, 0.35)',
   },
   title: {
     fontSize: 28,
     fontWeight: '900',
     textAlign: 'center',
-    color: '#172554',
+    color: '#FFFFFF',
     letterSpacing: -0.5,
     marginBottom: 2,
   },
   subtitle: {
     textAlign: 'center',
-    color: '#64748B',
+    color: '#94A3B8',
     fontSize: 13,
     fontWeight: '500',
   },
   formCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 22,
     padding: 22,
     borderWidth: 1,
-    borderColor: 'rgba(23, 37, 84, 0.06)',
-    shadowColor: '#172554',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 4,
   },
   modeTabs: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderRadius: 12,
-    padding: 3,
+    padding: 4,
     marginBottom: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   modeTab: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 9,
     alignItems: 'center',
     borderRadius: 9,
   },
   modeTabActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
+    backgroundColor: '#F97316',
+    shadowColor: '#F97316',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 2,
   },
   modeTabText: {
     fontSize: 12.5,
     fontWeight: '600',
-    color: '#64748B',
+    color: '#94A3B8',
   },
   modeTabTextActive: {
-    color: '#F97316',
+    color: '#FFFFFF',
     fontWeight: '800',
   },
   stepTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#172554',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   stepLabel: {
-    color: '#64748B',
+    color: '#94A3B8',
     fontSize: 12.5,
     lineHeight: 18,
     marginBottom: 16,
@@ -587,35 +591,37 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#172554',
+    color: '#E2E8F0',
     marginBottom: 6,
   },
   error: {
-    color: '#DC2626',
+    color: '#F87171',
     marginBottom: 14,
     textAlign: 'center',
     fontSize: 12.5,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
     padding: 10,
     borderRadius: 10,
     fontWeight: '600',
   },
   input: {
-    backgroundColor: '#F8F7F4',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
     borderRadius: 14,
     padding: 13,
     marginBottom: 14,
     fontSize: 14,
-    color: '#172554',
+    color: '#FFFFFF',
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F7F4',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
     borderRadius: 14,
     paddingRight: 10,
     marginBottom: 6,
@@ -631,7 +637,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     shadowColor: '#F97316',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
+    shadowOpacity: 0.35,
     shadowRadius: 10,
     elevation: 4,
   },
@@ -651,16 +657,16 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     textAlign: 'center',
     fontSize: 20,
     fontWeight: '800',
-    color: '#172554',
-    backgroundColor: '#F8F7F4',
+    color: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   otpBoxFilled: {
     borderColor: '#F97316',
-    backgroundColor: 'rgba(249, 115, 22, 0.04)',
+    backgroundColor: 'rgba(249, 115, 22, 0.15)',
     color: '#F97316',
   },
   resendRow: {
@@ -670,7 +676,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resendText: {
-    color: '#64748B',
+    color: '#94A3B8',
     fontSize: 13,
   },
   resendLink: {
@@ -688,7 +694,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   backText: {
-    color: '#64748B',
+    color: '#94A3B8',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -697,7 +703,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   registerText: {
-    color: '#64748B',
+    color: '#94A3B8',
     fontSize: 13.5,
   },
   registerBold: {
@@ -705,9 +711,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   noAccountBanner: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: 'rgba(220, 38, 38, 0.12)',
     borderWidth: 1.5,
-    borderColor: '#FECACA',
+    borderColor: 'rgba(220, 38, 38, 0.3)',
     borderRadius: 14,
     padding: 12,
     marginBottom: 14,
@@ -715,12 +721,12 @@ const styles = StyleSheet.create({
   noAccountTitle: {
     fontSize: 13.5,
     fontWeight: '800',
-    color: '#DC2626',
+    color: '#FCA5A5',
     marginBottom: 4,
   },
   noAccountText: {
     fontSize: 12,
-    color: '#991B1B',
+    color: '#FCA5A5',
     lineHeight: 17,
     marginBottom: 8,
   },
@@ -742,7 +748,7 @@ const styles = StyleSheet.create({
   },
   legalNotice: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: '#64748B',
     textAlign: 'center',
     lineHeight: 16,
   },

@@ -4,6 +4,7 @@ import {
   RefreshControl, Modal, TextInput, Alert, ActivityIndicator,
   KeyboardAvoidingView, Platform, ScrollView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -13,7 +14,7 @@ import ReceiptModal from '../components/ReceiptModal';
 const MODES = ['cash', 'upi', 'card', 'netbanking'];
 const QUICK_AMOUNTS = [100, 250, 500, 1000, 2100, 5100];
 
-export default function CollectionsScreen() {
+export default function CollectionsScreen({ navigation }) {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -222,76 +223,68 @@ export default function CollectionsScreen() {
 
   const renderHeaderComponents = () => (
     <View>
-      {/* 1. Website-Aligned Header Card */}
-      <View style={styles.headerCard}>
-        <View style={styles.headerTopRow}>
-          <View style={styles.badgePill}>
-            <Text style={styles.badgePillText}>
-              💰 {language === 'mr' ? 'संकलन वही' : 'COLLECTION LEDGER'}
-            </Text>
-          </View>
-          <Text style={styles.countPill}>
-            {filteredCollections.length} {language === 'mr' ? 'नोंदी' : 'records'}
-          </Text>
-        </View>
-
-        <Text style={styles.headerTitle}>
-          {language === 'mr' ? 'सर्व देणग्या (All Donations)' : 'All Donations & Collections'}
+      {/* 1. Header Section matching Image 1 */}
+      <View style={styles.headerSection}>
+        <Text style={styles.screenMainTitle}>
+          🚩 {language === 'mr' ? 'संकलन' : 'Collections'}
         </Text>
-        <Text style={styles.headerSub}>
+        <Text style={styles.screenMainSub}>
           {language === 'mr'
-            ? 'थेट डिजिटल पावती व पारदर्शक हिशोब व्यवस्था'
-            : 'Live verified collection ledger with instant receipt generation'}
+            ? 'देणगी नोंदी, पावती तयार करा आणि WhatsApp वर शेअर करा'
+            : 'Record collections, generate receipts & share via WhatsApp'}
         </Text>
 
-        <TouchableOpacity style={styles.headerAddBtn} onPress={openAddModal} activeOpacity={0.88}>
-          <Text style={styles.headerAddBtnText}>
-            {language === 'mr' ? '➕ नवीन देणगी नोंदवा' : '➕ Record New Donation'}
+        <TouchableOpacity style={styles.recordDonationBigBtn} onPress={openAddModal} activeOpacity={0.88}>
+          <Text style={styles.recordDonationBigBtnText}>
+            ✨ ✨ {language === 'mr' ? 'नवीन देणगी नोंदवा' : 'Record New Donation'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* 2. Three Website-Aligned Stat Cards */}
+      {/* 2. Three Full-Width Stacked Stat Cards matching Image 1 */}
       <View style={styles.statsContainer}>
-        {/* Card 1: Total Collections (Orange Accent) */}
+        {/* Card 1: Total Collections */}
         <View style={[styles.statCardFull, styles.accentBorderOrange]}>
           <View style={styles.statCardHeader}>
             <Text style={styles.statCardLabel}>
-              🔥 {language === 'mr' ? 'एकूण देणगी संकलन' : 'Total Collections'}
+              💰 {language === 'mr' ? 'एकूण देणगी संकलन' : 'TOTAL COLLECTIONS'}
             </Text>
             <View style={styles.statCountBadge}>
-              <Text style={styles.statCountBadgeText}>{collections.length}</Text>
+              <Text style={styles.statCountBadgeText}>
+                {collections.length} {language === 'mr' ? 'नोंदी' : 'total records'}
+              </Text>
             </View>
           </View>
-          <Text style={[styles.statCardAmount, { color: '#EA580C' }]}>{inr(totalCollections)}</Text>
+          <Text style={[styles.statCardAmount, { color: '#0F172A' }]}>{inr(totalCollections)}</Text>
           <Text style={styles.statCardSub}>
             {language === 'mr' ? 'एकूण जमा झालेली रक्कम' : 'Verified mandal inflow collections'}
           </Text>
         </View>
 
-        {/* Row 2: Cash Inflow & Online / UPI */}
-        <View style={styles.statCardRow}>
-          {/* Card 2: Cash Inflow (Green Accent) */}
-          <View style={[styles.statCardHalf, styles.accentBorderGreen]}>
+        {/* Card 2: Cash Inflow */}
+        <View style={[styles.statCardFull, styles.accentBorderGreen]}>
+          <View style={styles.statCardHeader}>
             <Text style={styles.statCardLabel}>
-              💵 {language === 'mr' ? 'रोख जमा' : 'Cash Inflow'}
-            </Text>
-            <Text style={[styles.statCardAmount, { color: '#059669' }]}>{inr(cashCollections)}</Text>
-            <Text style={styles.statCardSub}>
-              {language === 'mr' ? 'थेट रोख संकलन' : 'Direct physical cash'}
+              💵 {language === 'mr' ? 'रोख जमा' : 'CASH INFLOW'}
             </Text>
           </View>
+          <Text style={[styles.statCardAmount, { color: '#059669' }]}>{inr(cashCollections)}</Text>
+          <Text style={styles.statCardSub}>
+            {language === 'mr' ? 'थेट रोख संकलन' : 'Hand-to-hand collections'}
+          </Text>
+        </View>
 
-          {/* Card 3: Online / UPI (Purple Accent) */}
-          <View style={[styles.statCardHalf, styles.accentBorderPurple]}>
+        {/* Card 3: Online / UPI */}
+        <View style={[styles.statCardFull, styles.accentBorderPurple]}>
+          <View style={styles.statCardHeader}>
             <Text style={styles.statCardLabel}>
-              📱 {language === 'mr' ? 'युपीआय / ऑनलाइन' : 'Online / UPI'}
-            </Text>
-            <Text style={[styles.statCardAmount, { color: '#7C3AED' }]}>{inr(onlineCollections)}</Text>
-            <Text style={styles.statCardSub}>
-              {language === 'mr' ? 'डिजिटल पेमेंट' : 'UPI & Gateway'}
+              📱 {language === 'mr' ? 'युपीआय / ऑनलाइन' : 'ONLINE / UPI'}
             </Text>
           </View>
+          <Text style={[styles.statCardAmount, { color: '#2563EB' }]}>{inr(onlineCollections)}</Text>
+          <Text style={styles.statCardSub}>
+            {language === 'mr' ? 'डिजिटल पेमेंट' : 'QR & Bank transfers'}
+          </Text>
         </View>
       </View>
 
@@ -339,7 +332,7 @@ export default function CollectionsScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Main History List / States */}
       {loading ? (
         <View style={styles.centerBox}>
@@ -439,14 +432,15 @@ export default function CollectionsScreen() {
         />
       )}
 
-      {/* 3. Floating Action Button (+) */}
+      {/* 3. Floating Purple Chat Pill Button matching Image 1 */}
       <TouchableOpacity
-        style={styles.fab}
-        onPress={openAddModal}
-        activeOpacity={0.88}
-        accessibilityLabel={t('collections.addCollection')}
+        style={styles.floatingChatPill}
+        onPress={() => navigation?.navigate('ChatTab')}
+        activeOpacity={0.85}
+        accessibilityLabel="Chat"
       >
-        <Text style={styles.fabIcon}>+</Text>
+        <Text style={styles.floatingChatIcon}>💬</Text>
+        <Text style={styles.floatingChatText}>{language === 'mr' ? 'चॅट' : 'Chat'}</Text>
       </TouchableOpacity>
 
       {/* 4. Details / Actions Modal */}
@@ -680,78 +674,74 @@ export default function CollectionsScreen() {
         collectorName={user?.name}
         onClose={() => setReceiptToShow(null)}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F7F4' },
 
-  /* 1. Header Card */
-  headerCard: {
-    backgroundColor: '#FFFFFF',
-    marginBottom: 12,
-    borderRadius: 22,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(23, 37, 84, 0.06)',
-    shadowColor: '#172554',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
+  /* 1. Header Section matching Image 1 */
+  headerSection: {
+    marginBottom: 16,
+    paddingTop: 4,
   },
-  headerTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  badgePill: {
-    backgroundColor: 'rgba(249, 115, 22, 0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  badgePillText: {
-    color: '#EA580C',
-    fontWeight: '800',
-    fontSize: 11,
-    letterSpacing: 0.5,
-  },
-  countPill: {
-    color: '#64748B',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  headerTitle: {
-    fontSize: 18,
+  screenMainTitle: {
+    fontSize: 24,
+    fontWeight: '900',
     color: '#0F172A',
-    fontWeight: '800',
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
     marginBottom: 4,
   },
-  headerSub: {
-    fontSize: 12.5,
+  screenMainSub: {
+    fontSize: 13,
     color: '#64748B',
     lineHeight: 18,
-    marginBottom: 14,
+    marginBottom: 16,
   },
-  headerAddBtn: {
+  recordDonationBigBtn: {
     backgroundColor: '#F97316',
-    borderRadius: 12,
-    paddingVertical: 10,
+    borderRadius: 24,
+    paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#F97316',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  headerAddBtnText: {
+  recordDonationBigBtnText: {
     color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '800',
-    fontSize: 13.5,
+    letterSpacing: 0.3,
+  },
+  floatingChatPill: {
+    position: 'absolute',
+    bottom: 120,
+    right: 16,
+    backgroundColor: '#4F46E5',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
+    gap: 6,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
+    zIndex: 99,
+  },
+  floatingChatIcon: {
+    fontSize: 16,
+  },
+  floatingChatText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 
   /* 2. Stat Cards */
@@ -899,7 +889,7 @@ const styles = StyleSheet.create({
   listContainer: {
     padding: 16,
     paddingTop: 12,
-    paddingBottom: 110,
+    paddingBottom: 130,
   },
   card: {
     backgroundColor: '#FFFFFF',

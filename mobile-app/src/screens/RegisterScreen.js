@@ -256,6 +256,7 @@ export default function RegisterScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={s.safe}>
+      <StatusBar barStyle="light-content" backgroundColor="#0B1120" />
       {/* ── Top Navigation Bar ── */}
       <View style={s.topBar}>
         <TouchableOpacity
@@ -291,7 +292,9 @@ export default function RegisterScreen({ navigation, route }) {
           {/* Header */}
           <View style={s.header}>
             <Image source={require('../../assets/logo.png')} style={s.logo} />
-            <Text style={s.title}>{t('nav.appTitle')}</Text>
+            <Text style={s.title}>
+              Apla<Text style={{ color: PRIMARY }}>Mandal</Text>
+            </Text>
             <View style={s.stepper}>
               {[1,2,3].map(n => (
                 <View key={n} style={[s.dot, step === n && s.dotActive, step > n && s.dotDone]}>
@@ -330,7 +333,7 @@ export default function RegisterScreen({ navigation, route }) {
               <TextInput
                 style={[s.input, isExistingUser && { borderColor: '#EF4444' }]}
                 placeholder={t('auth.emailPlaceholder')}
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#64748B"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 value={email}
@@ -353,7 +356,7 @@ export default function RegisterScreen({ navigation, route }) {
                 <>
                   <Text style={s.label}>{t('auth.otpVerification')}</Text>
                   <TextInput
-                    style={s.input} placeholder="123456" placeholderTextColor="#9ca3af"
+                    style={s.input} placeholder="123456" placeholderTextColor="#64748B"
                     keyboardType="number-pad" maxLength={6} value={otp} onChangeText={setOtp}
                   />
                   <TouchableOpacity style={s.btnPrimary} onPress={verifyOtp} disabled={loading}>
@@ -374,7 +377,7 @@ export default function RegisterScreen({ navigation, route }) {
               <TextInput
                 style={[s.input, errors.name && s.inputError]}
                 placeholder={t('register.yourNamePlaceholder')}
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#64748B"
                 value={name}
                 onChangeText={(text) => {
                   setName(text);
@@ -389,7 +392,7 @@ export default function RegisterScreen({ navigation, route }) {
               <TextInput
                 style={[s.input, errors.mandalName && s.inputError]}
                 placeholder={t('register.mandalNamePlaceholder')}
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#64748B"
                 value={mandalName}
                 onChangeText={(text) => {
                   setMandalName(text);
@@ -404,7 +407,7 @@ export default function RegisterScreen({ navigation, route }) {
               <TextInput
                 style={[s.input, errors.mobile && s.inputError]}
                 placeholder={t('register.mobilePlaceholder')}
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#64748B"
                 keyboardType="phone-pad"
                 maxLength={10}
                 value={mobile}
@@ -421,7 +424,7 @@ export default function RegisterScreen({ navigation, route }) {
                 <TextInput
                   style={[s.input, s.passwordInput, errors.password && s.inputError]}
                   placeholder={t('register.passwordPlaceholder')}
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor="#64748B"
                   secureTextEntry={!showPassword}
                   value={password}
                   onChangeText={(text) => {
@@ -494,42 +497,162 @@ export default function RegisterScreen({ navigation, route }) {
 
 const PRIMARY = '#F97316';
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8F7F4', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
-  container: { padding: 20, paddingTop: 30, paddingBottom: 40 },
-  header: { alignItems: 'center', marginBottom: 24 },
-  logo: { width: 64, height: 64, borderRadius: 16, marginBottom: 12, borderWidth: 1.5, borderColor: 'rgba(249, 115, 22, 0.2)' },
-  title: { color: '#172554', fontSize: 26, fontWeight: '800', marginBottom: 14, letterSpacing: -0.3 },
-  stepper: { flexDirection: 'row', gap: 12, marginBottom: 8 },
-  dot: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center' },
-  dotActive: { backgroundColor: PRIMARY, borderColor: PRIMARY },
-  dotDone: { backgroundColor: '#10B981', borderColor: '#10B981' },
-  dotText: { color: '#94A3B8', fontSize: 13, fontWeight: '800' },
-  dotTextActive: { color: '#FFFFFF' },
-  stepLabel: { color: '#64748B', fontSize: 13, fontWeight: '600', marginTop: 4 },
-  card: {
-    backgroundColor: '#FFFFFF',
+  safe: {
+    flex: 1,
+    backgroundColor: '#0B1120',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#0B1120',
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  backBtnArrow: {
+    fontSize: 20,
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  backBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  langPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: 20,
+    gap: 5,
+  },
+  langIcon: {
+    fontSize: 12,
+  },
+  langText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#F97316',
+  },
+  langSub: {
+    fontSize: 9.5,
+    fontWeight: '700',
+    color: '#F97316',
+    backgroundColor: 'rgba(249, 115, 22, 0.15)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 8,
+  },
+  container: {
+    padding: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
+    backgroundColor: '#0B1120',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logo: {
+    width: 68,
+    height: 68,
+    borderRadius: 18,
+    marginBottom: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(249, 115, 22, 0.35)',
+  },
+  title: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '900',
+    marginBottom: 14,
+    letterSpacing: -0.5,
+  },
+  stepper: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 8,
+  },
+  dot: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dotActive: {
+    backgroundColor: PRIMARY,
+    borderColor: PRIMARY,
+  },
+  dotDone: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  dotText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  dotTextActive: {
+    color: '#FFFFFF',
+  },
+  stepLabel: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  card: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 22,
     padding: 22,
     borderWidth: 1,
-    borderColor: 'rgba(23, 37, 84, 0.06)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     marginBottom: 16,
-    shadowColor: '#172554',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  cardTitle: { color: '#172554', fontSize: 18, fontWeight: '800', marginBottom: 16 },
-  label: { color: '#172554', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
+  cardTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 16,
+  },
+  label: {
+    color: '#CBD5E1',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
   input: {
-    backgroundColor: '#F8F7F4',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
     borderRadius: 14,
     padding: 13,
-    color: '#172554',
+    color: '#FFFFFF',
     fontSize: 14.5,
-    marginBottom: 14
+    marginBottom: 14,
   },
   btnPrimary: {
     backgroundColor: PRIMARY,
@@ -539,28 +662,54 @@ const s = StyleSheet.create({
     marginTop: 4,
     shadowColor: PRIMARY,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
+    shadowOpacity: 0.35,
     shadowRadius: 10,
-    elevation: 4
+    elevation: 4,
   },
-  btnText: { color: '#FFFFFF', fontSize: 15.5, fontWeight: '800' },
-  hint: { color: '#64748B', fontSize: 13, marginBottom: 14 },
-  eventGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
+  btnText: {
+    color: '#FFFFFF',
+    fontSize: 15.5,
+    fontWeight: '800',
+  },
+  hint: {
+    color: '#94A3B8',
+    fontSize: 13,
+    marginBottom: 14,
+  },
+  eventGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 20,
+  },
   eventCard: {
     width: '30%',
-    backgroundColor: '#F8F7F4',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 14,
     padding: 12,
     alignItems: 'center',
     gap: 4,
-    position: 'relative'
+    position: 'relative',
   },
-  eventCardSel: { borderColor: PRIMARY, backgroundColor: 'rgba(249, 115, 22, 0.08)' },
-  eventIcon: { fontSize: 26 },
-  eventName: { color: '#475569', fontSize: 11.5, fontWeight: '700', textAlign: 'center' },
-  eventNameSel: { color: PRIMARY, fontWeight: '800' },
+  eventCardSel: {
+    borderColor: PRIMARY,
+    backgroundColor: 'rgba(249, 115, 22, 0.12)',
+  },
+  eventIcon: {
+    fontSize: 26,
+  },
+  eventName: {
+    color: '#94A3B8',
+    fontSize: 11.5,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  eventNameSel: {
+    color: PRIMARY,
+    fontWeight: '800',
+  },
   eventCheck: {
     position: 'absolute',
     top: 5,
@@ -570,15 +719,24 @@ const s = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: PRIMARY,
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
-  link: { alignItems: 'center', marginTop: 10 },
-  linkText: { color: '#64748B', fontSize: 14 },
-  linkBold: { color: PRIMARY, fontWeight: '800' },
+  link: {
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  linkText: {
+    color: '#94A3B8',
+    fontSize: 14,
+  },
+  linkBold: {
+    color: PRIMARY,
+    fontWeight: '800',
+  },
   existingBanner: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: 'rgba(220, 38, 38, 0.12)',
     borderWidth: 1.5,
-    borderColor: '#FECACA',
+    borderColor: 'rgba(220, 38, 38, 0.3)',
     borderRadius: 14,
     padding: 14,
     marginBottom: 16,
@@ -586,12 +744,12 @@ const s = StyleSheet.create({
   existingTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#DC2626',
+    color: '#FCA5A5',
     marginBottom: 4,
   },
   existingText: {
     fontSize: 12.5,
-    color: '#991B1B',
+    color: '#FCA5A5',
     lineHeight: 18,
     marginBottom: 10,
   },
@@ -609,10 +767,10 @@ const s = StyleSheet.create({
   },
   inputError: {
     borderColor: '#EF4444',
-    backgroundColor: '#FEF2F2',
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
   },
   errorText: {
-    color: '#DC2626',
+    color: '#F87171',
     fontSize: 12,
     fontWeight: '700',
     marginTop: -8,
@@ -644,61 +802,8 @@ const s = StyleSheet.create({
     paddingVertical: 8,
   },
   backStepText: {
-    color: '#64748B',
+    color: '#94A3B8',
     fontSize: 13.5,
     fontWeight: '700',
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#F8F8F6',
-  },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-  },
-  backBtnArrow: {
-    fontSize: 20,
-    color: '#172554',
-    fontWeight: '800',
-  },
-  backBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#172554',
-  },
-  langPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF7ED',
-    borderWidth: 1,
-    borderColor: '#FED7AA',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 20,
-    gap: 5,
-  },
-  langIcon: {
-    fontSize: 12,
-  },
-  langText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#C2410C',
-  },
-  langSub: {
-    fontSize: 9.5,
-    fontWeight: '700',
-    color: '#F97316',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 8,
   },
 });
