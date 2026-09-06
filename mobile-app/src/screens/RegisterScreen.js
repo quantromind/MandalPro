@@ -71,8 +71,10 @@ export default function RegisterScreen({ navigation, route }) {
       newErrors.mandalName = t('register.errors.mandalMin');
     }
 
-    if (mobile.trim() && cleanMobile.length !== 10) {
-      newErrors.mobile = t('register.errors.mobileInvalid');
+    if (!mobile.trim()) {
+      newErrors.mobile = t('register.mobileRequired') || 'Contact number is required';
+    } else if (cleanMobile.length !== 10) {
+      newErrors.mobile = t('register.mobileInvalid') || 'Please enter a valid 10-digit contact number';
     }
 
     if (!password) {
@@ -406,7 +408,7 @@ export default function RegisterScreen({ navigation, route }) {
               {errors.mandalName ? <Text style={s.errorText}>⚠️ {errors.mandalName}</Text> : null}
 
               {/* Mobile */}
-              <Text style={s.label}>{t('register.mobileOptional')}</Text>
+              <Text style={s.label}>{t('register.mobileRequiredLabel') || 'Contact Number *'}</Text>
               <TextInput
                 style={[s.input, errors.mobile && s.inputError]}
                 placeholder={t('register.mobilePlaceholder')}

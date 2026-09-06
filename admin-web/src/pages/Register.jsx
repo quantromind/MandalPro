@@ -28,6 +28,8 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isExistingUser, setIsExistingUser] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const checkEmailExists = async (emailToCheck) => {
     const trimmed = (emailToCheck || '').trim().toLowerCase();
@@ -122,6 +124,15 @@ export default function Register() {
     if (!mandalName.trim()) { setError('Mandal name is required'); return; }
     if (!account.email.trim()) { setError('Email address is required'); return; }
     if (!otpVerified) { setError('Please verify your email address via OTP first'); return; }
+
+    const cleanMobile = account.mobile ? account.mobile.trim().replace(/[^0-9]/g, '') : '';
+    const normalizedMobile = cleanMobile.length === 12 && cleanMobile.startsWith('91')
+      ? cleanMobile.slice(2)
+      : cleanMobile;
+
+    if (!normalizedMobile) { setError('Contact number is required'); return; }
+    if (normalizedMobile.length !== 10) { setError('Please enter a valid 10-digit contact number'); return; }
+
     if (!account.password) { setError('Password is required'); return; }
     if (account.password.length < 8) { setError('Password must be at least 8 characters'); return; }
     if (account.password !== account.confirmPassword) { setError('Passwords do not match'); return; }
@@ -134,7 +145,7 @@ export default function Register() {
         name: account.name.trim(),
         email: account.email.trim().toLowerCase(),
         password: account.password,
-        mobile: account.mobile ? account.mobile.trim().replace(/[^0-9]/g, '') : '',
+        mobile: normalizedMobile,
         mandalName: mandalName.trim(),
         eventTypes: eventTypes.length > 0 ? eventTypes : ['Ganesh Utsav']
       };
@@ -261,12 +272,14 @@ export default function Register() {
           )}
 
           <div className="field">
-            <label>Mobile Number (Optional)</label>
+            <label>Contact Number *</label>
             <input
+              type="tel"
               placeholder="10-digit mobile number"
               value={account.mobile}
-              onChange={e => setAccount({ ...account, mobile: e.target.value })}
+              onChange={e => setAccount({ ...account, mobile: e.target.value.replace(/[^0-9]/g, '').slice(0, 10) })}
               maxLength={10}
+              required
             />
           </div>
 
@@ -305,23 +318,67 @@ export default function Register() {
           <div className="grid-2">
             <div className="field">
               <label>Password *</label>
-              <input
-                type="password"
-                placeholder="Min 8 characters"
-                value={account.password}
-                onChange={e => setAccount({ ...account, password: e.target.value })}
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Min 8 characters"
+                  value={account.password}
+                  onChange={e => setAccount({ ...account, password: e.target.value })}
+                  style={{ width: '100%', paddingRight: 40 }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: 10,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: 16,
+                    color: 'var(--text-muted)',
+                    padding: 4
+                  }}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? '👁️' : '🙈'}
+                </button>
+              </div>
             </div>
             <div className="field">
               <label>Confirm Password *</label>
-              <input
-                type="password"
-                placeholder="Re-enter password"
-                value={account.confirmPassword}
-                onChange={e => setAccount({ ...account, confirmPassword: e.target.value })}
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="Re-enter password"
+                  value={account.confirmPassword}
+                  onChange={e => setAccount({ ...account, confirmPassword: e.target.value })}
+                  style={{ width: '100%', paddingRight: 40 }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: 10,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: 16,
+                    color: 'var(--text-muted)',
+                    padding: 4
+                  }}
+                  title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPassword ? '👁️' : '🙈'}
+                </button>
+              </div>
             </div>
           </div>
 

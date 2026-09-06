@@ -114,6 +114,8 @@
     "nameMinLength": "नाव किमान २ अक्षरांचे असणे आवश्यक आहे",
     "mandalRequired": "मंडळाचे नाव आवश्यक आहे",
     "mandalMinLength": "मंडळाचे नाव किमान ३ अक्षरांचे असणे आवश्यक आहे",
+    "mobileRequiredLabel": "संपर्क नंबर *",
+    "mobileRequired": "संपर्क नंबर आवश्यक आहे",
     "mobileInvalid": "मोबाइल नंबर वैध १० अंकी असावा",
     "passwordRequired": "पासवर्ड आवश्यक आहे",
     "passwordMinLength": "पासवर्ड किमान ८ अक्षरांचा असणे आवश्यक आहे"

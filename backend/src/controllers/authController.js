@@ -27,11 +27,19 @@ const {
 // @desc Register: creates a Mandal + first President user together (onboarding step 1-2)
 // @route POST /api/auth/register
 const register = asyncHandler(async (req, res) => {
-  const { name, email, password, mobile, mandalName, eventTypes } = req.body;
+  const cleanMobile = (mobile || '').toString().trim().replace(/[^0-9]/g, '');
+  const normalizedMobile = cleanMobile.length === 12 && cleanMobile.startsWith('91')
+    ? cleanMobile.slice(2)
+    : cleanMobile;
 
-  if (!name || !email || !password || !mandalName) {
+  if (!name || !email || !password || !mandalName || !mobile) {
     res.status(400);
-    throw new Error('name, email, password and mandalName are required');
+    throw new Error('Name, email, contact number, password and mandal name are required');
+  }
+
+  if (normalizedMobile.length !== 10) {
+    res.status(400);
+    throw new Error('Please enter a valid 10-digit contact number');
   }
 
   const normalizedEmail = email.toLowerCase();
@@ -76,7 +84,7 @@ const register = asyncHandler(async (req, res) => {
   const user = await User.create({
     name,
     email: normalizedEmail,
-    mobile: mobile || '',
+    mobile: normalizedMobile,
     passwordHash,
     role: 'president',
     mandalId: mandal._id,
@@ -127,13 +135,8 @@ const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const normalizedEmail = (email || '').toLowerCase();
 
-  // Superadmin static credentials check
+  // Superadmin credentials check
   if (normalizedEmail === 'quantromind@gmail.com') {
-    if (password !== 'Nakshatra@#12345') {
-      res.status(401);
-      throw new Error('Invalid email or password');
-    }
-    
     // Ensure the superadmin user exists in the database
     let adminUser = await User.findOne({ email: 'quantromind@gmail.com' });
     if (!adminUser) {
@@ -145,6 +148,26 @@ const login = asyncHandler(async (req, res) => {
         role: 'superadmin',
         status: 'active'
       });
+    }
+
+    if (adminUser.status !== 'active') {
+      res.status(403);
+      throw new Error('This account is not active');
+    }
+
+    // Verify password: check database hash (supports new passwords set via forgot-password or admin settings),
+    // or fallback to initial default password 'Nakshatra@#12345'
+    let isMatch = false;
+    if (adminUser.passwordHash) {
+      isMatch = await adminUser.comparePassword(password);
+    }
+    if (!isMatch && password === 'Nakshatra@#12345') {
+      isMatch = true;
+    }
+
+    if (!isMatch) {
+      res.status(401);
+      throw new Error('Invalid email or password');
     }
 
     const token = generateToken({
