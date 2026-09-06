@@ -59,6 +59,7 @@ const SuperadminDashboard = () => {
   });
   const [savingUser, setSavingUser] = useState(false);
   const [modalError, setModalError] = useState('');
+  const [showUserPassword, setShowUserPassword] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -114,6 +115,7 @@ const SuperadminDashboard = () => {
       mandalId: u.mandalId?._id || u.mandalId || '',
       newPassword: ''
     });
+    setShowUserPassword(false);
     setModalError('');
   };
 
@@ -131,7 +133,12 @@ const SuperadminDashboard = () => {
         status: editFormData.status,
         mandalId: editFormData.mandalId || null
       };
-      if (editFormData.newPassword && editFormData.newPassword.trim().length >= 6) {
+      if (editFormData.newPassword && editFormData.newPassword.trim().length > 0) {
+        if (editFormData.newPassword.trim().length < 6) {
+          setModalError('Password must be at least 6 characters long');
+          setSavingUser(false);
+          return;
+        }
         payload.password = editFormData.newPassword.trim();
       }
 
@@ -1054,14 +1061,35 @@ const SuperadminDashboard = () => {
                 <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>
                   Reset Password (Optional)
                 </label>
-                <input 
-                  type="password" 
-                  className="input" 
-                  value={editFormData.newPassword} 
-                  onChange={e => setEditFormData({ ...editFormData, newPassword: e.target.value })} 
-                  placeholder="Enter new password (min 6 characters) to reset"
-                  autoComplete="new-password"
-                />
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    type={showUserPassword ? "text" : "password"} 
+                    className="input" 
+                    value={editFormData.newPassword} 
+                    onChange={e => setEditFormData({ ...editFormData, newPassword: e.target.value })} 
+                    placeholder="Enter new password (min 6 characters) to reset"
+                    autoComplete="new-password"
+                    style={{ paddingRight: 40 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowUserPassword(!showUserPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: 10,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 16,
+                      color: 'var(--text-muted)'
+                    }}
+                    title={showUserPassword ? "Hide password" : "Show password"}
+                  >
+                    {showUserPassword ? '👁️' : '🙈'}
+                  </button>
+                </div>
                 <span className="text-caption" style={{ display: 'block', marginTop: 4, color: 'var(--text-muted)' }}>
                   Leave empty if you do not want to change the user's password.
                 </span>

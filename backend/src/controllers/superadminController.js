@@ -56,7 +56,11 @@ const updateUser = asyncHandler(async (req, res) => {
     }
   }
 
-  if (password && password.trim().length >= 6) {
+  if (password !== undefined && password !== null && password.trim().length > 0) {
+    if (password.trim().length < 6) {
+      res.status(400);
+      throw new Error('Password must be at least 6 characters long');
+    }
     targetUser.passwordHash = await User.hashPassword(password.trim());
   }
 

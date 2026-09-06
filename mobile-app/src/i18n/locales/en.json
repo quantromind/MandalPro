@@ -113,6 +113,8 @@
     "nameMinLength": "Name must be at least 2 characters",
     "mandalRequired": "Mandal name is required",
     "mandalMinLength": "Mandal name must be at least 3 characters",
+    "mobileRequiredLabel": "Contact Number *",
+    "mobileRequired": "Contact number is required",
     "mobileInvalid": "Mobile number must be a valid 10-digit number",
     "passwordRequired": "Password is required",
     "passwordMinLength": "Password must be at least 8 characters"

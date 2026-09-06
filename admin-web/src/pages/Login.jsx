@@ -8,6 +8,7 @@ export default function Login() {
   const [authMode, setAuthMode] = useState('otp'); // 'otp' | 'password'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState('');
@@ -581,21 +582,42 @@ export default function Login() {
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
                     {isMr ? 'पासवर्ड (Password)' : 'Password'}
                   </label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      borderRadius: 12,
-                      border: '1.5px solid #CBD5E1',
-                      fontSize: 14.5,
-                      outline: 'none'
-                    }}
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showLoginPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px 42px 12px 16px',
+                        borderRadius: 12,
+                        border: '1.5px solid #CBD5E1',
+                        fontSize: 14.5,
+                        outline: 'none'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: 12,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#64748B',
+                        fontSize: 16,
+                        padding: 4
+                      }}
+                      title={showLoginPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showLoginPassword ? '👁️' : '🙈'}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Small Professional Forgot Password Link */}
