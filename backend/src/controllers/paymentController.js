@@ -203,9 +203,12 @@ const getKey = asyncHandler(async (req, res) => {
 const getCheckoutPage = asyncHandler(async (req, res) => {
   const { orderId, amount, currency = 'INR', keyId, plan = 'Basic', name = '', email = '' } = req.query;
 
+  const activeKeyId = keyId || process.env.RAZORPAY_KEY_ID;
+  const isLive = activeKeyId && activeKeyId.startsWith('rzp_live');
+
   const simPaymentId = `pay_test_${Date.now()}`;
   const simSignature = crypto
-    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
     .update(`${orderId}|${simPaymentId}`)
     .digest('hex');
 
@@ -213,6 +216,7 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Apla Mandal Secure Checkout</title>
   <style>
@@ -249,7 +253,7 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
       margin: 0 0 10px;
     }
     .amount {
-      font-size: 30px;
+      font-size: 32px;
       font-weight: 800;
       color: #17233C;
       margin-bottom: 16px;
@@ -307,17 +311,21 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
     <div class="amount">₹${Number(amount) / 100}</div>
     
     <button class="btn" id="payBtn">Pay with Razorpay Gateway →</button>
+    ${!isLive ? `
     <button class="btn-test" id="testBtn" onclick="simulateTestSuccess()">⚡ 1-Click Test Payment (Instant)</button>
+    ` : ''}
     
-    <div class="status" id="statusText">🔒 256-bit Encrypted Checkout</div>
+    <div class="status" id="statusText">🔒 256-bit Encrypted Checkout • Razorpay Secured</div>
 
+    ${!isLive ? `
     <div class="tips">
-      <strong>💡 Razorpay Test Mode Guide (India Domestic):</strong><br/>
-      • <strong>Cards</strong>: Use <code>4000 0000 0000 0002</code> (Domestic Visa), expiry <code>12/28</code>, CVV <code>123</code>, OTP <code>123456</code><br/>
-      • <strong>Netbanking</strong>: Pick <strong>HDFC Bank / SBI / ICICI</strong> & tap "Success"<br/>
-      • <strong>UPI</strong>: Enter VPA <code>success@razorpay</code><br/>
-      • <strong>Instant</strong>: Tap the green <strong>1-Click Test Payment</strong> button above!
+      <strong>💡 Test Mode Guide:</strong><br/>
+      • <strong>Cards</strong>: <code>4000 0000 0000 0002</code>, exp <code>12/28</code>, CVV <code>123</code><br/>
+      • <strong>Netbanking</strong>: Pick HDFC/SBI & tap "Success"<br/>
+      • <strong>UPI</strong>: Enter <code>success@razorpay</code><br/>
+      • <strong>Instant</strong>: Tap the green <strong>1-Click Test Payment</strong> button!
     </div>
+    ` : ''}
   </div>
 
   <script>
@@ -336,12 +344,14 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
     }
 
     var options = {
-      "key": "${keyId || process.env.RAZORPAY_KEY_ID}",
+      "key": "${activeKeyId}",
       "amount": "${amount}",
       "currency": "${currency}",
       "name": "Apla Mandal",
       "description": "${plan} Plan Subscription",
       "order_id": "${orderId}",
+      "retry": { "enabled": true, "max_count": 3 },
+      "send_sms_hash": true,
       "handler": function (response) {
         document.getElementById('statusText').innerText = '✅ Payment complete! Verifying...';
         if (window.ReactNativeWebView) {
@@ -353,7 +363,8 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
         "email": "${email}"
       },
       "theme": {
-        "color": "#FF6B00"
+        "color": "#FF6B00",
+        "backdrop_color": "rgba(0,0,0,0.6)"
       },
       "modal": {
         "ondismiss": function() {
@@ -367,7 +378,7 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
 
     var rzp = new Razorpay(options);
     rzp.on('payment.failed', function (response){
-      document.getElementById('statusText').innerText = '❌ ' + (response.error.description || 'Payment could not be completed.');
+      document.getElementById('statusText').innerText = '❌ ' + (response.error?.description || 'Payment could not be completed.');
       if (window.ReactNativeWebView) {
         window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'error', error: response.error }));
       }

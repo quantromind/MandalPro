@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  ActivityIndicator, Alert, Switch, Platform, StatusBar, Modal
+  ActivityIndicator, Alert, Switch, Platform, StatusBar, Modal, Linking
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -60,6 +60,49 @@ export default function SubscriptionScreen({ navigation }) {
     if (!plan.price) return plan.label;
     const p = annual ? Math.round(plan.price * 0.8) : plan.price;
     return p === 0 ? '₹0' : `₹${p}`;
+  };
+
+  const handleShouldStartLoadWithRequest = (request) => {
+    const { url } = request;
+    if (!url) return false;
+
+    // Allow normal HTTP/HTTPS traffic to load in WebView (Razorpay JS, Bank 3D-Secure pages)
+    if (url.startsWith('https://') || url.startsWith('http://')) {
+      return true;
+    }
+
+    // Intercept UPI apps and native Android intents (GPay, PhonePe, Paytm, BHIM, etc.)
+    try {
+      if (url.startsWith('intent://')) {
+        const schemeMatch = url.match(/scheme=([^;]+)/);
+        let targetUrl = url;
+        if (schemeMatch && schemeMatch[1]) {
+          const customScheme = schemeMatch[1];
+          targetUrl = url.replace(/^intent:\/\//, `${customScheme}://`).split('#Intent')[0];
+        }
+
+        Linking.openURL(targetUrl).catch(() => {
+          Linking.openURL(url).catch((err) => {
+            console.warn('[Payment Gateway] Could not launch intent URL:', url, err);
+          });
+        });
+      } else {
+        // Direct upi:// or third-party scheme
+        Linking.openURL(url).catch((err) => {
+          console.warn('[Payment Gateway] Could not open app for URL:', url, err);
+          Alert.alert(
+            language === 'mr' ? 'ॲप उघडता आले नाही' : 'App Not Found',
+            language === 'mr'
+              ? 'हे पेमेंट ॲप तुमच्या फोनवर उपलब्ध नाही. कृपया कार्ड किंवा नेटबँकिंग निवडा.'
+              : 'The selected UPI app is not installed on this device. Please select another payment method.'
+          );
+        });
+      }
+    } catch (err) {
+      console.warn('[Payment Gateway] Deep link handler error:', err);
+    }
+
+    return false;
   };
 
   const handleSelect = async () => {
@@ -146,11 +189,13 @@ export default function SubscriptionScreen({ navigation }) {
               javaScriptCanOpenWindowsAutomatically={true}
               setSupportMultipleWindows={false}
               allowsBackForwardNavigationGestures={true}
+              allowsInlineMediaPlayback={true}
+              mediaPlaybackRequiresUserAction={false}
               mixedContentMode="always"
               thirdPartyCookiesEnabled={true}
               sharedCookiesEnabled={true}
               startInLoadingState={true}
-              onShouldStartLoadWithRequest={() => true}
+              onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
               source={{
                 uri: `${API_URL}/payments/checkout-page?orderId=${checkoutConfig.orderId}&amount=${checkoutConfig.amount}&currency=${checkoutConfig.currency}&keyId=${checkoutConfig.keyId}&plan=${checkoutConfig.selectedPlan}&name=${encodeURIComponent(checkoutConfig.userName)}&email=${encodeURIComponent(checkoutConfig.userEmail)}`
               }}
@@ -191,7 +236,7 @@ export default function SubscriptionScreen({ navigation }) {
                   } else if (data.type === 'cancel' || data.type === 'modal_dismissed') {
                     // Modal dismissed or closed
                   } else if (data.type === 'error') {
-                    Alert.alert(t('subscription.paymentFailed'), data.error?.description || 'Payment was unsuccessful. Please choose a supported test method (e.g. HDFC/SBI Netbanking or Test Card) or use 1-Click Test Payment.');
+                    Alert.alert(t('subscription.paymentFailed'), data.error?.description || 'Payment was unsuccessful. Please choose another method (e.g. UPI, Netbanking or Card).');
                   }
                 } catch (e) {
                   setCheckoutConfig(null);
