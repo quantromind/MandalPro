@@ -115,47 +115,11 @@ export default function SubscriptionScreen({ navigation }) {
 
     Alert.alert(
       `${selectedPlan} Plan`,
-      `${t('subscription.selectPaymentMethod')} ${effectivePrice(PLANS.find(p => p.id === selectedPlan))}${annual ? t('subscription.perMonthAnnual') : t('subscription.perMonth')}:`,
+      `${effectivePrice(plan)}${annual ? t('subscription.perMonthAnnual') : t('subscription.perMonth')}\n\n${language === 'mr' ? 'रेझरपे गेटवे द्वारे सुरक्षित व्यवहार करण्यासाठी पुढे जा.' : 'Proceed to secure payment via Razorpay Gateway.'}`,
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
-          text: `⚡ ${t('subscription.instantTestActivate')}`,
-          onPress: async () => {
-            setLoading(true);
-            try {
-              await client.patch('/onboarding/plan', { plan: selectedPlan });
-              await updateMandal({
-                ...mandal,
-                checklist: { ...mandal?.checklist, planSelected: true, profileComplete: true },
-                onboardingComplete: true,
-                plan: selectedPlan,
-                planStatus: 'Active'
-              });
-
-              // Refresh profile so AuthContext and RootNavigator receive latest server state
-              await refreshProfile();
-
-              Alert.alert(
-                t('subscription.planActivated'),
-                t('subscription.planActivatedDesc', { plan: selectedPlan }),
-                [{
-                  text: t('subscription.continueToDashboard'),
-                  onPress: () => {
-                    if (navigation?.canGoBack && navigation.canGoBack()) {
-                      navigation.goBack();
-                    }
-                  }
-                }]
-              );
-            } catch (e) {
-              Alert.alert(t('common.error'), e.response?.data?.message || 'Activation failed');
-            } finally {
-              setLoading(false);
-            }
-          }
-        },
-        {
-          text: `${t('subscription.razorpayGateway')} →`,
+          text: language === 'mr' ? 'पेमेंट करा →' : 'Pay Now →',
           onPress: async () => {
             setLoading(true);
             try {

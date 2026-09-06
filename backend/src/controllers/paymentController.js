@@ -204,13 +204,6 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
   const { orderId, amount, currency = 'INR', keyId, plan = 'Basic', name = '', email = '' } = req.query;
 
   const activeKeyId = keyId || process.env.RAZORPAY_KEY_ID;
-  const isLive = activeKeyId && activeKeyId.startsWith('rzp_live');
-
-  const simPaymentId = `pay_test_${Date.now()}`;
-  const simSignature = crypto
-    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
-    .update(`${orderId}|${simPaymentId}`)
-    .digest('hex');
 
   const html = `
 <!DOCTYPE html>
@@ -272,34 +265,10 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
       transition: opacity 0.2s;
     }
     .btn:active { opacity: 0.85; }
-    .btn-test {
-      background: #10B981;
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      padding: 13px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      width: 100%;
-      margin-top: 10px;
-      box-shadow: 0 4px 14px rgba(16,185,129,0.25);
-    }
     .status {
       font-size: 12px;
       color: #6B7280;
       margin-top: 14px;
-    }
-    .tips {
-      margin-top: 16px;
-      text-align: left;
-      background: #FFF7ED;
-      border: 1px solid #FFEDD5;
-      border-radius: 12px;
-      padding: 12px 14px;
-      font-size: 12px;
-      color: #9A3412;
-      line-height: 1.5;
     }
   </style>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
@@ -311,37 +280,11 @@ const getCheckoutPage = asyncHandler(async (req, res) => {
     <div class="amount">₹${Number(amount) / 100}</div>
     
     <button class="btn" id="payBtn">Pay with Razorpay Gateway →</button>
-    ${!isLive ? `
-    <button class="btn-test" id="testBtn" onclick="simulateTestSuccess()">⚡ 1-Click Test Payment (Instant)</button>
-    ` : ''}
     
     <div class="status" id="statusText">🔒 256-bit Encrypted Checkout • Razorpay Secured</div>
-
-    ${!isLive ? `
-    <div class="tips">
-      <strong>💡 Test Mode Guide:</strong><br/>
-      • <strong>Cards</strong>: <code>4000 0000 0000 0002</code>, exp <code>12/28</code>, CVV <code>123</code><br/>
-      • <strong>Netbanking</strong>: Pick HDFC/SBI & tap "Success"<br/>
-      • <strong>UPI</strong>: Enter <code>success@razorpay</code><br/>
-      • <strong>Instant</strong>: Tap the green <strong>1-Click Test Payment</strong> button!
-    </div>
-    ` : ''}
   </div>
 
   <script>
-    function simulateTestSuccess() {
-      document.getElementById('statusText').innerText = '✅ Test Payment complete! Activating plan...';
-      if (window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'success',
-          response: {
-            razorpay_order_id: "${orderId}",
-            razorpay_payment_id: "${simPaymentId}",
-            razorpay_signature: "${simSignature}"
-          }
-        }));
-      }
-    }
 
     var options = {
       "key": "${activeKeyId}",
