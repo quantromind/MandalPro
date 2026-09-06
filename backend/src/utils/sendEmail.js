@@ -184,9 +184,9 @@ const sendEmail = async ({ to, subject, text, html }) => {
     process.env.SMTP_HOST === 'smtp.gmail.com' || 
     (process.env.SMTP_USER && process.env.SMTP_USER.endsWith('@gmail.com'));
 
-  // If using Gmail on cloud hosting (Render), try port 587 (STARTTLS) first, then port 465, then service: 'gmail'
   if (isGmail && process.env.SMTP_USER) {
-    const portsToTry = [587, 465];
+    const configuredPort = Number(process.env.SMTP_PORT) || 465;
+    const portsToTry = configuredPort === 465 ? [465, 587] : [587, 465];
     let lastError = null;
 
     for (const port of portsToTry) {

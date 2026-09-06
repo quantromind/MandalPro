@@ -202,16 +202,41 @@ const sendOtp = asyncHandler(async (req, res) => {
   // Dispatch email asynchronously so client response is instant
   sendEmail({
     to: normalizedEmail,
-    subject: 'Your Apla Mandal Verification Code',
-    text: `Your verification code is ${code}. It will expire in 10 minutes.`,
+    subject: `Apla Mandal - Verification Code: ${code}`,
+    text: `Your Apla Mandal verification code is ${code}. It will expire in 10 minutes. If you did not request this, please ignore this email.`,
     html: `
-      <div style="font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 8px;">
-        <h2 style="color: #FF6B00;">Apla Mandal Verification</h2>
-        <p style="font-size: 16px; color: #333;">Your verification code is:</p>
-        <div style="background: #FFF3E0; padding: 15px; border-radius: 6px; text-align: center; margin: 20px 0;">
-          <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #FF6B00;">${code}</span>
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 28px 20px; max-width: 520px; margin: auto; border: 1px solid #E2E8F0; border-radius: 16px; background-color: #FFFFFF;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <div style="display: inline-block; background: #FFF7ED; border: 1px solid #FFEDD5; border-radius: 50px; padding: 8px 18px; margin-bottom: 12px;">
+            <span style="font-size: 20px; vertical-align: middle;">🚩</span>
+            <strong style="color: #EA580C; font-size: 18px; margin-left: 6px; vertical-align: middle;">Apla Mandal</strong>
+          </div>
+          <h3 style="color: #0F172A; margin: 0; font-size: 20px; font-weight: 700;">Email Verification Code</h3>
+          <p style="color: #64748B; font-size: 13px; margin-top: 4px;">आपलं मंडळ - खाते पडताळणी कोड</p>
         </div>
-        <p style="font-size: 14px; color: #666;">This code will expire in 10 minutes. If you did not request this code, please ignore this email.</p>
+
+        <p style="font-size: 14.5px; color: #334155; line-height: 1.6; margin-bottom: 16px;">
+          Hello,<br/>
+          Use the verification code below to complete your verification for <strong>Apla Mandal</strong>:
+        </p>
+
+        <div style="background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%); border: 2px dashed #FB923C; padding: 20px; border-radius: 14px; text-align: center; margin: 20px 0;">
+          <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #C2410C; margin-bottom: 6px;">Your 6-Digit Code</div>
+          <span style="font-size: 36px; font-weight: 800; letter-spacing: 10px; color: #EA580C; font-family: monospace;">${code}</span>
+        </div>
+
+        <div style="background-color: #F8FAFC; border-radius: 10px; padding: 12px 16px; margin-top: 16px;">
+          <p style="font-size: 12.5px; color: #475569; margin: 0; line-height: 1.5;">
+            ⏱️ <strong>Valid for 10 minutes.</strong> Never share this code with anyone.
+          </p>
+        </div>
+
+        <div style="border-top: 1px solid #F1F5F9; margin-top: 24px; padding-top: 16px; text-align: center;">
+          <p style="font-size: 12px; color: #94A3B8; margin: 0;">
+            Sent securely via QuantroMind for Apla Mandal.<br/>
+            If you did not request this code, please safely ignore this email.
+          </p>
+        </div>
       </div>
     `
   }).catch((emailErr) => {
