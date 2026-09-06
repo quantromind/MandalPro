@@ -295,7 +295,21 @@
     "title": "Pending Approvals",
     "allCaughtUp": "All caught up!",
     "noPendingSub": "No expenses are currently waiting for your approval.",
-    "approvedSuccess": "Expense has been approved successfully."
+    "approvedSuccess": "Expense has been approved successfully.",
+    "rejectedSuccess": "Expense request has been returned to draft.",
+    "totalPending": "Total Pending",
+    "requestsToReview": "requests to review",
+    "requestToReview": "request to review",
+    "approve": "Approve",
+    "reject": "Reject",
+    "rejectTitle": "Reject Expense Request",
+    "rejectSub": "Provide a reason to return this expense to draft",
+    "reasonPlaceholder": "E.g., invalid bill receipt, duplicate request, etc.",
+    "confirmApproveTitle": "Approve Expense",
+    "confirmApproveMsg": "Approve {{category}} expense of {{amount}}?",
+    "viewBill": "View Bill",
+    "viewOnly": "View Only",
+    "pendingReview": "Pending Review"
   },
   "events": {
     "title": "Events & Tasks",

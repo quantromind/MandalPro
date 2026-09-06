@@ -157,8 +157,11 @@ export default function RegisterScreen({ navigation, route }) {
     }
 
     try {
-      await client.post('/auth/send-otp', { email: email.trim(), purpose: 'register' });
+      const res = await client.post('/auth/send-otp', { email: email.trim(), purpose: 'register' });
       setOtpSent(true);
+      if (res.data?.devOtp) {
+        setOtp(String(res.data.devOtp));
+      }
       Alert.alert(t('auth.otpVerification'), t('auth.otpSubtitle', { email: email.trim() }));
     } catch (e) {
       const msg = e.response?.data?.message || t('auth.failedToSendOtp');
@@ -267,7 +270,7 @@ export default function RegisterScreen({ navigation, route }) {
             } else if (navigation.canGoBack()) {
               navigation.goBack();
             } else {
-              navigation.navigate('Welcome');
+              navigation.navigate('Login');
             }
           }}
           activeOpacity={0.7}
@@ -509,6 +512,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     backgroundColor: '#0B1120',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   backBtn: {
     flexDirection: 'row',
@@ -618,26 +623,26 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     padding: 22,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: '#E2E8F0',
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 8,
   },
   cardTitle: {
-    color: '#FFFFFF',
+    color: '#0F172A',
     fontSize: 18,
     fontWeight: '800',
     marginBottom: 16,
   },
   label: {
-    color: '#CBD5E1',
+    color: '#334155',
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -645,12 +650,12 @@ const s = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: '#CBD5E1',
     borderRadius: 14,
     padding: 13,
-    color: '#FFFFFF',
+    color: '#0F172A',
     fontSize: 14.5,
     marginBottom: 14,
   },
@@ -672,7 +677,7 @@ const s = StyleSheet.create({
     fontWeight: '800',
   },
   hint: {
-    color: '#94A3B8',
+    color: '#64748B',
     fontSize: 13,
     marginBottom: 14,
   },
@@ -684,9 +689,9 @@ const s = StyleSheet.create({
   },
   eventCard: {
     width: '30%',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: '#E2E8F0',
     borderRadius: 14,
     padding: 12,
     alignItems: 'center',
@@ -695,19 +700,19 @@ const s = StyleSheet.create({
   },
   eventCardSel: {
     borderColor: PRIMARY,
-    backgroundColor: 'rgba(249, 115, 22, 0.12)',
+    backgroundColor: '#FFF7ED',
   },
   eventIcon: {
     fontSize: 26,
   },
   eventName: {
-    color: '#94A3B8',
+    color: '#475569',
     fontSize: 11.5,
     fontWeight: '700',
     textAlign: 'center',
   },
   eventNameSel: {
-    color: PRIMARY,
+    color: '#EA580C',
     fontWeight: '800',
   },
   eventCheck: {
@@ -726,7 +731,7 @@ const s = StyleSheet.create({
     marginTop: 10,
   },
   linkText: {
-    color: '#94A3B8',
+    color: '#CBD5E1',
     fontSize: 14,
   },
   linkBold: {
@@ -734,9 +739,9 @@ const s = StyleSheet.create({
     fontWeight: '800',
   },
   existingBanner: {
-    backgroundColor: 'rgba(220, 38, 38, 0.12)',
+    backgroundColor: '#FEF2F2',
     borderWidth: 1.5,
-    borderColor: 'rgba(220, 38, 38, 0.3)',
+    borderColor: '#FCA5A5',
     borderRadius: 14,
     padding: 14,
     marginBottom: 16,
@@ -744,12 +749,12 @@ const s = StyleSheet.create({
   existingTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#FCA5A5',
+    color: '#991B1B',
     marginBottom: 4,
   },
   existingText: {
     fontSize: 12.5,
-    color: '#FCA5A5',
+    color: '#B91C1C',
     lineHeight: 18,
     marginBottom: 10,
   },
@@ -767,10 +772,10 @@ const s = StyleSheet.create({
   },
   inputError: {
     borderColor: '#EF4444',
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    backgroundColor: '#FEF2F2',
   },
   errorText: {
-    color: '#F87171',
+    color: '#DC2626',
     fontSize: 12,
     fontWeight: '700',
     marginTop: -8,
@@ -792,7 +797,7 @@ const s = StyleSheet.create({
     paddingVertical: 2,
   },
   togglePassText: {
-    color: PRIMARY,
+    color: '#EA580C',
     fontWeight: '800',
     fontSize: 12.5,
   },
@@ -802,7 +807,7 @@ const s = StyleSheet.create({
     paddingVertical: 8,
   },
   backStepText: {
-    color: '#94A3B8',
+    color: '#64748B',
     fontSize: 13.5,
     fontWeight: '700',
   },

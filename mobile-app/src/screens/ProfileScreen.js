@@ -11,7 +11,7 @@ import { useLanguage } from '../context/LanguageContext';
 import LanguageModal from '../components/LanguageModal';
 import client from '../api/client';
 
-export default function ProfileScreen({ navigation }) {
+export default function ProfileScreen({ navigation, route }) {
   const { user, mandal, logout, refreshProfile, updateMandal } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
@@ -97,6 +97,15 @@ export default function ProfileScreen({ navigation }) {
     setDeleteOtp('');
     setShowDeleteModal(true);
   };
+
+  // Auto-open Add Member modal when navigated here from QuickActionModal
+  useEffect(() => {
+    if (route?.params?.openAddMember) {
+      setShowMemberModal(true);
+      // Clear the param so back-navigation doesn't re-trigger
+      navigation.setParams({ openAddMember: false });
+    }
+  }, [route?.params?.openAddMember]);
 
   const handleRequestDeleteOtp = async () => {
     try {

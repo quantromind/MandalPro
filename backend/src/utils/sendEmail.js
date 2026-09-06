@@ -19,7 +19,7 @@ const getTransporter = async () => {
     return cachedTransporter;
   }
 
-  // If using Gmail, use Port 587 with STARTTLS (Render allows 587 but blocks 465/25)
+  // If using Gmail, use Port 587 with STARTTLS
   const isGmail = 
     process.env.SMTP_HOST === 'smtp.gmail.com' || 
     (process.env.SMTP_USER && process.env.SMTP_USER.endsWith('@gmail.com'));
@@ -31,8 +31,8 @@ const getTransporter = async () => {
     cachedTransporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: port,
-      family: 4, // Force IPv4 to prevent ENETUNREACH on cloud environments like Render
-      secure: isSecure, // false for 587 (STARTTLS), true for 465
+      family: 4,
+      secure: isSecure,
       requireTLS: !isSecure,
       auth: {
         user: process.env.SMTP_USER,
@@ -41,9 +41,9 @@ const getTransporter = async () => {
       tls: {
         rejectUnauthorized: false
       },
-      connectionTimeout: 12000,
-      greetingTimeout: 12000,
-      socketTimeout: 20000,
+      connectionTimeout: 6000,
+      greetingTimeout: 6000,
+      socketTimeout: 8000,
     });
     return cachedTransporter;
   }
@@ -51,7 +51,7 @@ const getTransporter = async () => {
   cachedTransporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT) || 587,
-    family: 4, // Force IPv4
+    family: 4,
     secure: Number(process.env.SMTP_PORT) === 465,
     auth: {
       user: process.env.SMTP_USER,
@@ -60,9 +60,9 @@ const getTransporter = async () => {
     tls: {
       rejectUnauthorized: false
     },
-    connectionTimeout: 12000,
-    greetingTimeout: 12000,
-    socketTimeout: 20000,
+    connectionTimeout: 6000,
+    greetingTimeout: 6000,
+    socketTimeout: 8000,
   });
   return cachedTransporter;
 };
@@ -72,7 +72,7 @@ const createGmailTransporter = (port) => {
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: port,
-    family: 4, // Force IPv4 to avoid ENETUNREACH on Render Linux containers
+    family: 4,
     secure: is465,
     requireTLS: !is465,
     auth: {
@@ -82,9 +82,9 @@ const createGmailTransporter = (port) => {
     tls: {
       rejectUnauthorized: false,
     },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 18000,
+    connectionTimeout: 6000,
+    greetingTimeout: 6000,
+    socketTimeout: 8000,
   });
 };
 
@@ -99,13 +99,13 @@ const createGmailServiceTransporter = () => {
     tls: {
       rejectUnauthorized: false,
     },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 18000,
+    connectionTimeout: 6000,
+    greetingTimeout: 6000,
+    socketTimeout: 8000,
   });
 };
 
-// ── 1. Resend HTTPS API (Recommended for Render — 100% works over HTTPS port 443) ──
+// ── 1. Resend HTTPS API (Recommended — 100% works over HTTPS port 443) ──
 const sendViaResend = async ({ to, subject, text, html }) => {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return null;
@@ -137,7 +137,7 @@ const sendViaResend = async ({ to, subject, text, html }) => {
   return { messageId: data.id, provider: 'resend' };
 };
 
-// ── 2. Brevo HTTPS API (Alternative free provider over HTTPS) ──
+// ── 2. Brevo HTTPS API (Free — 300 emails/day, works on any network) ──
 const sendViaBrevo = async ({ to, subject, text, html }) => {
   const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) return null;
@@ -152,7 +152,7 @@ const sendViaBrevo = async ({ to, subject, text, html }) => {
     body: JSON.stringify({
       sender: {
         name: process.env.SMTP_FROM_NAME || 'Apla Mandal',
-        email: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@aplamandal.com'
+        email: process.env.BREVO_FROM || process.env.SMTP_FROM || 'noreply@aplamandal.com'
       },
       to: [{ email: to }],
       subject,
@@ -171,11 +171,12 @@ const sendViaBrevo = async ({ to, subject, text, html }) => {
 };
 
 const sendEmail = async ({ to, subject, text, html }) => {
-  // Try HTTPS REST APIs first (immune to Render SMTP port blocking)
+  // ── Priority 1: Resend HTTPS API (immune to SMTP port blocking) ──
   if (process.env.RESEND_API_KEY) {
     return await sendViaResend({ to, subject, text, html });
   }
 
+  // ── Priority 2: Brevo HTTPS API (free, 300/day) ──
   if (process.env.BREVO_API_KEY) {
     return await sendViaBrevo({ to, subject, text, html });
   }
@@ -184,8 +185,9 @@ const sendEmail = async ({ to, subject, text, html }) => {
     process.env.SMTP_HOST === 'smtp.gmail.com' || 
     (process.env.SMTP_USER && process.env.SMTP_USER.endsWith('@gmail.com'));
 
+  // ── Priority 3: Gmail SMTP — port 587 only (port 465 causes long hangs) ──
   if (isGmail && process.env.SMTP_USER) {
-    const configuredPort = Number(process.env.SMTP_PORT) || 465;
+    const configuredPort = Number(process.env.SMTP_PORT) || 587;
     const portsToTry = configuredPort === 465 ? [465, 587] : [587, 465];
     let lastError = null;
 
@@ -203,13 +205,14 @@ const sendEmail = async ({ to, subject, text, html }) => {
         console.log(`[Email Sent] Message sent via port ${port}: ${info.messageId}`);
         return info;
       } catch (err) {
-        console.warn(`[Email Warning] Port ${port} failed (${err.message}). Trying next...`);
+        console.warn(`[Email Warning] Port ${port} failed (${err.message.slice(0, 80)}). Trying next...`);
         lastError = err;
       }
     }
 
+    // Last-resort: Gmail service transporter
     try {
-      console.log(`[Email] Attempting Gmail Service Transporter (IPv4)...`);
+      console.log('[Email] Fallback: Gmail service transport...');
       const serviceTransporter = createGmailServiceTransporter();
       const info = await serviceTransporter.sendMail({
         from: `"${process.env.SMTP_FROM_NAME || 'Apla Mandal'}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
@@ -218,17 +221,17 @@ const sendEmail = async ({ to, subject, text, html }) => {
         text,
         html,
       });
-      console.log(`[Email Sent] Message sent via Gmail Service: ${info.messageId}`);
+      console.log(`[Email Sent via Gmail service] ${info.messageId}`);
       return info;
     } catch (err) {
-      console.warn(`[Email Warning] Gmail Service failed (${err.message})`);
+      console.warn(`[Email Warning] Gmail Service failed (${err.message.slice(0, 80)})`);
       lastError = err;
     }
 
     throw lastError;
   }
 
-  // Standard generic SMTP / Ethereal fallback
+  // ── Priority 4: Generic SMTP / Ethereal fallback ──
   try {
     const transporter = await getTransporter();
     const info = await transporter.sendMail({
