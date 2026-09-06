@@ -294,9 +294,23 @@
   },
   "approvals": {
     "title": "प्रलंबित मंजुऱ्या",
-    "allCaughtUp": "सर्व काम पूर्ण!",
+    "allCaughtUp": "सर्व मंजुऱ्या पूर्ण!",
     "noPendingSub": "सध्या तुमच्या मंजुरीसाठी कोणताही खर्च प्रलंबित नाही.",
-    "approvedSuccess": "खर्च यशस्वीरित्या मंजूर झाला आहे."
+    "approvedSuccess": "खर्च यशस्वीरित्या मंजूर झाला आहे.",
+    "rejectedSuccess": "खर्च अर्ज नाकारण्यात आला आहे.",
+    "totalPending": "एकूण प्रलंबित रक्कम",
+    "requestsToReview": "अर्ज मंजुरीच्या प्रतीक्षेत",
+    "requestToReview": "अर्ज मंजुरीच्या प्रतीक्षेत",
+    "approve": "मंजूर करा",
+    "reject": "नाकारा",
+    "rejectTitle": "खर्च अर्ज नाकारा",
+    "rejectSub": "खर्च मसुद्यात परत पाठवण्यासाठी कारण द्या",
+    "reasonPlaceholder": "उदा. चुकीचे बिल, दुबार नोंद, अर्थसंकल्प जास्त...",
+    "confirmApproveTitle": "खर्च मंजूर करा",
+    "confirmApproveMsg": "{{category}} साठी {{amount}} चा खर्च मंजूर करायचा आहे का?",
+    "viewBill": "पावती पहा",
+    "viewOnly": "फक्त पाहणे",
+    "pendingReview": "प्रलंबित मंजुरी"
   },
   "events": {
     "title": "कार्यक्रम आणि कार्ये",

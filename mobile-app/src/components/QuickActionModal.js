@@ -13,7 +13,7 @@ import {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2; // 2 columns with padding and gap
 
-export default function QuickActionModal({ visible, onClose, navigation }) {
+export default function QuickActionModal({ visible, onClose, navigation, onAddMember }) {
   const actions = [
     {
       id: 'new_collection',
@@ -82,7 +82,11 @@ export default function QuickActionModal({ visible, onClose, navigation }) {
       iconBg: '#DBEAFE',
       onPress: () => {
         onClose();
-        navigation?.navigate?.('MainTabs', { screen: 'ProfileTab' });
+        if (onAddMember) {
+          onAddMember();
+        } else {
+          navigation?.navigate?.('MainTabs', { screen: 'ProfileTab' });
+        }
       },
     },
   ];

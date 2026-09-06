@@ -120,9 +120,11 @@ const forgotPasswordSendOtp = asyncHandler(async (req, res) => {
     console.error(`[Forgot Password OTP Error] Email send failed to ${normalizedEmail}: ${emailErr.message}`);
   });
 
+  const isDev = process.env.NODE_ENV === 'development';
   res.json({
     success: true,
-    message: 'OTP sent successfully to email'
+    message: 'OTP sent successfully to email',
+    ...(isDev ? { devOtp: code } : {})
   });
 });
 
@@ -243,7 +245,12 @@ const sendOtp = asyncHandler(async (req, res) => {
     console.error(`[OTP Error] Email send failed to ${normalizedEmail}: ${emailErr.message}`);
   });
 
-  res.json({ message: 'OTP sent successfully to email' });
+  const isDev = process.env.NODE_ENV === 'development';
+  res.json({
+    success: true,
+    message: 'OTP sent successfully to email',
+    ...(isDev ? { devOtp: code } : {})
+  });
 });
 
 // Helper to validate and consume OTP (used in both verifyOtp and loginWithOtp)

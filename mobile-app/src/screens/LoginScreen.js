@@ -30,11 +30,27 @@ export default function LoginScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [noAccount, setNoAccount] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const { loginWithOtp, login } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const isMr = language === 'mr';
   const inputRefs = useRef([]);
+
+  React.useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setIsKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setIsKeyboardVisible(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   React.useEffect(() => {
     if (route?.params?.prefillEmail) {
@@ -60,9 +76,15 @@ export default function LoginScreen({ navigation, route }) {
     setLoading(true);
 
     try {
-      await client.post('/auth/send-otp', { email: trimmedEmail });
+      const res = await client.post('/auth/send-otp', { email: trimmedEmail });
       setStep('otp');
       startResendTimer();
+      // If devOtp is provided by local/dev backend, auto-fill it for instant developer testing
+      if (res.data?.devOtp) {
+        const digits = String(res.data.devOtp).split('').slice(0, 6);
+        while (digits.length < 6) digits.push('');
+        setOtp(digits);
+      }
     } catch (err) {
       if (err.response?.data?.code === 'USER_NOT_FOUND' || err.response?.status === 404) {
         setNoAccount(true);
@@ -154,7 +176,7 @@ export default function LoginScreen({ navigation, route }) {
           style={styles.backBtn}
           onPress={() => {
             if (navigation.canGoBack()) navigation.goBack();
-            else navigation.navigate('Welcome');
+            else navigation.navigate('Login');
           }}
           activeOpacity={0.7}
         >
@@ -172,21 +194,27 @@ export default function LoginScreen({ navigation, route }) {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
       >
         <ScrollView
-          contentContainerStyle={styles.container}
+          contentContainerStyle={[styles.container, isKeyboardVisible && styles.containerKeyboardActive]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Brand Header ── */}
-          <View style={styles.brandHeader}>
-            <Image source={require('../../assets/logo.png')} style={styles.logo} />
-            <Text style={styles.title}>
+          {/* ── Brand Header (compact when typing so inputs are never covered) ── */}
+          <View style={[styles.brandHeader, isKeyboardVisible && styles.brandHeaderCompact]}>
+            {!isKeyboardVisible && (
+              <Image source={require('../../assets/logo.png')} style={styles.logo} />
+            )}
+            <Text style={[styles.title, isKeyboardVisible && styles.titleCompact]}>
               Apla<Text style={{ color: '#F97316' }}>Mandal</Text>
             </Text>
-            <Text style={styles.subtitle}>
-              {isMr ? 'मंडळ व्यवस्थापन व वर्गणी पावती अ‍ॅप' : 'Mandal Management & Collector App'}
-            </Text>
+            {!isKeyboardVisible && (
+              <Text style={styles.subtitle}>
+                {isMr ? 'मंडळ व्यवस्थापन व वर्गणी पावती अ‍ॅप' : 'Mandal Management & Collector App'}
+              </Text>
+            )}
           </View>
 
           {/* ── Form Card ── */}
@@ -452,6 +480,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     backgroundColor: '#0B1120',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   backBtn: {
     flexDirection: 'row',
@@ -505,9 +535,19 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     backgroundColor: '#0B1120',
   },
+  containerKeyboardActive: {
+    justifyContent: 'flex-start',
+    paddingTop: 12,
+    paddingBottom: 160,
+  },
   brandHeader: {
     alignItems: 'center',
     marginBottom: 18,
+  },
+  brandHeaderCompact: {
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   logo: {
     width: 74,
@@ -526,6 +566,10 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     marginBottom: 2,
   },
+  titleCompact: {
+    fontSize: 22,
+    marginBottom: 0,
+  },
   subtitle: {
     textAlign: 'center',
     color: '#94A3B8',
@@ -533,25 +577,25 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   formCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     padding: 22,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: '#E2E8F0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 8,
   },
   modeTabs: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: '#F1F5F9',
     borderRadius: 12,
     padding: 4,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: '#E2E8F0',
   },
   modeTab: {
     flex: 1,
@@ -563,14 +607,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#F97316',
     shadowColor: '#F97316',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 2,
   },
   modeTabText: {
     fontSize: 12.5,
     fontWeight: '600',
-    color: '#94A3B8',
+    color: '#64748B',
   },
   modeTabTextActive: {
     color: '#FFFFFF',
@@ -579,11 +623,11 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0F172A',
     marginBottom: 4,
   },
   stepLabel: {
-    color: '#94A3B8',
+    color: '#64748B',
     fontSize: 12.5,
     lineHeight: 18,
     marginBottom: 16,
@@ -591,37 +635,37 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#E2E8F0',
+    color: '#334155',
     marginBottom: 6,
   },
   error: {
-    color: '#F87171',
+    color: '#DC2626',
     marginBottom: 14,
     textAlign: 'center',
     fontSize: 12.5,
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    backgroundColor: '#FEF2F2',
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.25)',
+    borderColor: '#FCA5A5',
     padding: 10,
     borderRadius: 10,
     fontWeight: '600',
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: '#CBD5E1',
     borderRadius: 14,
     padding: 13,
     marginBottom: 14,
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#0F172A',
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: '#CBD5E1',
     borderRadius: 14,
     paddingRight: 10,
     marginBottom: 6,
@@ -657,17 +701,17 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderColor: '#CBD5E1',
     textAlign: 'center',
     fontSize: 20,
     fontWeight: '800',
-    color: '#FFFFFF',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    color: '#0F172A',
+    backgroundColor: '#F8FAFC',
   },
   otpBoxFilled: {
     borderColor: '#F97316',
-    backgroundColor: 'rgba(249, 115, 22, 0.15)',
-    color: '#F97316',
+    backgroundColor: '#FFF7ED',
+    color: '#EA580C',
   },
   resendRow: {
     flexDirection: 'row',
@@ -676,16 +720,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resendText: {
-    color: '#94A3B8',
+    color: '#64748B',
     fontSize: 13,
   },
   resendLink: {
-    color: '#F97316',
+    color: '#EA580C',
     fontWeight: '800',
     fontSize: 13,
   },
   resendTimer: {
-    color: '#94A3B8',
+    color: '#64748B',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -694,7 +738,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   backText: {
-    color: '#94A3B8',
+    color: '#64748B',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -703,7 +747,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   registerText: {
-    color: '#94A3B8',
+    color: '#CBD5E1',
     fontSize: 13.5,
   },
   registerBold: {
@@ -711,9 +755,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   noAccountBanner: {
-    backgroundColor: 'rgba(220, 38, 38, 0.12)',
+    backgroundColor: '#FEF2F2',
     borderWidth: 1.5,
-    borderColor: 'rgba(220, 38, 38, 0.3)',
+    borderColor: '#FCA5A5',
     borderRadius: 14,
     padding: 12,
     marginBottom: 14,
@@ -721,12 +765,12 @@ const styles = StyleSheet.create({
   noAccountTitle: {
     fontSize: 13.5,
     fontWeight: '800',
-    color: '#FCA5A5',
+    color: '#991B1B',
     marginBottom: 4,
   },
   noAccountText: {
     fontSize: 12,
-    color: '#FCA5A5',
+    color: '#B91C1C',
     lineHeight: 17,
     marginBottom: 8,
   },

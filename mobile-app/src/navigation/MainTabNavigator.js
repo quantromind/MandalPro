@@ -169,6 +169,12 @@ export default function MainTabNavigator({ navigation }) {
         visible={showQuickAction}
         onClose={() => setShowQuickAction(false)}
         navigation={navigation}
+        onAddMember={() => {
+          navigation.navigate('MainTabs', {
+            screen: 'ProfileTab',
+            params: { openAddMember: true },
+          });
+        }}
       />
 
       {/* ☰ All Sections Bottom Sheet Modal (More Tab) */}
