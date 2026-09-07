@@ -27,6 +27,8 @@ const {
 // @desc Register: creates a Mandal + first President user together (onboarding step 1-2)
 // @route POST /api/auth/register
 const register = asyncHandler(async (req, res) => {
+  const { name, email, password, mobile, mandalName, eventTypes } = req.body || {};
+
   const cleanMobile = (mobile || '').toString().trim().replace(/[^0-9]/g, '');
   const normalizedMobile = cleanMobile.length === 12 && cleanMobile.startsWith('91')
     ? cleanMobile.slice(2)
