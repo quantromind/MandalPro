@@ -250,6 +250,9 @@ export default function Landing() {
 
           {/* Nav Links (Desktop) */}
           <nav className="landing-desktop-nav">
+            <a href="#video-demo" className="landing-nav-link">
+              {isMr ? 'व्हिडिओ डेमो' : 'Demo Video'}
+            </a>
             <a href="#features" className="landing-nav-link">
               {isMr ? 'वैशिष्ट्ये' : 'Features'}
             </a>
@@ -360,6 +363,14 @@ export default function Landing() {
             </div>
 
             <div className="landing-drawer-nav">
+              <a
+                href="#video-demo"
+                className="landing-drawer-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span>🎥</span>
+                <span>{isMr ? 'व्हिडिओ डेमो' : 'Demo Video'}</span>
+              </a>
               <a
                 href="#features"
                 className="landing-drawer-link"
@@ -515,6 +526,14 @@ export default function Landing() {
             >
               🔑 {isMr ? 'थेट लॉगिन करा' : 'Mandal Login →'}
             </Link>
+
+            <a
+              href="#video-demo"
+              className="landing-hero-btn-video"
+            >
+              <span className="landing-hero-play-icon">▶</span>
+              <span>{isMr ? 'व्हिडिओ डेमो पहा' : 'Watch Video Demo'}</span>
+            </a>
           </div>
 
           {/* ── Live Stats Row ── */}
@@ -535,7 +554,130 @@ export default function Landing() {
             ))}
           </div>
 
-          {/* ── Hero Visual Banner with Glow Border ── */}
+        </div>
+      </section>
+
+      {/* ── 2.5 Live Video Demo Showcase Section (Placed at Top) ── */}
+      <section id="video-demo" className="landing-section landing-video-section">
+        <div className="landing-container">
+          <div className="landing-section-header">
+            <span className="landing-section-badge landing-badge-video">
+              <span className="landing-badge-dot"></span>
+              🎥 {isMr ? 'लाइव्ह व्हिडिओ प्रेझेंटेशन' : 'OFFICIAL VIDEO WALKTHROUGH'}
+            </span>
+            <h2 className="landing-section-title">
+              {isMr ? (
+                <>Apla Mandal अ‍ॅप कसे चालते? <span className="landing-gradient-text">व्हिडिओ डेमो पहा</span></>
+              ) : (
+                <>See How Apla Mandal Works <span className="landing-gradient-text">In Action</span></>
+              )}
+            </h2>
+            <p className="landing-section-desc">
+              {isMr
+                ? 'पावती बनवण्यापासून ते जमा-खर्च हिशोब, ऑनलाइन मंजुऱ्या आणि सीए अहवाल — येथे थेट व्हिडिओ पहा किंवा YouTube वर उघडा.'
+                : 'Watch the full demonstration right here on this page, or click to open directly in the YouTube app.'}
+            </p>
+          </div>
+
+          <div className="landing-video-card-wrapper">
+            <div className="landing-video-glow"></div>
+            
+            <div className="landing-video-frame-container">
+              {/* Chrome / Video Header Bar */}
+              <div className="landing-video-window-bar">
+                <div className="landing-video-window-dots">
+                  <span className="red"></span>
+                  <span className="yellow"></span>
+                  <span className="green"></span>
+                </div>
+                <div className="landing-video-window-title">
+                  <span>🔒</span> aplamandal.quantromind.com • Apla Utsav, Apla Mandal App Demo
+                </div>
+                <div className="landing-video-yt-badge">
+                  <span>▶ YouTube HD</span>
+                </div>
+              </div>
+
+              {/* Responsive 16:9 YouTube Video Player */}
+              <div className="landing-video-embed-aspect">
+                <iframe
+                  src="https://www.youtube-nocookie.com/embed/_Bv5B-HvhkM?rel=0&modestbranding=0&enablejsapi=1"
+                  title="Apla Utsav, Apla Mandal App powered by Quantromind Pvt. Ltd."
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  loading="lazy"
+                  className="landing-video-iframe"
+                />
+              </div>
+
+              {/* Bottom YouTube Action Strip */}
+              <div className="landing-video-info-strip">
+                <div className="landing-video-info-details">
+                  <div className="landing-video-avatar">
+                    <img src="/logo.png" alt="QuantroMind Apla Mandal" />
+                  </div>
+                  <div>
+                    <h4 className="landing-video-item-title">
+                      Apla Utsav, Apla Mandal App
+                    </h4>
+                    <p className="landing-video-item-author">
+                      <span>QuantroMind Pvt Ltd</span>
+                      <span style={{ color: '#10B981', fontWeight: 'bold' }}>✓</span>
+                      <span>• {isMr ? 'अधिकृत व्हिडिओ ट्युटोरिअल' : 'Official Walkthrough'}</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="landing-video-actions">
+                  <a
+                    href="https://www.youtube.com/watch?v=_Bv5B-HvhkM"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="landing-video-yt-btn"
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                    <span>{isMr ? 'YouTube वर पहा' : 'Watch on YouTube'}</span>
+                    <span style={{ fontSize: 14 }}>↗</span>
+                  </a>
+
+                  <Link
+                    to="/register"
+                    className="landing-video-register-btn"
+                  >
+                    🚀 {isMr ? 'मोफत नोंदणी' : 'Try Free'}
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Demo Key Highlights Grid */}
+            <div className="landing-video-highlights">
+              <div className="landing-video-highlight-pill">
+                <span>🧾</span>
+                <span>{isMr ? '१ सेकंदात WhatsApp पावती' : 'Instant WhatsApp Receipts'}</span>
+              </div>
+              <div className="landing-video-highlight-pill">
+                <span>💰</span>
+                <span>{isMr ? 'पारदर्शक जमा-खर्च व्यवस्थापन' : 'Live Income & Expense Ledger'}</span>
+              </div>
+              <div className="landing-video-highlight-pill">
+                <span>👥</span>
+                <span>{isMr ? 'कार्यकारिणी डिजिटल ओळखपत्रे' : 'Member Digital ID Cards'}</span>
+              </div>
+              <div className="landing-video-highlight-pill">
+                <span>📑</span>
+                <span>{isMr ? 'सीए ऑडिट-रेडी अहवाल (PDF/Excel)' : 'CA Audit Balance Sheets'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 2.6 Hero Visual Banner (Placed Below YouTube Video) ── */}
+      <section className="landing-section" style={{ background: '#0B1120', paddingTop: 10, paddingBottom: 60 }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto', textAlign: 'center' }}>
           <div className="landing-hero-banner-wrap">
             <img
               src="/hero-banner.jpg"
@@ -992,6 +1134,7 @@ export default function Landing() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Link to="/register" style={{ color: '#94A3B8', fontSize: 13 }}>{isMr ? 'मंडळ नोंदणी' : 'Register Mandal'}</Link>
               <Link to="/login" style={{ color: '#94A3B8', fontSize: 13 }}>{isMr ? 'लॉगिन' : 'Login'}</Link>
+              <a href="#video-demo" style={{ color: '#94A3B8', fontSize: 13 }}>{isMr ? 'व्हिडिओ डेमो' : 'Demo Video'}</a>
               <a href="#pricing" style={{ color: '#94A3B8', fontSize: 13 }}>{isMr ? 'सदस्यत्व योजना' : 'Subscription Plans'}</a>
               <a href="#features" style={{ color: '#94A3B8', fontSize: 13 }}>{isMr ? 'वैशिष्ट्ये' : 'Features'}</a>
             </div>
