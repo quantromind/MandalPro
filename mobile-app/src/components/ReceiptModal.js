@@ -198,14 +198,14 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
                   {/* 5. Donor Info Row with Dashed Underline */}
                   <View style={styles.donorContainer}>
                     <View style={styles.donorRow}>
-                      <Text style={styles.donorPrefix}>श्री./श्रीमती/मेसर्स </Text>
+                      <Text style={styles.donorPrefix}>श्री. / श्रीमती </Text>
                       <View style={styles.donorUnderlineWrap}>
                         <Text style={styles.donorNameText} numberOfLines={1}>
                           {donorName}
                         </Text>
                         <View style={styles.dashedUnderline} />
                       </View>
-                      <Text style={styles.donorSuffix}>यांजकडून</Text>
+                      <Text style={styles.donorSuffix}>यांचेकडून</Text>
                     </View>
                     {donorMobile ? (
                       <Text style={styles.donorMobileText}>

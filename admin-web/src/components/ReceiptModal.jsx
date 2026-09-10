@@ -578,7 +578,7 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
             {/* 5. Donor Info with Dotted Underline */}
             <div style={{ fontSize: 15, lineHeight: 1.8, marginBottom: 14, color: '#334155' }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 6 }}>
-                <span style={{ fontWeight: 700 }}>श्री./श्रीमती/मेसर्स</span>
+                <span style={{ fontWeight: 700 }}>श्री. / श्रीमती</span>
                 <span
                   style={{
                     flex: 1,
@@ -593,7 +593,7 @@ ${collectorName ? `✍️ *संकलक:* ${collectorName}\n` : ''}━━━�
                 >
                   {donorName}
                 </span>
-                <span style={{ fontWeight: 700 }}>यांजकडून</span>
+                <span style={{ fontWeight: 700 }}>यांचेकडून</span>
               </div>
               {donorMobile && (
                 <div style={{ fontSize: 13, color: '#64748B', marginTop: 4, fontWeight: 700 }}>
