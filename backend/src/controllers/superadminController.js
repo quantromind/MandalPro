@@ -7,7 +7,7 @@ const User = require('../models/User');
 // @access  Private/Superadmin
 const getAllUsers = asyncHandler(async (req, res) => {
   const users = await User.find({})
-    .populate('mandalId', 'name plan')
+    .populate('mandalId', 'name plan planStatus establishedYear contactPhone address')
     .sort({ createdAt: -1 })
     .select('-passwordHash');
 

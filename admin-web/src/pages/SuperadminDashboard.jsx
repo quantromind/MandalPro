@@ -21,6 +21,10 @@ const SuperadminDashboard = () => {
   const [userSearch, setUserSearch] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState('all');
   const [userStatusFilter, setUserStatusFilter] = useState('all');
+  const [userPlanFilter, setUserPlanFilter] = useState('all');
+  const [userViewMode, setUserViewMode] = useState('presidents'); // 'presidents' | 'all' | 'superadmins' | 'unassigned'
+  const [expandedPresidents, setExpandedPresidents] = useState({});
+  const [expandAll, setExpandAll] = useState(false);
 
   // Plans Management State
   const [plans, setPlans] = useState([]);
@@ -335,7 +339,125 @@ const SuperadminDashboard = () => {
     });
   }, [mandals, mandalSearch, mandalPlanFilter, mandalStatusFilter]);
 
-  // Filtered Users
+  // Process Presidents and Members hierarchy
+  const { presidentsData, superadminsList, unassignedUsersList, totalPresidentsCount, totalMembersCount } = useMemo(() => {
+    const superadmins = [];
+    const unassigned = [];
+    const presidentsMap = new Map();
+    const membersByMandal = {};
+
+    // 1. Group users
+    users.forEach(u => {
+      if (u.role === 'superadmin' || u.email === 'quantromind@gmail.com') {
+        superadmins.push(u);
+        return;
+      }
+
+      const mandalId = u.mandalId?._id || u.mandalId;
+
+      if (u.role === 'president') {
+        presidentsMap.set(String(u._id), u);
+      } else if (mandalId) {
+        const mKey = String(mandalId);
+        if (!membersByMandal[mKey]) {
+          membersByMandal[mKey] = [];
+        }
+        membersByMandal[mKey].push(u);
+      } else {
+        unassigned.push(u);
+      }
+    });
+
+    // 2. Mandals createdBy users who should also be treated as Presidents if not already
+    mandals.forEach(m => {
+      if (m.createdBy?._id) {
+        const creatorId = String(m.createdBy._id);
+        const creator = users.find(u => String(u._id) === creatorId);
+        if (creator && creator.role !== 'superadmin' && !presidentsMap.has(creatorId)) {
+          presidentsMap.set(creatorId, creator);
+          const mKey = String(m._id);
+          if (membersByMandal[mKey]) {
+            membersByMandal[mKey] = membersByMandal[mKey].filter(u => String(u._id) !== creatorId);
+          }
+        }
+      }
+    });
+
+    // 3. Assemble structured president objects with their mandal and members
+    const structuredPresidents = Array.from(presidentsMap.values()).map(pres => {
+      const presMandalId = pres.mandalId?._id || pres.mandalId;
+      const presId = String(pres._id);
+      
+      const matchedMandal = mandals.find(m => String(m._id) === String(presMandalId) || (m.createdBy?._id && String(m.createdBy._id) === presId))
+        || (typeof pres.mandalId === 'object' && pres.mandalId ? pres.mandalId : null);
+      
+      const effectiveMandalId = matchedMandal?._id ? String(matchedMandal._id) : (presMandalId ? String(presMandalId) : null);
+      
+      const members = effectiveMandalId && membersByMandal[effectiveMandalId]
+        ? membersByMandal[effectiveMandalId].filter(m => String(m._id) !== presId)
+        : [];
+
+      return {
+        president: pres,
+        mandal: matchedMandal,
+        members: members
+      };
+    });
+
+    // Calculate total committee members
+    let totalMembers = 0;
+    Object.values(membersByMandal).forEach(list => {
+      totalMembers += list.length;
+    });
+
+    return {
+      presidentsData: structuredPresidents,
+      superadminsList: superadmins,
+      unassignedUsersList: unassigned,
+      totalPresidentsCount: structuredPresidents.length,
+      totalMembersCount: totalMembers
+    };
+  }, [users, mandals]);
+
+  // Filtered Presidents (searches President, Mandal, and nested Members!)
+  const filteredPresidents = useMemo(() => {
+    return presidentsData.filter(item => {
+      const q = userSearch.toLowerCase().trim();
+      const pres = item.president;
+      const mandal = item.mandal;
+      const members = item.members;
+
+      // Status filter
+      if (userStatusFilter !== 'all' && pres.status !== userStatusFilter) {
+        return false;
+      }
+
+      // Plan filter
+      if (userPlanFilter !== 'all') {
+        const plan = mandal?.plan || 'None';
+        if (plan !== userPlanFilter) return false;
+      }
+
+      // Search match
+      if (!q) return true;
+
+      const presNameMatch = pres.name?.toLowerCase().includes(q);
+      const presEmailMatch = pres.email?.toLowerCase().includes(q);
+      const presPhoneMatch = pres.mobile?.toLowerCase().includes(q);
+      const mandalNameMatch = mandal?.name?.toLowerCase().includes(q);
+
+      const memberMatch = members.some(m => 
+        m.name?.toLowerCase().includes(q) || 
+        m.email?.toLowerCase().includes(q) || 
+        m.mobile?.toLowerCase().includes(q) ||
+        m.role?.toLowerCase().includes(q)
+      );
+
+      return presNameMatch || presEmailMatch || presPhoneMatch || mandalNameMatch || memberMatch;
+    });
+  }, [presidentsData, userSearch, userStatusFilter, userPlanFilter]);
+
+  // Filtered Users (Flat list for fallback search)
   const filteredUsers = useMemo(() => {
     return users.filter(u => {
       const q = userSearch.toLowerCase();
@@ -350,6 +472,25 @@ const SuperadminDashboard = () => {
       return matchSearch && matchRole && matchStatus;
     });
   }, [users, userSearch, userRoleFilter, userStatusFilter]);
+
+  const toggleExpandPresident = (id) => {
+    setExpandedPresidents(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const handleToggleExpandAll = () => {
+    const nextState = !expandAll;
+    setExpandAll(nextState);
+    const newExpanded = {};
+    if (nextState) {
+      filteredPresidents.forEach(p => {
+        newExpanded[p.president._id] = true;
+      });
+    }
+    setExpandedPresidents(newExpanded);
+  };
 
   // Metric Stats
   const totalMandalsCount = mandals.length;
@@ -396,12 +537,12 @@ const SuperadminDashboard = () => {
         </div>
 
         <div className="card" style={{ padding: '16px 20px', borderLeft: '4px solid #2563EB' }}>
-          <div className="text-caption" style={{ fontWeight: 600, color: 'var(--text-muted)' }}>TOTAL USERS</div>
+          <div className="text-caption" style={{ fontWeight: 600, color: 'var(--text-muted)' }}>PRESIDENTS & USERS</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-main)', marginTop: 4 }}>
-            {totalUsersCount}
+            👑 {totalPresidentsCount} <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-muted)' }}>/ {totalUsersCount} Total</span>
           </div>
           <div className="text-caption" style={{ color: '#2563EB', marginTop: 4 }}>
-            👥 {activeUsersCount} Active Accounts
+            👥 {totalMembersCount} Mandal Members ({activeUsersCount} Active)
           </div>
         </div>
 
@@ -453,7 +594,7 @@ const SuperadminDashboard = () => {
               gap: 8
             }}
           >
-            <span>👥</span> All Users ({users.length})
+            <span>👑</span> Presidents & Members ({presidentsData.length} Presidents)
           </button>
           <button 
             onClick={() => setActiveTab('plans')}
@@ -599,32 +740,168 @@ const SuperadminDashboard = () => {
           </div>
         )}
 
-        {/* ──────────────── TAB 2: USERS ──────────────── */}
+        {/* ──────────────── TAB 2: PRESIDENTS & MEMBERS HIERARCHY ──────────────── */}
         {activeTab === 'users' && (
           <div>
-            {/* User Search & Filter Bar */}
+            {/* Sub-view switcher bar */}
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, background: '#FAFAFA' }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setUserViewMode('presidents')}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: userViewMode === 'presidents' ? '2px solid #2563EB' : '1px solid var(--border)',
+                    background: userViewMode === 'presidents' ? '#EFF6FF' : '#FFFFFF',
+                    color: userViewMode === 'presidents' ? '#1D4ED8' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                >
+                  <span>👑</span>
+                  <span>Presidents & Hierarchy (अध्यक्ष व सदस्य रचना) ({filteredPresidents.length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setUserViewMode('all')}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: userViewMode === 'all' ? '2px solid #FF6B00' : '1px solid var(--border)',
+                    background: userViewMode === 'all' ? '#FFF7ED' : '#FFFFFF',
+                    color: userViewMode === 'all' ? '#C2410C' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                >
+                  <span>👥</span>
+                  <span>All Users Table (सर्व वापरकर्ते) ({filteredUsers.length})</span>
+                </button>
+
+                {superadminsList.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setUserViewMode('superadmins')}
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: 8,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      border: userViewMode === 'superadmins' ? '2px solid #7C3AED' : '1px solid var(--border)',
+                      background: userViewMode === 'superadmins' ? '#F3E8FF' : '#FFFFFF',
+                      color: userViewMode === 'superadmins' ? '#7C3AED' : 'var(--text-muted)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <span>🛡️</span>
+                    <span>Superadmins ({superadminsList.length})</span>
+                  </button>
+                )}
+
+                {unassignedUsersList.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setUserViewMode('unassigned')}
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: 8,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      border: userViewMode === 'unassigned' ? '2px solid #F59E0B' : '1px solid var(--border)',
+                      background: userViewMode === 'unassigned' ? '#FEF3C7' : '#FFFFFF',
+                      color: userViewMode === 'unassigned' ? '#B45309' : 'var(--text-muted)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <span>⚠️</span>
+                    <span>Unassigned ({unassignedUsersList.length})</span>
+                  </button>
+                )}
+              </div>
+
+              {userViewMode === 'presidents' && filteredPresidents.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleToggleExpandAll}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    border: '1px solid #CBD5E1',
+                    background: '#FFFFFF',
+                    color: '#334155',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                >
+                  <span>{expandAll ? '📁' : '📂'}</span>
+                  <span>{expandAll ? 'Collapse All Members' : 'Expand All Members'}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Filter Search Bar */}
             <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', background: 'rgba(0,0,0,0.01)' }}>
               <input 
                 type="text" 
                 className="input" 
-                placeholder="🔍 Search name, email, phone, mandal..." 
+                placeholder="🔍 Search President name, Member name, Mandal, Phone, Email..." 
                 value={userSearch} 
                 onChange={(e) => setUserSearch(e.target.value)}
-                style={{ flex: '1 1 240px', minWidth: 220, padding: '8px 12px', fontSize: 14 }}
+                style={{ flex: '1 1 260px', minWidth: 240, padding: '8px 12px', fontSize: 14 }}
               />
-              <select 
-                className="input" 
-                value={userRoleFilter} 
-                onChange={(e) => setUserRoleFilter(e.target.value)}
-                style={{ width: 'auto', minWidth: 140, padding: '8px 12px', fontSize: 14 }}
-              >
-                <option value="all">All Roles</option>
-                <option value="superadmin">Superadmin</option>
-                <option value="president">President</option>
-                <option value="treasurer">Treasurer</option>
-                <option value="secretary">Secretary</option>
-                <option value="volunteer">Volunteer</option>
-              </select>
+
+              {userViewMode === 'presidents' && (
+                <select 
+                  className="input" 
+                  value={userPlanFilter} 
+                  onChange={(e) => setUserPlanFilter(e.target.value)}
+                  style={{ width: 'auto', minWidth: 130, padding: '8px 12px', fontSize: 14 }}
+                >
+                  <option value="all">All Plans</option>
+                  <option value="Basic">Basic Plan</option>
+                  <option value="Pro">Pro Plan</option>
+                  <option value="Premium">Premium Plan</option>
+                  <option value="Enterprise">Enterprise</option>
+                  <option value="None">Free / None</option>
+                </select>
+              )}
+
+              {userViewMode === 'all' && (
+                <select 
+                  className="input" 
+                  value={userRoleFilter} 
+                  onChange={(e) => setUserRoleFilter(e.target.value)}
+                  style={{ width: 'auto', minWidth: 140, padding: '8px 12px', fontSize: 14 }}
+                >
+                  <option value="all">All Roles</option>
+                  <option value="superadmin">Superadmin</option>
+                  <option value="president">President</option>
+                  <option value="treasurer">Treasurer</option>
+                  <option value="secretary">Secretary</option>
+                  <option value="volunteer">Volunteer</option>
+                </select>
+              )}
+
               <select 
                 className="input" 
                 value={userStatusFilter} 
@@ -636,10 +913,11 @@ const SuperadminDashboard = () => {
                 <option value="disabled">Disabled</option>
                 <option value="invited">Invited</option>
               </select>
-              {(userSearch || userRoleFilter !== 'all' || userStatusFilter !== 'all') && (
+
+              {(userSearch || userRoleFilter !== 'all' || userStatusFilter !== 'all' || userPlanFilter !== 'all') && (
                 <button 
                   className="btn btn-outline btn-sm"
-                  onClick={() => { setUserSearch(''); setUserRoleFilter('all'); setUserStatusFilter('all'); }}
+                  onClick={() => { setUserSearch(''); setUserRoleFilter('all'); setUserStatusFilter('all'); setUserPlanFilter('all'); }}
                   style={{ fontSize: 12 }}
                 >
                   Reset
@@ -647,125 +925,557 @@ const SuperadminDashboard = () => {
               )}
             </div>
 
-            <div className="table-responsive">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>User</th>
-                    <th>Role</th>
-                    <th>Primary Mandal</th>
-                    <th>Status</th>
-                    <th>Joined</th>
-                    <th style={{ textAlign: 'right' }}>Manage User</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map(u => {
-                    const roleStyle = getRoleColor(u.role);
-                    const isPrimarySuperAdmin = u.email === 'quantromind@gmail.com';
+            {/* ─── MODE 1: PRESIDENTS & MEMBERS HIERARCHY (PRIMARY) ─── */}
+            {userViewMode === 'presidents' && (
+              <div style={{ padding: 20 }}>
+                {filteredPresidents.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {filteredPresidents.map(item => {
+                      const isExpanded = expandedPresidents[item.president._id] || expandAll;
+                      const isPrimarySuperAdmin = item.president.email === 'quantromind@gmail.com';
+                      const mandalObj = item.mandal;
+                      const planName = mandalObj?.plan || (item.president.mandalId?.plan || 'Free');
 
-                    return (
-                      <tr key={u._id}>
-                        <td>
-                          <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            {u.name}
-                            {isPrimarySuperAdmin && <span title="Primary System Superadmin">👑</span>}
-                          </div>
-                          <div className="text-caption">{u.email} {u.mobile ? `· ${u.mobile}` : ''}</div>
-                        </td>
-                        <td>
-                          <span style={{ 
-                            background: roleStyle.bg, 
-                            color: roleStyle.text,
-                            border: `1px solid ${roleStyle.border}`,
-                            padding: '4px 10px', 
-                            borderRadius: 6, 
-                            fontSize: 12, 
-                            fontWeight: 700,
-                            textTransform: 'capitalize'
-                          }}>
-                            {u.role}
-                          </span>
-                        </td>
-                        <td>
-                          {u.mandalId ? (
-                            <>
-                              <div style={{ fontWeight: 600 }}>{u.mandalId.name}</div>
-                              <div className="text-caption">{u.mandalId.plan || 'Free'} plan</div>
-                            </>
-                          ) : (
-                            <span className="text-caption" style={{ color: 'var(--text-muted)' }}>None / Unassigned</span>
-                          )}
-                        </td>
-                        <td>
-                          <span style={{ 
-                            color: u.status === 'active' ? '#10b981' : (u.status === 'invited' ? '#f59e0b' : '#ef4444'),
-                            background: u.status === 'active' ? '#10b98118' : (u.status === 'invited' ? '#f59e0b18' : '#ef444418'),
-                            padding: '4px 8px',
-                            borderRadius: 6,
-                            fontSize: 12, 
-                            fontWeight: 600,
-                            textTransform: 'capitalize'
-                          }}>
-                            {u.status}
-                          </span>
-                        </td>
-                        <td className="text-caption">
-                          {new Date(u.createdAt).toLocaleDateString()}
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <div style={{ display: 'inline-flex', gap: 8 }}>
-                            <button 
-                              className="btn btn-outline"
-                              style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600 }}
-                              onClick={() => handleOpenEditUser(u)}
-                              title="Edit user details, role, status & password"
-                            >
-                              ✏️ Edit
-                            </button>
-
-                            {!isPrimarySuperAdmin && (
-                              <button 
-                                className="btn btn-outline"
-                                style={{ 
-                                  padding: '6px 10px', 
-                                  fontSize: 12, 
-                                  fontWeight: 600,
-                                  color: u.status === 'active' ? '#D97706' : '#10B981',
-                                  borderColor: u.status === 'active' ? '#FDE68A' : '#A7F3D0'
+                      return (
+                        <div
+                          key={item.president._id}
+                          style={{
+                            background: '#FFFFFF',
+                            border: '1px solid #E2E8F0',
+                            borderRadius: 14,
+                            overflow: 'hidden',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                            transition: 'all 0.2s ease',
+                            borderLeft: '5px solid #2563EB'
+                          }}
+                        >
+                          {/* Card Header / President Main Row */}
+                          <div
+                            style={{
+                              padding: '16px 20px',
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: 16,
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              background: isExpanded ? '#F8FAFC' : '#FFFFFF',
+                              borderBottom: isExpanded ? '1px solid #E2E8F0' : 'none'
+                            }}
+                          >
+                            {/* Left: President Info */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 260, flex: '1 1 260px' }}>
+                              <div
+                                style={{
+                                  width: 46,
+                                  height: 46,
+                                  borderRadius: 12,
+                                  background: 'linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%)',
+                                  color: '#FFFFFF',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontWeight: 800,
+                                  fontSize: 18,
+                                  boxShadow: '0 4px 10px rgba(37,99,235,0.2)',
+                                  position: 'relative',
+                                  flexShrink: 0
                                 }}
-                                onClick={() => handleToggleStatus(u)}
-                                title={u.status === 'active' ? 'Disable this account' : 'Activate this account'}
                               >
-                                {u.status === 'active' ? 'Disable' : 'Activate'}
-                              </button>
-                            )}
+                                {item.president.name ? item.president.name.charAt(0).toUpperCase() : 'P'}
+                                <span style={{ position: 'absolute', top: -6, right: -6, fontSize: 13 }} title="Mandal President">👑</span>
+                              </div>
 
-                            {!isPrimarySuperAdmin && u.role !== 'superadmin' && (
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                  <span style={{ fontWeight: 700, fontSize: 16, color: '#0F172A' }}>
+                                    {item.president.name}
+                                  </span>
+                                  {isPrimarySuperAdmin && <span title="Primary System Superadmin">👑</span>}
+                                  <span
+                                    style={{
+                                      background: '#EFF6FF',
+                                      color: '#1D4ED8',
+                                      border: '1px solid #BFDBFE',
+                                      padding: '2px 8px',
+                                      borderRadius: 6,
+                                      fontSize: 11,
+                                      fontWeight: 700
+                                    }}
+                                  >
+                                    👑 अध्यक्ष (President)
+                                  </span>
+                                  <span
+                                    style={{
+                                      color: item.president.status === 'active' ? '#10B981' : '#EF4444',
+                                      background: item.president.status === 'active' ? '#10B98115' : '#EF444415',
+                                      padding: '2px 7px',
+                                      borderRadius: 6,
+                                      fontSize: 11,
+                                      fontWeight: 700,
+                                      textTransform: 'capitalize'
+                                    }}
+                                  >
+                                    {item.president.status}
+                                  </span>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 4, fontSize: 12.5, color: '#64748B' }}>
+                                  <span>📧 {item.president.email}</span>
+                                  {item.president.mobile && (
+                                    <span style={{ fontWeight: 600, color: '#334155' }}>📱 {item.president.mobile}</span>
+                                  )}
+                                  <span>📅 {new Date(item.president.createdAt).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Center: Mandal & Plan Badge */}
+                            <div style={{ minWidth: 220, flex: '1 1 220px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: 14 }}>🚩</span>
+                                <strong style={{ fontSize: 14, color: '#1E293B' }}>
+                                  {mandalObj?.name || (item.president.mandalId?.name || 'Mandal Unassigned')}
+                                </strong>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                                <span
+                                  style={{
+                                    color: getPlanColor(planName),
+                                    background: `${getPlanColor(planName)}18`,
+                                    padding: '2px 8px',
+                                    borderRadius: 6,
+                                    fontSize: 11.5,
+                                    fontWeight: 700
+                                  }}
+                                >
+                                  💎 {planName} Plan
+                                </span>
+                                <span style={{ fontSize: 11.5, color: (mandalObj?.planStatus === 'Active' || item.president.mandalId?.planStatus === 'Active') ? '#10B981' : '#64748B', fontWeight: 600 }}>
+                                  {(mandalObj?.planStatus === 'Active' || item.president.mandalId?.planStatus === 'Active') ? '🟢 Active' : (mandalObj?.planStatus || '')}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Right: Member Count & Actions */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                              {/* Expand / Collapse Button */}
+                              <button
+                                type="button"
+                                onClick={() => toggleExpandPresident(item.president._id)}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  padding: '7px 12px',
+                                  borderRadius: 8,
+                                  border: '1px solid #CBD5E1',
+                                  background: isExpanded ? '#EFF6FF' : '#FFFFFF',
+                                  color: isExpanded ? '#1D4ED8' : '#334155',
+                                  fontSize: 12.5,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                title="View committee members and volunteers under this President's mandal"
+                              >
+                                <span>👥</span>
+                                <span>{item.members.length} सदस्य (Members)</span>
+                                <span style={{ fontSize: 10, transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}>
+                                  ▼
+                                </span>
+                              </button>
+
+                              {/* Edit President */}
+                              <button
+                                className="btn btn-outline btn-sm"
+                                onClick={() => handleOpenEditUser(item.president)}
+                                style={{ padding: '6px 10px', fontSize: 12, fontWeight: 600 }}
+                                title="Edit President details, password or status"
+                              >
+                                ✏️ Edit
+                              </button>
+
+                              {/* Disable/Activate */}
+                              {!isPrimarySuperAdmin && (
+                                <button
+                                  className="btn btn-outline btn-sm"
+                                  style={{
+                                    padding: '6px 10px',
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    color: item.president.status === 'active' ? '#D97706' : '#10B981',
+                                    borderColor: item.president.status === 'active' ? '#FDE68A' : '#A7F3D0'
+                                  }}
+                                  onClick={() => handleToggleStatus(item.president)}
+                                  title={item.president.status === 'active' ? 'Disable President' : 'Activate President'}
+                                >
+                                  {item.president.status === 'active' ? 'Disable' : 'Activate'}
+                                </button>
+                              )}
+
+                              {/* Delete */}
+                              {!isPrimarySuperAdmin && item.president.role !== 'superadmin' && (
+                                <button
+                                  className="btn btn-outline btn-sm"
+                                  style={{ padding: '6px 10px', fontSize: 12, color: '#EF4444', borderColor: '#FECACA' }}
+                                  onClick={() => handleDeleteUser(item.president)}
+                                  title="Delete President permanently"
+                                >
+                                  🗑️
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Expanded Members Section (Accordion) */}
+                          {isExpanded && (
+                            <div style={{ padding: '16px 20px', background: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <span style={{ fontSize: 15 }}>🏛️</span>
+                                  <h4 style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: '#334155' }}>
+                                    {mandalObj?.name || 'Mandal'} — कार्यकारिणी सदस्य व स्वयंसेवक (Committee Members & Volunteers)
+                                  </h4>
+                                  <span style={{ background: '#E2E8F0', color: '#475569', fontSize: 11, fontWeight: 700, padding: '1px 8px', borderRadius: 999 }}>
+                                    {item.members.length}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {item.members.length > 0 ? (
+                                <div style={{ background: '#FFFFFF', borderRadius: 10, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+                                  <table className="table" style={{ margin: 0, fontSize: 13 }}>
+                                    <thead style={{ background: '#F1F5F9' }}>
+                                      <tr>
+                                        <th style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>सदस्य नाव (Member)</th>
+                                        <th style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>पद (Role)</th>
+                                        <th style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>स्थिती (Status)</th>
+                                        <th style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>सामील (Joined)</th>
+                                        <th style={{ textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#475569' }}>कृती (Actions)</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {item.members.map(member => {
+                                        const roleInfo = getRoleColor(member.role);
+                                        return (
+                                          <tr key={member._id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                                            <td>
+                                              <div style={{ fontWeight: 600, color: '#0F172A' }}>{member.name}</div>
+                                              <div className="text-caption" style={{ color: '#64748B' }}>
+                                                {member.email} {member.mobile ? `· 📱 ${member.mobile}` : ''}
+                                              </div>
+                                            </td>
+                                            <td>
+                                              <span
+                                                style={{
+                                                  background: roleInfo.bg,
+                                                  color: roleInfo.text,
+                                                  border: `1px solid ${roleInfo.border}`,
+                                                  padding: '3px 8px',
+                                                  borderRadius: 6,
+                                                  fontSize: 11.5,
+                                                  fontWeight: 700,
+                                                  textTransform: 'capitalize'
+                                                }}
+                                              >
+                                                {roleInfo.label || member.role}
+                                              </span>
+                                            </td>
+                                            <td>
+                                              <span
+                                                style={{
+                                                  color: member.status === 'active' ? '#10B981' : (member.status === 'invited' ? '#F59E0B' : '#EF4444'),
+                                                  background: member.status === 'active' ? '#10B98118' : (member.status === 'invited' ? '#F59E0B18' : '#EF444418'),
+                                                  padding: '3px 8px',
+                                                  borderRadius: 6,
+                                                  fontSize: 11.5,
+                                                  fontWeight: 600,
+                                                  textTransform: 'capitalize'
+                                                }}
+                                              >
+                                                {member.status}
+                                              </span>
+                                            </td>
+                                            <td className="text-caption" style={{ color: '#64748B' }}>
+                                              {new Date(member.createdAt).toLocaleDateString()}
+                                            </td>
+                                            <td style={{ textAlign: 'right' }}>
+                                              <div style={{ display: 'inline-flex', gap: 6 }}>
+                                                <button
+                                                  className="btn btn-outline btn-sm"
+                                                  style={{ padding: '4px 8px', fontSize: 11.5 }}
+                                                  onClick={() => handleOpenEditUser(member)}
+                                                  title="Edit member details"
+                                                >
+                                                  ✏️ Edit
+                                                </button>
+                                                <button
+                                                  className="btn btn-outline btn-sm"
+                                                  style={{
+                                                    padding: '4px 8px',
+                                                    fontSize: 11.5,
+                                                    color: member.status === 'active' ? '#D97706' : '#10B981',
+                                                    borderColor: member.status === 'active' ? '#FDE68A' : '#A7F3D0'
+                                                  }}
+                                                  onClick={() => handleToggleStatus(member)}
+                                                  title={member.status === 'active' ? 'Disable member' : 'Activate member'}
+                                                >
+                                                  {member.status === 'active' ? 'Disable' : 'Activate'}
+                                                </button>
+                                                <button
+                                                  className="btn btn-outline btn-sm"
+                                                  style={{ padding: '4px 8px', fontSize: 11.5, color: '#EF4444', borderColor: '#FECACA' }}
+                                                  onClick={() => handleDeleteUser(member)}
+                                                  title="Delete member"
+                                                >
+                                                  🗑️
+                                                </button>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              ) : (
+                                <div style={{ padding: '16px 20px', background: '#FFFFFF', borderRadius: 10, border: '1px dashed #CBD5E1', color: '#64748B', fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>
+                                  <span>ℹ️</span>
+                                  <span>या मंडळाखाली अजून अतिरिक्त कार्यकारिणी सदस्य जोडलेले नाहीत. अध्यक्ष ॲपवरून किंवा वेब पोर्टलवरून सदस्यांना आमंत्रित करू शकतात.</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: 48, background: '#F8FAFC', borderRadius: 12, border: '1px dashed #CBD5E1', color: '#64748B' }}>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>👑</div>
+                    <div style={{ fontWeight: 600, fontSize: 15 }}>No President users matching filter criteria.</div>
+                    <div className="text-caption" style={{ marginTop: 4 }}>Try clearing search or filter selections.</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ─── MODE 2: FLAT USER LIST TABLE ─── */}
+            {userViewMode === 'all' && (
+              <div className="table-responsive">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Role</th>
+                      <th>Primary Mandal</th>
+                      <th>Status</th>
+                      <th>Joined</th>
+                      <th style={{ textAlign: 'right' }}>Manage User</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUsers.map(u => {
+                      const roleStyle = getRoleColor(u.role);
+                      const isPrimarySuperAdmin = u.email === 'quantromind@gmail.com';
+
+                      return (
+                        <tr key={u._id}>
+                          <td>
+                            <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              {u.name}
+                              {isPrimarySuperAdmin && <span title="Primary System Superadmin">👑</span>}
+                            </div>
+                            <div className="text-caption">{u.email} {u.mobile ? `· ${u.mobile}` : ''}</div>
+                          </td>
+                          <td>
+                            <span style={{ 
+                              background: roleStyle.bg, 
+                              color: roleStyle.text,
+                              border: `1px solid ${roleStyle.border}`,
+                              padding: '4px 10px', 
+                              borderRadius: 6, 
+                              fontSize: 12, 
+                              fontWeight: 700,
+                              textTransform: 'capitalize'
+                            }}>
+                              {roleStyle.label || u.role}
+                            </span>
+                          </td>
+                          <td>
+                            {u.mandalId ? (
+                              <>
+                                <div style={{ fontWeight: 600 }}>{u.mandalId.name}</div>
+                                <div className="text-caption">{u.mandalId.plan || 'Free'} plan</div>
+                              </>
+                            ) : (
+                              <span className="text-caption" style={{ color: 'var(--text-muted)' }}>None / Unassigned</span>
+                            )}
+                          </td>
+                          <td>
+                            <span style={{ 
+                              color: u.status === 'active' ? '#10b981' : (u.status === 'invited' ? '#f59e0b' : '#ef4444'),
+                              background: u.status === 'active' ? '#10b98118' : (u.status === 'invited' ? '#f59e0b18' : '#ef444418'),
+                              padding: '4px 8px',
+                              borderRadius: 6,
+                              fontSize: 12, 
+                              fontWeight: 600,
+                              textTransform: 'capitalize'
+                            }}>
+                              {u.status}
+                            </span>
+                          </td>
+                          <td className="text-caption">
+                            {new Date(u.createdAt).toLocaleDateString()}
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <div style={{ display: 'inline-flex', gap: 8 }}>
                               <button 
                                 className="btn btn-outline"
-                                style={{ padding: '6px 10px', fontSize: 12, color: '#EF4444', borderColor: '#FECACA' }}
-                                onClick={() => handleDeleteUser(u)}
-                                title="Delete user permanently"
+                                style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600 }}
+                                onClick={() => handleOpenEditUser(u)}
+                                title="Edit user details, role, status & password"
                               >
-                                🗑️
+                                ✏️ Edit
                               </button>
-                            )}
-                          </div>
+
+                              {!isPrimarySuperAdmin && (
+                                <button 
+                                  className="btn btn-outline"
+                                  style={{ 
+                                    padding: '6px 10px', 
+                                    fontSize: 12, 
+                                    fontWeight: 600,
+                                    color: u.status === 'active' ? '#D97706' : '#10B981',
+                                    borderColor: u.status === 'active' ? '#FDE68A' : '#A7F3D0'
+                                  }}
+                                  onClick={() => handleToggleStatus(u)}
+                                  title={u.status === 'active' ? 'Disable this account' : 'Activate this account'}
+                                >
+                                  {u.status === 'active' ? 'Disable' : 'Activate'}
+                                </button>
+                              )}
+
+                              {!isPrimarySuperAdmin && u.role !== 'superadmin' && (
+                                <button 
+                                  className="btn btn-outline"
+                                  style={{ padding: '6px 10px', fontSize: 12, color: '#EF4444', borderColor: '#FECACA' }}
+                                  onClick={() => handleDeleteUser(u)}
+                                  title="Delete user permanently"
+                                >
+                                  🗑️
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {filteredUsers.length === 0 && (
+                      <tr>
+                        <td colSpan="6" style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>
+                          No users found matching the filter.
                         </td>
                       </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* ─── MODE 3: SUPERADMINS ─── */}
+            {userViewMode === 'superadmins' && (
+              <div style={{ padding: 20 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+                  {superadminsList.map(sa => {
+                    const isPrimary = sa.email === 'quantromind@gmail.com';
+                    return (
+                      <div
+                        key={sa._id}
+                        style={{
+                          background: '#FFFFFF',
+                          border: '1px solid #DDD6FE',
+                          borderRadius: 14,
+                          padding: 18,
+                          borderLeft: '5px solid #7C3AED',
+                          boxShadow: '0 2px 8px rgba(124, 58, 237, 0.05)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              {sa.name}
+                              {isPrimary && <span title="Primary System Superadmin">👑</span>}
+                            </div>
+                            <div className="text-caption" style={{ color: '#64748B', marginTop: 2 }}>{sa.email}</div>
+                            {sa.mobile && <div className="text-caption" style={{ color: '#475569' }}>📱 {sa.mobile}</div>}
+                          </div>
+                          <span style={{ background: '#F3E8FF', color: '#7C3AED', border: '1px solid #DDD6FE', padding: '3px 8px', borderRadius: 6, fontSize: 11.5, fontWeight: 800 }}>
+                            🛡️ Superadmin
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTop: '1px solid #F1F5F9', marginTop: 10 }}>
+                          <span className="text-caption" style={{ color: '#94A3B8' }}>Joined: {new Date(sa.createdAt).toLocaleDateString()}</span>
+                          <button
+                            className="btn btn-outline btn-sm"
+                            onClick={() => handleOpenEditUser(sa)}
+                            style={{ fontSize: 12 }}
+                          >
+                            ✏️ Edit Details
+                          </button>
+                        </div>
+                      </div>
                     );
                   })}
-                  {filteredUsers.length === 0 && (
-                    <tr>
-                      <td colSpan="6" style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>
-                        No users found matching the filter.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              </div>
+            )}
+
+            {/* ─── MODE 4: UNASSIGNED USERS ─── */}
+            {userViewMode === 'unassigned' && (
+              <div style={{ padding: 20 }}>
+                {unassignedUsersList.length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+                    {unassignedUsersList.map(u => (
+                      <div
+                        key={u._id}
+                        style={{
+                          background: '#FFFFFF',
+                          border: '1px solid #FEF3C7',
+                          borderRadius: 14,
+                          padding: 18,
+                          borderLeft: '5px solid #F59E0B'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: 15 }}>{u.name}</div>
+                            <div className="text-caption" style={{ color: '#64748B' }}>{u.email}</div>
+                            {u.mobile && <div className="text-caption">📱 {u.mobile}</div>}
+                          </div>
+                          <span style={{ background: '#FEF3C7', color: '#B45309', padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+                            ⚠️ Unassigned
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12, paddingTop: 10, borderTop: '1px solid #F8FAFC' }}>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => handleOpenEditUser(u)}
+                            style={{ fontSize: 12, background: '#2563EB', borderColor: '#2563EB' }}
+                          >
+                            🏢 Assign Mandal
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: 36, color: '#64748B' }}>
+                    No unassigned users. All users belong to a registered Mandal.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
