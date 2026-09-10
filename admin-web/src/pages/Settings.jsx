@@ -113,6 +113,45 @@ const Settings = () => {
     });
   };
 
+  const handleOpenDeleteModal = () => {
+    setDeleteStep('warning');
+    setDeleteOtp('');
+    setDeleteError('');
+    setShowDeleteModal(true);
+  };
+
+  const handleSendDeleteOtp = async () => {
+    setSendingDeleteOtp(true);
+    setDeleteError('');
+    try {
+      await api.post('/auth/delete-account/send-otp');
+      setDeleteStep('otp');
+    } catch (err) {
+      setDeleteError(err.response?.data?.message || 'Failed to send OTP. Please try again.');
+    } finally {
+      setSendingDeleteOtp(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteOtp || deleteOtp.trim().length !== 6) {
+      setDeleteError('Please enter the 6-digit verification code.');
+      return;
+    }
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await api.post('/auth/delete-account', { code: deleteOtp.trim() });
+      setShowDeleteModal(false);
+      alert('Your account and workspace data have been permanently deleted.');
+      logout();
+    } catch (err) {
+      setDeleteError(err.response?.data?.message || 'Deletion failed. Please verify your OTP code.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (!mandal) return <Layout><div className="flex-center" style={{ height: '50vh' }}><p>Loading…</p></div></Layout>;
 
   return (
