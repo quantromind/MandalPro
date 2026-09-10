@@ -34,11 +34,17 @@ export default function Profile() {
     president: { canCollect: true, canManageExpenses: true, canAddMembers: true, canChat: true, canViewReports: true }
   };
 
+  const isSuperAdmin = user?.role === 'superadmin';
+  const isPresident = user?.role === 'president' || isSuperAdmin;
+  const canAddMembers = isPresident || (user?.permissions?.canAddMembers === true);
+
   // Add member modal state
   const [showAddMember, setShowAddMember] = useState(false);
   const [memberName, setMemberName] = useState('');
   const [memberEmail, setMemberEmail] = useState('');
   const [memberMobile, setMemberMobile] = useState('');
+  const [memberPassword, setMemberPassword] = useState('');
+  const [showMemberPassword, setShowMemberPassword] = useState(false);
   const [memberRole, setMemberRole] = useState('volunteer');
   const [memberPermissions, setMemberPermissions] = useState(ROLE_DEFAULTS.volunteer);
   const [addingMember, setAddingMember] = useState(false);
@@ -47,6 +53,8 @@ export default function Profile() {
   const [editingMember, setEditingMember] = useState(null);
   const [editName, setEditName] = useState('');
   const [editMobile, setEditMobile] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [showEditPassword, setShowEditPassword] = useState(false);
   const [editRole, setEditRole] = useState('volunteer');
   const [editPermissions, setEditPermissions] = useState(ROLE_DEFAULTS.volunteer);
   const [updatingMember, setUpdatingMember] = useState(false);
@@ -131,12 +139,15 @@ export default function Profile() {
         email: memberEmail.trim(),
         mobile: memberMobile.trim(),
         role: memberRole,
-        permissions: memberPermissions
+        permissions: memberPermissions,
+        password: memberPassword.trim()
       });
       setShowAddMember(false);
       setMemberName('');
       setMemberEmail('');
       setMemberMobile('');
+      setMemberPassword('');
+      setShowMemberPassword(false);
       setMemberRole('volunteer');
       setMemberPermissions(ROLE_DEFAULTS.volunteer);
       await loadMembers();
@@ -152,6 +163,8 @@ export default function Profile() {
     setEditingMember(member);
     setEditName(member.name || '');
     setEditMobile(member.mobile || '');
+    setEditPassword('');
+    setShowEditPassword(false);
     setEditRole(member.role || 'volunteer');
     setEditPermissions(member.permissions || ROLE_DEFAULTS[member.role] || ROLE_DEFAULTS.volunteer);
   };
@@ -161,12 +174,16 @@ export default function Profile() {
     if (!editingMember) return;
     try {
       setUpdatingMember(true);
-      await client.patch(`/members/${editingMember._id}`, {
+      const payload = {
         name: editName.trim(),
         mobile: editMobile.trim(),
         role: editRole,
         permissions: editPermissions
-      });
+      };
+      if (editPassword.trim()) {
+        payload.password = editPassword.trim();
+      }
+      await client.patch(`/members/${editingMember._id}`, payload);
       setEditingMember(null);
       await loadMembers();
       alert(language === 'mr' ? 'सदस्य माहिती व परवानग्या अद्ययावत झाल्या! ✅' : 'Member updated successfully! ✅');
@@ -220,12 +237,34 @@ export default function Profile() {
               🏛️ {t('profile.mandalDetails')}
             </h3>
 
+            {!isPresident && (
+              <div style={{
+                background: 'rgba(245, 158, 11, 0.1)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                color: '#B45309',
+                borderRadius: 10,
+                padding: '10px 14px',
+                fontSize: 12.5,
+                marginBottom: 16,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
+              }}>
+                <span>🔒</span>
+                <span>
+                  {language === 'mr'
+                    ? 'मंडळ अधिकृत तपशील, लोगो व बँक UPI केवळ मंडळ अध्यक्ष (President) बदलू शकतात.'
+                    : 'Mandal branding, contact details & UPI ID can only be modified by the Mandal President.'}
+                </span>
+              </div>
+            )}
+
             <form onSubmit={handleUpdateProfile}>
               {/* Mandal Official Logo Upload */}
               <div className="form-group" style={{ marginBottom: 20 }}>
                 <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>🚩 {language === 'mr' ? 'मंडळ अधिकृत लोगो (पावतीवर दिसेल)' : 'Official Mandal Logo (Printed on receipts)'}</span>
-                  {logoPreview && (
+                  {isPresident && logoPreview && (
                     <button
                       type="button"
                       className="btn btn-ghost btn-sm"
@@ -238,7 +277,7 @@ export default function Profile() {
                 </label>
                 <div
                   className="logo-upload-box"
-                  onClick={() => logoInputRef.current?.click()}
+                  onClick={() => isPresident && logoInputRef.current?.click()}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -247,7 +286,8 @@ export default function Profile() {
                     border: '2px dashed var(--border)',
                     borderRadius: 'var(--radius-md)',
                     background: 'var(--bg-subtle)',
-                    cursor: 'pointer',
+                    cursor: isPresident ? 'pointer' : 'default',
+                    opacity: isPresident ? 1 : 0.85,
                     transition: 'all 0.2s ease'
                   }}
                 >
@@ -271,20 +311,26 @@ export default function Profile() {
                       {logoPreview ? (language === 'mr' ? 'लोगो निवडला आहे ✓' : 'Custom logo selected ✓') : (language === 'mr' ? 'लोगो अपलोड करा' : 'Upload custom logo')}
                     </div>
                     <div className="text-muted" style={{ fontSize: 11.5, marginTop: 2 }}>
-                      {language === 'mr' ? 'PNG, JPG किंवा WEBP निवडा (क्लिक करा)' : 'Click to select PNG, JPG or WEBP'}
+                      {isPresident
+                        ? (language === 'mr' ? 'PNG, JPG किंवा WEBP निवडा (क्लिक करा)' : 'Click to select PNG, JPG or WEBP')
+                        : (language === 'mr' ? 'केवळ अध्यक्ष लोगो बदलू शकतात' : 'Only President can update logo')}
                     </div>
                   </div>
-                  <button type="button" className="btn btn-sm btn-outline" style={{ pointerEvents: 'none' }}>
-                    📁 {language === 'mr' ? 'बदला' : 'Browse'}
-                  </button>
+                  {isPresident && (
+                    <button type="button" className="btn btn-sm btn-outline" style={{ pointerEvents: 'none' }}>
+                      📁 {language === 'mr' ? 'बदला' : 'Browse'}
+                    </button>
+                  )}
                 </div>
-                <input
-                  ref={logoInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoChange}
-                  style={{ display: 'none' }}
-                />
+                {isPresident && (
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    style={{ display: 'none' }}
+                  />
+                )}
               </div>
 
               <div className="grid-2">
@@ -295,6 +341,7 @@ export default function Profile() {
                     className="form-control"
                     value={mandalName}
                     onChange={(e) => setMandalName(e.target.value)}
+                    disabled={!isPresident}
                     required
                   />
                 </div>
@@ -309,6 +356,7 @@ export default function Profile() {
                     placeholder="उदा. 1995, 2012, 2023"
                     value={establishedYear}
                     onChange={(e) => setEstablishedYear(e.target.value)}
+                    disabled={!isPresident}
                   />
                 </div>
               </div>
@@ -321,6 +369,7 @@ export default function Profile() {
                   placeholder="e.g. Shivaji Chowk, Pune"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
+                  disabled={!isPresident}
                 />
               </div>
 
@@ -335,6 +384,7 @@ export default function Profile() {
                     placeholder="e.g. 9876543210"
                     value={contactPhone}
                     onChange={(e) => setContactPhone(e.target.value)}
+                    disabled={!isPresident}
                   />
                 </div>
 
@@ -348,6 +398,7 @@ export default function Profile() {
                     placeholder="e.g. contact@mandal.com"
                     value={contactEmail}
                     onChange={(e) => setContactEmail(e.target.value)}
+                    disabled={!isPresident}
                   />
                 </div>
               </div>
@@ -361,6 +412,7 @@ export default function Profile() {
                     placeholder="e.g. mandal@upi"
                     value={upiId}
                     onChange={(e) => setUpiId(e.target.value)}
+                    disabled={!isPresident}
                   />
                 </div>
 
@@ -374,13 +426,16 @@ export default function Profile() {
                     placeholder="e.g. GU26, RCPT"
                     value={receiptPrefix}
                     onChange={(e) => setReceiptPrefix(e.target.value)}
+                    disabled={!isPresident}
                   />
                 </div>
               </div>
 
-              <button type="submit" className="btn btn-primary" disabled={saving}>
-                {saving ? t('common.loading') : `💾 ${t('common.save')}`}
-              </button>
+              {isPresident && (
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? t('common.loading') : `💾 ${t('common.save')}`}
+                </button>
+              )}
             </form>
           </div>
 
@@ -447,15 +502,23 @@ export default function Profile() {
                   {t('profile.unlimitedMembersBadge')}
                 </span>
               </div>
-              <button
-                className="btn btn-sm btn-primary"
-                onClick={() => {
-                  setMemberPermissions(ROLE_DEFAULTS.volunteer);
-                  setShowAddMember(true);
-                }}
-              >
-                + {t('profile.addMember')}
-              </button>
+              {canAddMembers && (
+                <button
+                  className="btn btn-sm btn-primary"
+                  onClick={() => {
+                    setMemberName('');
+                    setMemberEmail('');
+                    setMemberMobile('');
+                    setMemberPassword('');
+                    setShowMemberPassword(false);
+                    setMemberRole('volunteer');
+                    setMemberPermissions(ROLE_DEFAULTS.volunteer);
+                    setShowAddMember(true);
+                  }}
+                >
+                  + {t('profile.addMember')}
+                </button>
+              )}
             </div>
 
             {loadingMembers ? (
@@ -502,15 +565,17 @@ export default function Profile() {
                           >
                             🪪 ID Card
                           </button>
-                          <button
-                            className="btn btn-sm btn-outline"
-                            onClick={() => handleOpenEditMember(m)}
-                            title="Edit Role & Permissions"
-                            style={{ padding: '4px 8px', fontSize: 12 }}
-                          >
-                            ✏️
-                          </button>
-                          {m.role !== 'president' && (
+                          {canAddMembers && (
+                            <button
+                              className="btn btn-sm btn-outline"
+                              onClick={() => handleOpenEditMember(m)}
+                              title="Edit Role & Permissions"
+                              style={{ padding: '4px 8px', fontSize: 12 }}
+                            >
+                              ✏️
+                            </button>
+                          )}
+                          {isPresident && m.role !== 'president' && (
                             <button
                               className="btn btn-sm btn-ghost"
                               onClick={() => handleRemoveMember(m._id, m.name)}
@@ -618,6 +683,50 @@ export default function Profile() {
                       onChange={(e) => setMemberMobile(e.target.value)}
                       style={{ height: 42 }}
                     />
+                  </div>
+                </div>
+
+                {/* Password for member login */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <label className="form-label" style={{ fontWeight: 600, margin: 0 }}>
+                      🔑 {t('profile.memberPassword')}
+                    </label>
+                    <span className="text-muted" style={{ fontSize: 11 }}>
+                      {language === 'mr' ? 'किंवा सदस्य OTP ने लॉगिन करू शकतात' : 'or member can use OTP'}
+                    </span>
+                  </div>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showMemberPassword ? 'text' : 'password'}
+                      className="form-control"
+                      placeholder={t('profile.memberPasswordPlaceholder')}
+                      value={memberPassword}
+                      onChange={(e) => setMemberPassword(e.target.value)}
+                      style={{ height: 42, paddingRight: 40 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowMemberPassword(!showMemberPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: 10,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: 16,
+                        color: 'var(--text-muted)',
+                        padding: 0
+                      }}
+                      title={showMemberPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showMemberPassword ? '👁️' : '🔒'}
+                    </button>
+                  </div>
+                  <div className="text-muted" style={{ fontSize: 11, marginTop: 4 }}>
+                    {t('profile.memberPasswordHelp')}
                   </div>
                 </div>
 
@@ -820,6 +929,47 @@ export default function Profile() {
                       onChange={(e) => setEditMobile(e.target.value)}
                       style={{ height: 42 }}
                     />
+                  </div>
+                </div>
+
+                {/* Optional Change Password for member */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <label className="form-label" style={{ fontWeight: 600, margin: 0 }}>
+                      🔑 {t('profile.changePassword')}
+                    </label>
+                    <span className="text-muted" style={{ fontSize: 11 }}>
+                      {language === 'mr' ? 'बदलायचा असेल तरच टाका' : 'Leave empty to keep current'}
+                    </span>
+                  </div>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showEditPassword ? 'text' : 'password'}
+                      className="form-control"
+                      placeholder={t('profile.memberPasswordPlaceholder')}
+                      value={editPassword}
+                      onChange={(e) => setEditPassword(e.target.value)}
+                      style={{ height: 42, paddingRight: 40 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditPassword(!showEditPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: 10,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: 16,
+                        color: 'var(--text-muted)',
+                        padding: 0
+                      }}
+                      title={showEditPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showEditPassword ? '👁️' : '🔒'}
+                    </button>
                   </div>
                 </div>
 

@@ -22,6 +22,8 @@ const {
   isResetTokenUsed,
   markResetTokenUsed
 } = require('../utils/rateLimiter');
+const { getDefaultPermissions } = require('../middleware/rbac');
+
 
 
 // @desc Register: creates a Mandal + first President user together (onboarding step 1-2)
@@ -100,7 +102,15 @@ const register = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     token,
-    user: { id: user._id, name: user.name, email: user.email, role: user.role, mandalId: mandal._id },
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      mobile: user.mobile,
+      role: user.role,
+      mandalId: mandal._id,
+      permissions: user.permissions || getDefaultPermissions(user.role)
+    },
     mandal
   });
 });
@@ -207,7 +217,15 @@ const login = asyncHandler(async (req, res) => {
 
   res.json({
     token,
-    user: { id: user._id, name: user.name, email: user.email, role: user.role, mandalId: user.mandalId },
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      mobile: user.mobile,
+      role: user.role,
+      mandalId: user.mandalId,
+      permissions: user.permissions || getDefaultPermissions(user.role)
+    },
     mandal
   });
 });
@@ -220,8 +238,12 @@ const getMe = asyncHandler(async (req, res) => {
   if (req.user.mandalId) {
     mandal = await Mandal.findById(req.user.mandalId);
   }
+  const userObj = req.user.toObject ? req.user.toObject() : { ...req.user };
+  if (!userObj.permissions) {
+    userObj.permissions = getDefaultPermissions(userObj.role);
+  }
   res.json({
-    ...req.user.toObject(),
+    ...userObj,
     mandal
   });
 });
@@ -382,7 +404,15 @@ const loginWithOtp = asyncHandler(async (req, res) => {
 
   res.json({
     token,
-    user: { id: user._id, name: user.name, email: user.email, role: user.role, mandalId: user.mandalId },
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      mobile: user.mobile,
+      role: user.role,
+      mandalId: user.mandalId,
+      permissions: user.permissions || getDefaultPermissions(user.role)
+    },
     mandal,
     isNewPresident: false
   });

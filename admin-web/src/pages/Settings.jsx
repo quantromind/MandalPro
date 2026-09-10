@@ -13,6 +13,7 @@ const FALLBACK_PLANS = [
 const Settings = () => {
   const { user, logout, refreshMandal } = useAuth();
   const [mandal, setMandal] = useState(null);
+  const isPresident = user?.role?.toLowerCase() === 'president' || user?.role?.toLowerCase() === 'superadmin';
   const [availablePlans, setAvailablePlans] = useState(FALLBACK_PLANS);
 
   // Upgrade Modal State
@@ -210,21 +211,27 @@ const Settings = () => {
               <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)', marginBottom: 4 }}>{mandal.plan} Plan</div>
               <div className="text-caption">Status: <strong style={{ color: mandal.planStatus === 'Active' ? 'var(--success)' : 'var(--danger)' }}>{mandal.planStatus || 'Active'}</strong></div>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Link
-                to="/subscription"
-                className="btn btn-primary btn-sm"
-                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
-              >
-                💎 Manage Subscription
-              </Link>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={handleOpenUpgradeModal}
-              >
-                ⭐ Upgrade Subscription Plan
-              </button>
-            </div>
+            {isPresident ? (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <Link
+                  to="/subscription"
+                  className="btn btn-primary btn-sm"
+                  style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                >
+                  💎 Manage Subscription
+                </Link>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={handleOpenUpgradeModal}
+                >
+                  ⭐ Upgrade Subscription Plan
+                </button>
+              </div>
+            ) : (
+              <span className="badge badge-neutral" style={{ fontSize: 12 }}>
+                🔒 Managed by President
+              </span>
+            )}
           </div>
           <p className="text-sub" style={{ fontSize: 13, margin: 0, lineHeight: 1.5 }}>
             Upgrade your plan for unlimited members, advanced analytics, and custom branding for your receipts.
@@ -264,22 +271,24 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* Danger Zone */}
-      <div className="card border-danger" style={{ marginTop: 20 }}>
-        <h2 className="text-h2" style={{ fontSize: 18, marginBottom: 12, color: 'var(--danger)' }}>⚠️ Danger Zone</h2>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          <p className="text-sub" style={{ margin: 0, maxWidth: 600 }}>
-            Irreversible and destructive actions. Permanently purge your Mandal workspace, donations, expenses, and records.
-          </p>
-          <button
-            className="btn btn-outline"
-            style={{ borderColor: 'var(--danger)', color: 'var(--danger)', whiteSpace: 'nowrap' }}
-            onClick={handleOpenDeleteModal}
-          >
-            Delete Workspace Permanently
-          </button>
+      {/* Danger Zone - President Only */}
+      {isPresident && (
+        <div className="card border-danger" style={{ marginTop: 20 }}>
+          <h2 className="text-h2" style={{ fontSize: 18, marginBottom: 12, color: 'var(--danger)' }}>⚠️ Danger Zone</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+            <p className="text-sub" style={{ margin: 0, maxWidth: 600 }}>
+              Irreversible and destructive actions. Permanently purge your Mandal workspace, donations, expenses, and records.
+            </p>
+            <button
+              className="btn btn-outline"
+              style={{ borderColor: 'var(--danger)', color: 'var(--danger)', whiteSpace: 'nowrap' }}
+              onClick={handleOpenDeleteModal}
+            >
+              Delete Workspace Permanently
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Delete Workspace / Account Modal ── */}
       {showDeleteModal && (

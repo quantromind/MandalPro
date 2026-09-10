@@ -26,13 +26,23 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('mandalpro_token');
     if (token) {
-      api.get('/mandal')
+      api.get('/auth/me')
         .then((res) => {
-          if (res.data) persistMandal(res.data);
+          if (res.data) {
+            persistUser(res.data);
+            if (res.data.mandal) persistMandal(res.data.mandal);
+          }
         })
-        .catch(() => {});
+        .catch(() => {
+          api.get('/mandal')
+            .then((res) => {
+              if (res.data) persistMandal(res.data);
+            })
+            .catch(() => {});
+        });
     }
   }, []);
+
 
   const login = async (email, password) => {
     const { data } = await api.post('/auth/login', { email, password });

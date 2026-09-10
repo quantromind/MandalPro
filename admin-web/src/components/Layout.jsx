@@ -19,16 +19,28 @@ export default function Layout({ children }) {
     end: true
   };
 
-  const navSections = [
+  const isSuperAdmin = user?.role === 'superadmin';
+  const isPresident = user?.role === 'president' || isSuperAdmin;
+  const perms = isPresident
+    ? { canCollect: true, canManageExpenses: true, canAddMembers: true, canChat: true, canViewReports: true }
+    : {
+        canCollect: user?.permissions?.canCollect ?? ['treasurer', 'secretary', 'volunteer'].includes(user?.role),
+        canManageExpenses: user?.permissions?.canManageExpenses ?? ['treasurer', 'secretary'].includes(user?.role),
+        canAddMembers: user?.permissions?.canAddMembers ?? ['secretary'].includes(user?.role),
+        canChat: user?.permissions?.canChat ?? true,
+        canViewReports: user?.permissions?.canViewReports ?? ['treasurer', 'secretary'].includes(user?.role)
+      };
+
+  const rawNavSections = [
     {
       id: 'finance',
       titleMr: 'वित्त',
       titleEn: 'Finance',
       items: [
-        { to: '/collections', labelMr: 'वर्गणी / जमा', labelEn: 'Collections', icon: '🚩' },
-        { to: '/donations', labelMr: 'देणग्या', labelEn: 'Donations', icon: '💰' },
-        { to: '/expenses', labelMr: 'खर्च', labelEn: 'Expenses', icon: '💸' },
-        { to: '/budgets', labelMr: 'अंदाजपत्रक', labelEn: 'Budgets', icon: '📈' }
+        { to: '/collections', labelMr: 'वर्गणी / जमा', labelEn: 'Collections', icon: '🚩', visible: perms.canCollect },
+        { to: '/donations', labelMr: 'देणग्या', labelEn: 'Donations', icon: '💰', visible: perms.canCollect },
+        { to: '/expenses', labelMr: 'खर्च', labelEn: 'Expenses', icon: '💸', visible: perms.canManageExpenses },
+        { to: '/budgets', labelMr: 'अंदाजपत्रक', labelEn: 'Budgets', icon: '📈', visible: perms.canManageExpenses }
       ]
     },
 
@@ -37,8 +49,8 @@ export default function Layout({ children }) {
       titleMr: 'संवाद',
       titleEn: 'Communication',
       items: [
-        { to: '/chat', labelMr: 'समिती संवाद', labelEn: 'Committee Chat', icon: '💬' },
-        { to: '/approvals', labelMr: 'मंजुऱ्या', labelEn: 'Approvals', icon: '⏳' }
+        { to: '/chat', labelMr: 'समिती संवाद', labelEn: 'Committee Chat', icon: '💬', visible: perms.canChat },
+        { to: '/approvals', labelMr: 'मंजुऱ्या', labelEn: 'Approvals', icon: '⏳', visible: isPresident || user?.role === 'treasurer' || perms.canManageExpenses }
       ]
     },
     {
@@ -46,8 +58,8 @@ export default function Layout({ children }) {
       titleMr: 'वाढ व अहवाल',
       titleEn: 'Growth',
       items: [
-        { to: '/subscription', labelMr: 'सदस्यता', labelEn: 'Subscription', icon: '💎' },
-        { to: '/reports', labelMr: 'अहवाल', labelEn: 'Reports', icon: '📑' }
+        { to: '/subscription', labelMr: 'सदस्यता', labelEn: 'Subscription', icon: '💎', visible: isPresident },
+        { to: '/reports', labelMr: 'अहवाल', labelEn: 'Reports', icon: '📑', visible: perms.canViewReports }
       ]
     },
     {
@@ -55,11 +67,18 @@ export default function Layout({ children }) {
       titleMr: 'खाते',
       titleEn: 'Account',
       items: [
-        { to: '/profile', labelMr: 'मंडळ प्रोफाइल', labelEn: 'Mandal Profile', icon: '🏛️' },
-        { to: '/settings', labelMr: 'सेटिंग्ज', labelEn: 'Settings', icon: '⚙️' }
+        { to: '/profile', labelMr: 'मंडळ प्रोफाइल', labelEn: 'Mandal Profile', icon: '🏛️', visible: true },
+        { to: '/settings', labelMr: 'सेटिंग्ज', labelEn: 'Settings', icon: '⚙️', visible: isPresident }
       ]
     }
   ];
+
+  const navSections = rawNavSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => item.visible !== false)
+    }))
+    .filter((section) => section.items.length > 0);
 
   const handleLogout = () => {
     logout();
@@ -75,8 +94,6 @@ export default function Layout({ children }) {
     setShowQuickAdd(false);
     navigate(path);
   };
-
-  const isSuperAdmin = user?.role === 'superadmin';
 
   return (
     <div className="app-shell">
@@ -183,7 +200,7 @@ export default function Layout({ children }) {
               <span className="lang-text">{language === 'mr' ? 'English' : 'मराठी'}</span>
             </button>
 
-            {!isSuperAdmin && (
+            {!isSuperAdmin && (perms.canCollect || perms.canManageExpenses || perms.canChat || perms.canAddMembers) && (
               <button className="btn btn-primary btn-quick-add" onClick={() => setShowQuickAdd(true)}>
                 + New
               </button>
@@ -225,7 +242,7 @@ export default function Layout({ children }) {
       </div>
 
       {/* Floating Chat Shortcut Button */}
-      {!isSuperAdmin && location.pathname !== '/chat' && (
+      {!isSuperAdmin && perms.canChat && location.pathname !== '/chat' && (
         <button
           className="floating-chat-btn"
           onClick={() => navigate('/chat')}
@@ -267,34 +284,56 @@ export default function Layout({ children }) {
             <span>{language === 'mr' ? 'मुख्यपृष्ठ' : 'Home'}</span>
           </NavLink>
 
-          {/* 2. Collections */}
-          <NavLink
-            to="/collections"
-            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-          >
-            <span>🚩</span>
-            <span>{language === 'mr' ? 'वर्गणी' : 'Collections'}</span>
-          </NavLink>
+          {/* 2. Collections (if permitted) or Profile */}
+          {perms.canCollect ? (
+            <NavLink
+              to="/collections"
+              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            >
+              <span>🚩</span>
+              <span>{language === 'mr' ? 'वर्गणी' : 'Collections'}</span>
+            </NavLink>
+          ) : (
+            <NavLink
+              to="/profile"
+              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            >
+              <span>🏛️</span>
+              <span>{language === 'mr' ? 'प्रोफाइल' : 'Profile'}</span>
+            </NavLink>
+          )}
 
           {/* 3. Floating Quick Action Center Button */}
-          <div className="nav-item nav-fab-wrapper">
-            <button
-              className="nav-fab"
-              onClick={() => setShowQuickAdd(true)}
-              aria-label="Quick Add"
-            >
-              +
-            </button>
-          </div>
+          {(perms.canCollect || perms.canManageExpenses || perms.canChat || perms.canAddMembers) && (
+            <div className="nav-item nav-fab-wrapper">
+              <button
+                className="nav-fab"
+                onClick={() => setShowQuickAdd(true)}
+                aria-label="Quick Add"
+              >
+                +
+              </button>
+            </div>
+          )}
 
-          {/* 4. Chat */}
-          <NavLink
-            to="/chat"
-            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-          >
-            <span>💬</span>
-            <span>{language === 'mr' ? 'संवाद' : 'Chat'}</span>
-          </NavLink>
+          {/* 4. Chat (if permitted) */}
+          {perms.canChat ? (
+            <NavLink
+              to="/chat"
+              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            >
+              <span>💬</span>
+              <span>{language === 'mr' ? 'संवाद' : 'Chat'}</span>
+            </NavLink>
+          ) : (
+            <NavLink
+              to="/profile"
+              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            >
+              <span>🏛️</span>
+              <span>{language === 'mr' ? 'प्रोफाइल' : 'Profile'}</span>
+            </NavLink>
+          )}
 
           {/* 5. More Menu Button */}
           <button
@@ -416,34 +455,48 @@ export default function Layout({ children }) {
             </p>
             
             <div className="quick-add-grid">
-              <div className="quick-add-item" onClick={() => handleNavigate('/collections')}>
-                <div className="quick-add-icon" style={{ background: 'rgba(249, 115, 22, 0.1)', color: '#F97316' }}>🚩</div>
-                <div className="text-h3" style={{ fontSize: 12.5 }}>{t('nav.collection')}</div>
-              </div>
-              <div className="quick-add-item" onClick={() => handleNavigate('/collections?tab=receipts')}>
-                <div className="quick-add-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10B981' }}>🧾</div>
-                <div className="text-h3" style={{ fontSize: 12.5 }}>{t('nav.receipts')}</div>
-              </div>
-              <div className="quick-add-item" onClick={() => handleNavigate('/donations')}>
-                <div className="quick-add-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B' }}>💰</div>
-                <div className="text-h3" style={{ fontSize: 12.5 }}>{language === 'mr' ? 'देणगी नोंद' : 'Donation'}</div>
-              </div>
-              <div className="quick-add-item" onClick={() => handleNavigate('/expenses')}>
-                <div className="quick-add-icon" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444' }}>💸</div>
-                <div className="text-h3" style={{ fontSize: 12.5 }}>{t('nav.expenses')}</div>
-              </div>
-              <div className="quick-add-item" onClick={() => handleNavigate('/chat')}>
-                <div className="quick-add-icon" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366F1' }}>💬</div>
-                <div className="text-h3" style={{ fontSize: 12.5 }}>{t('nav.chat')}</div>
-              </div>
-              <div className="quick-add-item" onClick={() => handleNavigate('/events')}>
-                <div className="quick-add-icon" style={{ background: 'rgba(108, 77, 217, 0.1)', color: '#6C4DD9' }}>🎪</div>
-                <div className="text-h3" style={{ fontSize: 12.5 }}>{t('nav.events')}</div>
-              </div>
-              <div className="quick-add-item" onClick={() => handleNavigate('/members')}>
-                <div className="quick-add-icon" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3B82F6' }}>👥</div>
-                <div className="text-h3" style={{ fontSize: 12.5 }}>{t('profile.addMember')}</div>
-              </div>
+              {perms.canCollect && (
+                <div className="quick-add-item" onClick={() => handleNavigate('/collections')}>
+                  <div className="quick-add-icon" style={{ background: 'rgba(249, 115, 22, 0.1)', color: '#F97316' }}>🚩</div>
+                  <div className="text-h3" style={{ fontSize: 12.5 }}>{t('nav.collection')}</div>
+                </div>
+              )}
+              {perms.canCollect && (
+                <div className="quick-add-item" onClick={() => handleNavigate('/collections?tab=receipts')}>
+                  <div className="quick-add-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10B981' }}>🧾</div>
+                  <div className="text-h3" style={{ fontSize: 12.5 }}>{t('nav.receipts')}</div>
+                </div>
+              )}
+              {perms.canCollect && (
+                <div className="quick-add-item" onClick={() => handleNavigate('/donations')}>
+                  <div className="quick-add-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B' }}>💰</div>
+                  <div className="text-h3" style={{ fontSize: 12.5 }}>{language === 'mr' ? 'देणगी नोंद' : 'Donation'}</div>
+                </div>
+              )}
+              {perms.canManageExpenses && (
+                <div className="quick-add-item" onClick={() => handleNavigate('/expenses')}>
+                  <div className="quick-add-icon" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444' }}>💸</div>
+                  <div className="text-h3" style={{ fontSize: 12.5 }}>{t('nav.expenses')}</div>
+                </div>
+              )}
+              {perms.canChat && (
+                <div className="quick-add-item" onClick={() => handleNavigate('/chat')}>
+                  <div className="quick-add-icon" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366F1' }}>💬</div>
+                  <div className="text-h3" style={{ fontSize: 12.5 }}>{t('nav.chat')}</div>
+                </div>
+              )}
+              {(isPresident || user?.role === 'secretary') && (
+                <div className="quick-add-item" onClick={() => handleNavigate('/events')}>
+                  <div className="quick-add-icon" style={{ background: 'rgba(108, 77, 217, 0.1)', color: '#6C4DD9' }}>🎪</div>
+                  <div className="text-h3" style={{ fontSize: 12.5 }}>{t('nav.events')}</div>
+                </div>
+              )}
+              {perms.canAddMembers && (
+                <div className="quick-add-item" onClick={() => handleNavigate('/profile')}>
+                  <div className="quick-add-icon" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3B82F6' }}>👥</div>
+                  <div className="text-h3" style={{ fontSize: 12.5 }}>{t('profile.addMember')}</div>
+                </div>
+              )}
             </div>
           </div>
         </div>
