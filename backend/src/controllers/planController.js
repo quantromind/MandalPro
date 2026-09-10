@@ -81,13 +81,16 @@ const DEFAULT_PLANS = [
 ];
 
 // Helper to seed default plans if collection is empty
+let plansSeeded = false;
 const seedDefaultPlansIfEmpty = async () => {
+  if (plansSeeded) return;
   const count = await Plan.countDocuments();
   if (count === 0) {
     console.log('[Plans] Seeding default plans...');
     await Plan.insertMany(DEFAULT_PLANS);
     console.log('[Plans] Default plans seeded successfully');
   }
+  plansSeeded = true;
 };
 
 // @desc  Get all active plans (for public / users)
