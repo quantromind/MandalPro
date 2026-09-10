@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import { initiatePlanUpgrade } from '../utils/razorpay';
 
 /* ─── Constants ─────────────────────────────────────────────── */
 const EVENT_TYPES = [
@@ -117,14 +118,15 @@ function getRecommendedPlan(types) {
 /* ─── Main Component ──────────────────────────────────────────── */
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { user, activeMandal, setActiveMandal } = useAuth();
+  const { user, activeMandal, setActiveMandal, refreshMandal } = useAuth();
 
   // Initialize step immediately from localStorage to avoid flash
   const [step, setStep] = useState(() => {
     const raw = localStorage.getItem('mandalpro_mandal');
     const mandal = raw ? JSON.parse(raw) : null;
     const cl = mandal?.checklist || {};
-    if (!cl.planSelected) {
+    const hasActivePlan = mandal?.planStatus === 'Active' && mandal?.plan && mandal?.plan !== 'None';
+    if (!cl.planSelected && !hasActivePlan) {
       // Start from step 1 so user goes: Mandal Info → Event Types → Subscription
       if (!cl.profileComplete) return 1;
       if (!cl.eventTypesSelected) return 2;
@@ -140,7 +142,8 @@ export default function Onboarding() {
   useEffect(() => {
     if (activeMandal) {
       const cl = activeMandal.checklist || {};
-      if (!cl.planSelected) {
+      const hasActivePlan = activeMandal.planStatus === 'Active' && activeMandal.plan && activeMandal.plan !== 'None';
+      if (!cl.planSelected && !hasActivePlan) {
         if (!cl.profileComplete) setStep(1);
         else if (!cl.eventTypesSelected) setStep(2);
         else setStep(3);
@@ -226,9 +229,11 @@ export default function Onboarding() {
     setLoading(true); setError('');
     try {
       await api.patch('/mandal', { eventTypes });
-      await api.post('/onboarding/provision');
-      setSelectedPlan(getRecommendedPlan(eventTypes));
-      if (activeMandal?.checklist?.planSelected) setStep(6);
+      await api.post('/onboarding/provision').catch(() => {});
+      const recommendedPlan = getRecommendedPlan(eventTypes);
+      setSelectedPlan(recommendedPlan);
+      const hasActivePlan = activeMandal?.planStatus === 'Active' && activeMandal?.plan && activeMandal?.plan !== 'None';
+      if (activeMandal?.checklist?.planSelected || hasActivePlan) setStep(6);
       else next();
     } catch (e) { setError(e.response?.data?.message || 'Failed to save event types'); }
     finally { setLoading(false); }
@@ -236,51 +241,55 @@ export default function Onboarding() {
 
   /* ── Step 3 Submit ── */
   const handlePlanSubmit = async () => {
-    next(); // All plans go to payment
+    const isCurrentPlanActive = activeMandal?.planStatus === 'Active' &&
+      (activeMandal?.plan?.toLowerCase() === selectedPlan?.toLowerCase());
+    if (isCurrentPlanActive) {
+      goTo(5); // Skip payment if already subscribed
+      return;
+    }
+    next(); // All new/upgrade plans go to payment
   };
 
   /* ── Step 4 Payment ── */
   const handlePayment = async () => {
+    const isCurrentPlanActive = activeMandal?.planStatus === 'Active' &&
+      (activeMandal?.plan?.toLowerCase() === selectedPlan?.toLowerCase());
+    if (isCurrentPlanActive) {
+      next();
+      return;
+    }
+
     setPaymentLoading(true); setError('');
     try {
-      const { data: orderData } = await api.post('/payments/create-order', { plan: selectedPlan });
-      await new Promise((resolve, reject) => {
-        if (window.Razorpay) return resolve();
-        const script = document.createElement('script');
-        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-        script.onload = resolve;
-        script.onerror = () => reject(new Error('Failed to load Razorpay'));
-        document.body.appendChild(script);
-      });
-
-      setPollingOrderId(orderData.orderId);
-      await new Promise((resolve, reject) => {
-        const rzp = new window.Razorpay({
-          key: orderData.keyId, amount: orderData.amount,
-          currency: orderData.currency, order_id: orderData.orderId,
-          name: 'Apla Mandal', description: `${selectedPlan} Plan Subscription`,
-          image: '/logo.png',
-          prefill: { name: user?.name, email: user?.email },
-          theme: { color: '#FF6B00' },
-          handler: async (response) => {
-            try {
-              await api.post('/payments/verify', {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                plan: selectedPlan
-              });
-              setPaymentDone(true);
-              setTimeout(() => next(), 2000);
-              resolve();
-            } catch (e) { reject(e); }
-          },
-          modal: { ondismiss: () => reject(new Error('Payment cancelled')) }
-        });
-        rzp.open();
+      await initiatePlanUpgrade({
+        planCode: selectedPlan,
+        user,
+        onSuccess: async () => {
+          if (refreshMandal) await refreshMandal();
+          setPaymentDone(true);
+          setTimeout(() => next(), 2000);
+        },
+        onError: (err) => {
+          const msg = err.message || 'Payment failed';
+          if (msg.toLowerCase().includes('already subscribed')) {
+            setError(`${msg} You may proceed directly.`);
+            setTimeout(() => next(), 2000);
+          } else {
+            setError(msg);
+          }
+        },
+        onCancel: (cancelMsg) => {
+          setError(cancelMsg || 'Payment cancelled. Please complete payment to activate your plan.');
+        }
       });
     } catch (e) {
-      setError(e.message === 'Payment cancelled' ? 'Payment was cancelled. Please complete payment to activate your plan.' : (e.response?.data?.message || e.message || 'Payment failed'));
+      const serverMsg = e.response?.data?.message || e.message || 'Payment failed';
+      if (serverMsg.toLowerCase().includes('already subscribed')) {
+        setError(`${serverMsg} Proceeding to next step...`);
+        setTimeout(() => next(), 2000);
+      } else {
+        setError(serverMsg);
+      }
     } finally { setPaymentLoading(false); }
   };
 
@@ -972,6 +981,9 @@ export default function Onboarding() {
               {(() => {
                 const plan = PLANS.find(p => p.id === selectedPlan) || PLANS[1];
                 const price = plan.price;
+                const isCurrentPlanActive = activeMandal?.planStatus === 'Active' &&
+                  (activeMandal?.plan?.toLowerCase() === selectedPlan?.toLowerCase());
+
                 return (
                   <div style={{ background: '#F8FAFC', borderRadius: 16, padding: 24, marginBottom: 28, border: '1px solid #E2E8F0' }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', marginBottom: 16 }}>Order Summary</div>
@@ -981,11 +993,11 @@ export default function Onboarding() {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, fontSize: 13, color: '#0284C7', paddingBottom: 16, borderBottom: '1px solid #E2E8F0' }}>
                       <span>👥 {plan.memberLimit}</span>
-                      <span style={{ color: '#16A34A', fontWeight: 600 }}>Instant Activation ✓</span>
+                      <span style={{ color: '#16A34A', fontWeight: 600 }}>{isCurrentPlanActive ? 'Already Active ✓' : 'Instant Activation ✓'}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: '#0F172A' }}>
                       <span>Total Payable</span>
-                      <span style={{ color: plan.popular ? '#D97706' : '#0284C7' }}>₹{price}</span>
+                      <span style={{ color: plan.popular ? '#D97706' : '#0284C7' }}>{isCurrentPlanActive ? '₹0 (Active)' : `₹${price}`}</span>
                     </div>
                   </div>
                 );
@@ -1000,26 +1012,51 @@ export default function Onboarding() {
                 ))}
               </div>
 
-              {paymentDone ? (
-                <div style={{ textAlign: 'center', background: 'rgba(16,185,129,0.1)', borderRadius: 14, padding: 24, border: '1px solid rgba(16,185,129,0.3)' }}>
-                  <div style={{ fontSize: 40, marginBottom: 8 }}>🎉</div>
-                  <div style={{ fontWeight: 700, color: '#059669', fontSize: 16 }}>Payment Successful!</div>
-                  <div style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>Activating your {selectedPlan} plan…</div>
-                </div>
-              ) : (
-                <>
-                  <button
-                    style={{ ...css.btnPrimary, width: '100%', padding: '16px', fontSize: 16 }}
-                    onClick={handlePayment}
-                    disabled={paymentLoading}
-                  >
-                    {paymentLoading ? '⏳ Opening Secure Gateway…' : `Pay Securely 🔒`}
-                  </button>
-                  <div style={{ textAlign: 'center', fontSize: 12, color: '#9CA3AF', marginTop: 12 }}>
-                    🔒 256-bit SSL encrypted · Powered by Razorpay
-                  </div>
-                </>
-              )}
+              {(() => {
+                const isCurrentPlanActive = activeMandal?.planStatus === 'Active' &&
+                  (activeMandal?.plan?.toLowerCase() === selectedPlan?.toLowerCase());
+
+                if (isCurrentPlanActive) {
+                  return (
+                    <div style={{ textAlign: 'center', background: 'rgba(16,185,129,0.08)', borderRadius: 14, padding: 24, border: '1px solid rgba(16,185,129,0.25)', marginBottom: 20 }}>
+                      <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div>
+                      <div style={{ fontWeight: 700, color: '#059669', fontSize: 16 }}>Plan Already Active!</div>
+                      <div style={{ color: '#4b5563', fontSize: 14, margin: '8px 0 16px' }}>Your Mandal is currently active on the <strong>{selectedPlan} Plan</strong>.</div>
+                      <button
+                        style={{ ...css.btnPrimary, width: '100%', padding: '14px', fontSize: 15 }}
+                        onClick={next}
+                      >
+                        Continue to Verification & Setup →
+                      </button>
+                    </div>
+                  );
+                }
+
+                if (paymentDone) {
+                  return (
+                    <div style={{ textAlign: 'center', background: 'rgba(16,185,129,0.1)', borderRadius: 14, padding: 24, border: '1px solid rgba(16,185,129,0.3)' }}>
+                      <div style={{ fontSize: 40, marginBottom: 8 }}>🎉</div>
+                      <div style={{ fontWeight: 700, color: '#059669', fontSize: 16 }}>Payment Successful!</div>
+                      <div style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>Activating your {selectedPlan} plan…</div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <>
+                    <button
+                      style={{ ...css.btnPrimary, width: '100%', padding: '16px', fontSize: 16 }}
+                      onClick={handlePayment}
+                      disabled={paymentLoading}
+                    >
+                      {paymentLoading ? '⏳ Opening Secure Gateway…' : `Pay Securely 🔒`}
+                    </button>
+                    <div style={{ textAlign: 'center', fontSize: 12, color: '#9CA3AF', marginTop: 12 }}>
+                      🔒 256-bit SSL encrypted · Powered by Razorpay
+                    </div>
+                  </>
+                );
+              })()}
 
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
                 <button style={css.btnOutline} onClick={back} disabled={paymentLoading}>← Change Plan</button>

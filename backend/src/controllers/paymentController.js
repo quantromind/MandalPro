@@ -61,6 +61,15 @@ const checkPlanUpgradeAllowed = async (mandal, targetPlan) => {
   return { allowed: true };
 };
 
+// Helper to sanitize strings for Razorpay notes (strip 4-byte UTF-8 emojis and limit length)
+const sanitizeForRazorpay = (str, maxLen = 40) => {
+  if (!str) return '';
+  return str
+    .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\p{Emoji_Presentation}|\p{Extended_Pictographic}/gu, '')
+    .trim()
+    .slice(0, maxLen);
+};
+
 // @desc  Create Razorpay order for plan upgrade
 // @route POST /api/payments/create-order
 const createOrder = asyncHandler(async (req, res) => {
@@ -97,16 +106,17 @@ const createOrder = asyncHandler(async (req, res) => {
   }
 
   const amountPaise = Math.round(targetPlan.price * 100);
+  const receiptId = `rcpt_${req.mandalId.toString().slice(-8)}_${Date.now().toString().slice(-8)}`;
 
   const order = await razorpay.orders.create({
     amount: amountPaise,
     currency: 'INR',
-    receipt: `rcpt_${req.mandalId}_${Date.now()}`,
+    receipt: receiptId,
     notes: {
       mandalId: req.mandalId.toString(),
-      mandalName: mandal.name,
-      planCode: targetPlan.code,
-      planName: targetPlan.name
+      mandalName: sanitizeForRazorpay(mandal.name, 40),
+      planCode: sanitizeForRazorpay(targetPlan.code, 20),
+      planName: sanitizeForRazorpay(targetPlan.name, 40)
     }
   });
 

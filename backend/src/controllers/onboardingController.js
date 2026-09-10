@@ -17,27 +17,31 @@ const EVENT_BUDGET_TEMPLATES = {
 // @route POST /api/onboarding/provision
 const provision = asyncHandler(async (req, res) => {
   const mandalId = req.mandalId;
+  if (!mandalId) {
+    return res.status(200).json({ message: 'No mandal associated to provision' });
+  }
   const mandal = await Mandal.findById(mandalId);
   if (!mandal) {
-    res.status(404);
-    throw new Error('Mandal not found');
+    return res.status(200).json({ message: 'Mandal not found, skipping provisioning' });
   }
 
   // Collect unique categories from all selected event types
   const categories = new Set();
-  for (const type of mandal.eventTypes) {
+  const eventTypes = mandal.eventTypes || [];
+  for (const type of eventTypes) {
     const tmpl = EVENT_BUDGET_TEMPLATES[type] || EVENT_BUDGET_TEMPLATES['Custom'];
-    tmpl.forEach(c => categories.add(c));
+    if (tmpl) tmpl.forEach(c => categories.add(c));
   }
 
   // Set receipt prefix from mandal name initials
-  const initials = mandal.name
+  const initials = (mandal.name || 'RCPT')
     .split(' ')
     .map(w => w[0]?.toUpperCase() || '')
     .join('')
     .slice(0, 4);
   mandal.receiptPrefix = initials || 'RCPT';
-  mandal.checklist.eventTypesSelected = mandal.eventTypes.length > 0;
+  if (!mandal.checklist) mandal.checklist = {};
+  mandal.checklist.eventTypesSelected = eventTypes.length > 0;
   await mandal.save();
 
   res.json({
