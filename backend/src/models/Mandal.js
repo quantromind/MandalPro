@@ -42,5 +42,9 @@ const mandalSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+mandalSchema.index({ createdAt: -1 });
+mandalSchema.index({ createdBy: 1 });
+mandalSchema.index({ plan: 1, planStatus: 1 });
+
 module.exports = mongoose.model('Mandal', mandalSchema);
 

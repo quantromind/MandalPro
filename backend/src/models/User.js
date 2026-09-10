@@ -28,6 +28,9 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ mandalId: 1 });
+userSchema.index({ role: 1 });
+userSchema.index({ createdAt: -1 });
 
 userSchema.methods.comparePassword = function (candidate) {
   return bcrypt.compare(candidate, this.passwordHash);

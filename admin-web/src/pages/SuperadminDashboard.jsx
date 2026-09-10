@@ -3,11 +3,144 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import Layout from '../components/Layout';
 
+// Pagination Controls Component
+const PaginationControls = ({ currentPage, totalPages, totalItems, pageSize, onPageChange, onPageSizeChange }) => {
+  if (totalItems === 0) return null;
+  const startItem = Math.min((currentPage - 1) * pageSize + 1, totalItems);
+  const endItem = Math.min(currentPage * pageSize, totalItems);
+
+  const getPageNumbers = () => {
+    const pages = [];
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+        pages.push(i);
+      }
+    }
+    const withDots = [];
+    pages.forEach((p, idx) => {
+      if (idx > 0 && p - pages[idx - 1] > 1) {
+        withDots.push('...');
+      }
+      withDots.push(p);
+    });
+    return withDots;
+  };
+
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '12px 20px',
+      borderTop: '1px solid var(--border, #E2E8F0)',
+      background: '#FAFAFA',
+      flexWrap: 'wrap',
+      gap: 12,
+      fontSize: 13,
+      color: 'var(--text-muted, #64748B)'
+    }}>
+      <div>
+        Showing <strong style={{ color: 'var(--text-main, #0F172A)' }}>{startItem}</strong> to <strong style={{ color: 'var(--text-main, #0F172A)' }}>{endItem}</strong> of <strong style={{ color: 'var(--text-main, #0F172A)' }}>{totalItems}</strong> entries
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button
+          type="button"
+          className="btn btn-outline"
+          style={{ padding: '4px 10px', fontSize: 12, opacity: currentPage <= 1 ? 0.4 : 1, cursor: currentPage <= 1 ? 'not-allowed' : 'pointer' }}
+          disabled={currentPage <= 1}
+          onClick={() => onPageChange(currentPage - 1)}
+        >
+          &larr; Prev
+        </button>
+
+        {getPageNumbers().map((item, idx) => item === '...' ? (
+          <span key={`dots-${idx}`} style={{ padding: '0 4px', color: 'var(--text-muted, #64748B)' }}>...</span>
+        ) : (
+          <button
+            key={item}
+            type="button"
+            onClick={() => onPageChange(item)}
+            style={{
+              minWidth: 32,
+              height: 32,
+              borderRadius: 6,
+              border: item === currentPage ? '1px solid var(--primary, #FF6B00)' : '1px solid var(--border, #E2E8F0)',
+              background: item === currentPage ? 'var(--primary, #FF6B00)' : '#FFFFFF',
+              color: item === currentPage ? '#FFFFFF' : 'var(--text-main, #0F172A)',
+              fontWeight: item === currentPage ? 700 : 500,
+              fontSize: 12,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            {item}
+          </button>
+        ))}
+
+        <button
+          type="button"
+          className="btn btn-outline"
+          style={{ padding: '4px 10px', fontSize: 12, opacity: currentPage >= totalPages ? 0.4 : 1, cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer' }}
+          disabled={currentPage >= totalPages}
+          onClick={() => onPageChange(currentPage + 1)}
+        >
+          Next &rarr;
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span>Show:</span>
+        <select
+          value={pageSize}
+          onChange={(e) => onPageSizeChange(Number(e.target.value))}
+          style={{
+            padding: '4px 10px',
+            borderRadius: 6,
+            border: '1px solid var(--border, #E2E8F0)',
+            fontSize: 12,
+            background: '#FFFFFF',
+            color: 'var(--text-main, #0F172A)',
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          <option value={20}>20 per page</option>
+          <option value={30}>30 per page</option>
+          <option value={50}>50 per page</option>
+        </select>
+      </div>
+    </div>
+  );
+};
+
 const SuperadminDashboard = () => {
-  const [mandals, setMandals] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [mandals, setMandals] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('sa_mandals_cache');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [users, setUsers] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('sa_users_cache');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [activeTab, setActiveTab] = useState('mandals');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !sessionStorage.getItem('sa_mandals_cache');
+    } catch {
+      return true;
+    }
+  });
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const navigate = useNavigate();
@@ -27,7 +160,14 @@ const SuperadminDashboard = () => {
   const [expandAll, setExpandAll] = useState(false);
 
   // Plans Management State
-  const [plans, setPlans] = useState([]);
+  const [plans, setPlans] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('sa_plans_cache');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [editingPlan, setEditingPlan] = useState(null); // 'new' | plan object | null
   const [planFormData, setPlanFormData] = useState({
     name: '',
@@ -66,11 +206,30 @@ const SuperadminDashboard = () => {
   const [showUserPassword, setShowUserPassword] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    const hasCache = mandals.length > 0 && users.length > 0;
+    fetchData(hasCache);
   }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
+  useEffect(() => {
+    if (mandals.length > 0) {
+      try { sessionStorage.setItem('sa_mandals_cache', JSON.stringify(mandals)); } catch {}
+    }
+  }, [mandals]);
+
+  useEffect(() => {
+    if (users.length > 0) {
+      try { sessionStorage.setItem('sa_users_cache', JSON.stringify(users)); } catch {}
+    }
+  }, [users]);
+
+  useEffect(() => {
+    if (plans.length > 0) {
+      try { sessionStorage.setItem('sa_plans_cache', JSON.stringify(plans)); } catch {}
+    }
+  }, [plans]);
+
+  const fetchData = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
       const [mandalsRes, usersRes, plansRes] = await Promise.all([
         api.get('/superadmin/mandals'),
@@ -80,6 +239,11 @@ const SuperadminDashboard = () => {
       setMandals(mandalsRes.data);
       setUsers(usersRes.data);
       setPlans(plansRes.data);
+      try {
+        sessionStorage.setItem('sa_mandals_cache', JSON.stringify(mandalsRes.data));
+        sessionStorage.setItem('sa_users_cache', JSON.stringify(usersRes.data));
+        sessionStorage.setItem('sa_plans_cache', JSON.stringify(plansRes.data));
+      } catch {}
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch data');
     } finally {
@@ -368,11 +532,24 @@ const SuperadminDashboard = () => {
       }
     });
 
+    // Quick lookup maps to avoid O(N^2) searches
+    const usersMap = new Map();
+    users.forEach(u => usersMap.set(String(u._id), u));
+
+    const mandalsMap = new Map();
+    const mandalsByCreator = new Map();
+    mandals.forEach(m => {
+      mandalsMap.set(String(m._id), m);
+      if (m.createdBy?._id) {
+        mandalsByCreator.set(String(m.createdBy._id), m);
+      }
+    });
+
     // 2. Mandals createdBy users who should also be treated as Presidents if not already
     mandals.forEach(m => {
       if (m.createdBy?._id) {
         const creatorId = String(m.createdBy._id);
-        const creator = users.find(u => String(u._id) === creatorId);
+        const creator = usersMap.get(creatorId);
         if (creator && creator.role !== 'superadmin' && !presidentsMap.has(creatorId)) {
           presidentsMap.set(creatorId, creator);
           const mKey = String(m._id);
@@ -388,7 +565,8 @@ const SuperadminDashboard = () => {
       const presMandalId = pres.mandalId?._id || pres.mandalId;
       const presId = String(pres._id);
       
-      const matchedMandal = mandals.find(m => String(m._id) === String(presMandalId) || (m.createdBy?._id && String(m.createdBy._id) === presId))
+      const matchedMandal = (presMandalId ? mandalsMap.get(String(presMandalId)) : null)
+        || mandalsByCreator.get(presId)
         || (typeof pres.mandalId === 'object' && pres.mandalId ? pres.mandalId : null);
       
       const effectiveMandalId = matchedMandal?._id ? String(matchedMandal._id) : (presMandalId ? String(presMandalId) : null);
@@ -493,13 +671,82 @@ const SuperadminDashboard = () => {
   };
 
   // Metric Stats
+  // Pagination states (Default 20 per page, selectable 20, 30, 50)
+  const [mandalPage, setMandalPage] = useState(1);
+  const [mandalPageSize, setMandalPageSize] = useState(20);
+
+  const [userPage, setUserPage] = useState(1);
+  const [userPageSize, setUserPageSize] = useState(20);
+
+  // Reset mandalPage when search, filters, or pageSize change
+  useEffect(() => {
+    setMandalPage(1);
+  }, [mandalSearch, mandalPlanFilter, mandalStatusFilter, mandalPageSize]);
+
+  // Reset userPage when search, filters, view mode, or pageSize change
+  useEffect(() => {
+    setUserPage(1);
+  }, [userSearch, userRoleFilter, userStatusFilter, userPlanFilter, userViewMode, userPageSize]);
+
+  // Paginated Mandals
+  const totalMandalPages = Math.ceil(filteredMandals.length / mandalPageSize) || 1;
+  const paginatedMandals = useMemo(() => {
+    const start = (mandalPage - 1) * mandalPageSize;
+    return filteredMandals.slice(start, start + mandalPageSize);
+  }, [filteredMandals, mandalPage, mandalPageSize]);
+
+  // Paginated Presidents
+  const totalPresidentPages = Math.ceil(filteredPresidents.length / userPageSize) || 1;
+  const paginatedPresidents = useMemo(() => {
+    const start = (userPage - 1) * userPageSize;
+    return filteredPresidents.slice(start, start + userPageSize);
+  }, [filteredPresidents, userPage, userPageSize]);
+
+  // Paginated Users (Flat list)
+  const totalUserPages = Math.ceil(filteredUsers.length / userPageSize) || 1;
+  const paginatedUsers = useMemo(() => {
+    const start = (userPage - 1) * userPageSize;
+    return filteredUsers.slice(start, start + userPageSize);
+  }, [filteredUsers, userPage, userPageSize]);
+
   const totalMandalsCount = mandals.length;
   const activeMandalsCount = mandals.filter(m => m.planStatus === 'Active').length;
   const totalUsersCount = users.length;
   const activeUsersCount = users.filter(u => u.status === 'active').length;
   const paidPlansCount = mandals.filter(m => ['Basic', 'Pro', 'Premium', 'Enterprise'].includes(m.plan)).length;
 
-  if (loading) return <Layout><div className="page-header"><h2>Loading Superadmin Console...</h2></div></Layout>;
+  if (loading && mandals.length === 0) {
+    return (
+      <Layout>
+        <div className="page-header" style={{ marginBottom: 20 }}>
+          <h2 className="text-h2" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>🛡️</span> Superadmin Dashboard
+          </h2>
+          <p className="text-sub">Loading dashboard data...</p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
+          {[1, 2, 3].map(i => (
+            <div key={i} className="card" style={{ padding: '20px', height: 95, background: '#F8FAFC', border: '1px solid var(--border)' }}>
+              <div style={{ width: '45%', height: 14, background: '#E2E8F0', borderRadius: 4, marginBottom: 12 }} />
+              <div style={{ width: '30%', height: 26, background: '#CBD5E1', borderRadius: 6 }} />
+            </div>
+          ))}
+        </div>
+        <div className="card" style={{ padding: 24, minHeight: 320, background: '#FFFFFF' }}>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+            <div style={{ width: 140, height: 38, background: '#E2E8F0', borderRadius: 8 }} />
+            <div style={{ width: 140, height: 38, background: '#F1F5F9', borderRadius: 8 }} />
+            <div style={{ width: 140, height: 38, background: '#F1F5F9', borderRadius: 8 }} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} style={{ width: '100%', height: 48, background: '#F8FAFC', borderRadius: 6, border: '1px solid #F1F5F9' }} />
+            ))}
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -679,7 +926,7 @@ const SuperadminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredMandals.map(mandal => (
+                  {paginatedMandals.map(mandal => (
                     <tr key={mandal._id}>
                       <td>
                         <div style={{ fontWeight: 600 }}>{mandal.name}</div>
@@ -706,8 +953,8 @@ const SuperadminDashboard = () => {
                         <span style={{ 
                           color: mandal.planStatus === 'Active' ? '#10b981' : '#ef4444',
                           background: mandal.planStatus === 'Active' ? '#10b9811A' : '#ef44441A',
-                          padding: '4px 8px',
-                          borderRadius: 6,
+                          padding: '4px 8px', 
+                          borderRadius: 6, 
                           fontSize: 12, fontWeight: 600
                         }}>
                           {mandal.planStatus}
@@ -737,6 +984,15 @@ const SuperadminDashboard = () => {
                 </tbody>
               </table>
             </div>
+
+            <PaginationControls
+              currentPage={mandalPage}
+              totalPages={totalMandalPages}
+              totalItems={filteredMandals.length}
+              pageSize={mandalPageSize}
+              onPageChange={setMandalPage}
+              onPageSizeChange={setMandalPageSize}
+            />
           </div>
         )}
 
@@ -930,7 +1186,7 @@ const SuperadminDashboard = () => {
               <div style={{ padding: 20 }}>
                 {filteredPresidents.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {filteredPresidents.map(item => {
+                    {paginatedPresidents.map(item => {
                       const isExpanded = expandedPresidents[item.president._id] || expandAll;
                       const isPrimarySuperAdmin = item.president.email === 'quantromind@gmail.com';
                       const mandalObj = item.mandal;
@@ -1257,129 +1513,149 @@ const SuperadminDashboard = () => {
                     <div className="text-caption" style={{ marginTop: 4 }}>Try clearing search or filter selections.</div>
                   </div>
                 )}
+
+                <PaginationControls
+                  currentPage={userPage}
+                  totalPages={totalPresidentPages}
+                  totalItems={filteredPresidents.length}
+                  pageSize={userPageSize}
+                  onPageChange={setUserPage}
+                  onPageSizeChange={setUserPageSize}
+                />
               </div>
             )}
 
             {/* ─── MODE 2: FLAT USER LIST TABLE ─── */}
             {userViewMode === 'all' && (
-              <div className="table-responsive">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>User</th>
-                      <th>Role</th>
-                      <th>Primary Mandal</th>
-                      <th>Status</th>
-                      <th>Joined</th>
-                      <th style={{ textAlign: 'right' }}>Manage User</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredUsers.map(u => {
-                      const roleStyle = getRoleColor(u.role);
-                      const isPrimarySuperAdmin = u.email === 'quantromind@gmail.com';
+              <div>
+                <div className="table-responsive">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Primary Mandal</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                        <th style={{ textAlign: 'right' }}>Manage User</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedUsers.map(u => {
+                        const roleStyle = getRoleColor(u.role);
+                        const isPrimarySuperAdmin = u.email === 'quantromind@gmail.com';
 
-                      return (
-                        <tr key={u._id}>
-                          <td>
-                            <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                              {u.name}
-                              {isPrimarySuperAdmin && <span title="Primary System Superadmin">👑</span>}
-                            </div>
-                            <div className="text-caption">{u.email} {u.mobile ? `· ${u.mobile}` : ''}</div>
-                          </td>
-                          <td>
-                            <span style={{ 
-                              background: roleStyle.bg, 
-                              color: roleStyle.text,
-                              border: `1px solid ${roleStyle.border}`,
-                              padding: '4px 10px', 
-                              borderRadius: 6, 
-                              fontSize: 12, 
-                              fontWeight: 700,
-                              textTransform: 'capitalize'
-                            }}>
-                              {roleStyle.label || u.role}
-                            </span>
-                          </td>
-                          <td>
-                            {u.mandalId ? (
-                              <>
-                                <div style={{ fontWeight: 600 }}>{u.mandalId.name}</div>
-                                <div className="text-caption">{u.mandalId.plan || 'Free'} plan</div>
-                              </>
-                            ) : (
-                              <span className="text-caption" style={{ color: 'var(--text-muted)' }}>None / Unassigned</span>
-                            )}
-                          </td>
-                          <td>
-                            <span style={{ 
-                              color: u.status === 'active' ? '#10b981' : (u.status === 'invited' ? '#f59e0b' : '#ef4444'),
-                              background: u.status === 'active' ? '#10b98118' : (u.status === 'invited' ? '#f59e0b18' : '#ef444418'),
-                              padding: '4px 8px',
-                              borderRadius: 6,
-                              fontSize: 12, 
-                              fontWeight: 600,
-                              textTransform: 'capitalize'
-                            }}>
-                              {u.status}
-                            </span>
-                          </td>
-                          <td className="text-caption">
-                            {new Date(u.createdAt).toLocaleDateString()}
-                          </td>
-                          <td style={{ textAlign: 'right' }}>
-                            <div style={{ display: 'inline-flex', gap: 8 }}>
-                              <button 
-                                className="btn btn-outline"
-                                style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600 }}
-                                onClick={() => handleOpenEditUser(u)}
-                                title="Edit user details, role, status & password"
-                              >
-                                ✏️ Edit
-                              </button>
-
-                              {!isPrimarySuperAdmin && (
+                        return (
+                          <tr key={u._id}>
+                            <td>
+                              <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                {u.name}
+                                {isPrimarySuperAdmin && <span title="Primary System Superadmin">👑</span>}
+                              </div>
+                              <div className="text-caption">{u.email} {u.mobile ? `· ${u.mobile}` : ''}</div>
+                            </td>
+                            <td>
+                              <span style={{ 
+                                background: roleStyle.bg, 
+                                color: roleStyle.text,
+                                border: `1px solid ${roleStyle.border}`,
+                                padding: '4px 10px', 
+                                borderRadius: 6, 
+                                fontSize: 12, 
+                                fontWeight: 700,
+                                textTransform: 'capitalize'
+                              }}>
+                                {roleStyle.label || u.role}
+                              </span>
+                            </td>
+                            <td>
+                              {u.mandalId ? (
+                                <>
+                                  <div style={{ fontWeight: 600 }}>{u.mandalId.name}</div>
+                                  <div className="text-caption">{u.mandalId.plan || 'Free'} plan</div>
+                                </>
+                              ) : (
+                                <span className="text-caption" style={{ color: 'var(--text-muted)' }}>None / Unassigned</span>
+                              )}
+                            </td>
+                            <td>
+                              <span style={{ 
+                                color: u.status === 'active' ? '#10b981' : (u.status === 'invited' ? '#f59e0b' : '#ef4444'),
+                                background: u.status === 'active' ? '#10b98118' : (u.status === 'invited' ? '#f59e0b18' : '#ef444418'),
+                                padding: '4px 8px', 
+                                borderRadius: 6, 
+                                fontSize: 12, 
+                                fontWeight: 600,
+                                textTransform: 'capitalize'
+                              }}>
+                                {u.status}
+                              </span>
+                            </td>
+                            <td className="text-caption">
+                              {new Date(u.createdAt).toLocaleDateString()}
+                            </td>
+                            <td style={{ textAlign: 'right' }}>
+                              <div style={{ display: 'inline-flex', gap: 8 }}>
                                 <button 
                                   className="btn btn-outline"
-                                  style={{ 
-                                    padding: '6px 10px', 
-                                    fontSize: 12, 
-                                    fontWeight: 600,
-                                    color: u.status === 'active' ? '#D97706' : '#10B981',
-                                    borderColor: u.status === 'active' ? '#FDE68A' : '#A7F3D0'
-                                  }}
-                                  onClick={() => handleToggleStatus(u)}
-                                  title={u.status === 'active' ? 'Disable this account' : 'Activate this account'}
+                                  style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600 }}
+                                  onClick={() => handleOpenEditUser(u)}
+                                  title="Edit user details, role, status & password"
                                 >
-                                  {u.status === 'active' ? 'Disable' : 'Activate'}
+                                  ✏️ Edit
                                 </button>
-                              )}
 
-                              {!isPrimarySuperAdmin && u.role !== 'superadmin' && (
-                                <button 
-                                  className="btn btn-outline"
-                                  style={{ padding: '6px 10px', fontSize: 12, color: '#EF4444', borderColor: '#FECACA' }}
-                                  onClick={() => handleDeleteUser(u)}
-                                  title="Delete user permanently"
-                                >
-                                  🗑️
-                                </button>
-                              )}
-                            </div>
+                                {!isPrimarySuperAdmin && (
+                                  <button 
+                                    className="btn btn-outline"
+                                    style={{ 
+                                      padding: '6px 10px', 
+                                      fontSize: 12, 
+                                      fontWeight: 600,
+                                      color: u.status === 'active' ? '#D97706' : '#10B981',
+                                      borderColor: u.status === 'active' ? '#FDE68A' : '#A7F3D0'
+                                    }}
+                                    onClick={() => handleToggleStatus(u)}
+                                    title={u.status === 'active' ? 'Disable this account' : 'Activate this account'}
+                                  >
+                                    {u.status === 'active' ? 'Disable' : 'Activate'}
+                                  </button>
+                                )}
+
+                                {!isPrimarySuperAdmin && u.role !== 'superadmin' && (
+                                  <button 
+                                    className="btn btn-outline"
+                                    style={{ padding: '6px 10px', fontSize: 12, color: '#EF4444', borderColor: '#FECACA' }}
+                                    onClick={() => handleDeleteUser(u)}
+                                    title="Delete user permanently"
+                                  >
+                                    🗑️
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {filteredUsers.length === 0 && (
+                        <tr>
+                          <td colSpan="6" style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>
+                            No users found matching the filter.
                           </td>
                         </tr>
-                      );
-                    })}
-                    {filteredUsers.length === 0 && (
-                      <tr>
-                        <td colSpan="6" style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>
-                          No users found matching the filter.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <PaginationControls
+                  currentPage={userPage}
+                  totalPages={totalUserPages}
+                  totalItems={filteredUsers.length}
+                  pageSize={userPageSize}
+                  onPageChange={setUserPage}
+                  onPageSizeChange={setUserPageSize}
+                />
               </div>
             )}
 

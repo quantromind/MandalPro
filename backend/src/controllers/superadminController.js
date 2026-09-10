@@ -9,7 +9,8 @@ const getAllUsers = asyncHandler(async (req, res) => {
   const users = await User.find({})
     .populate('mandalId', 'name plan planStatus establishedYear contactPhone address')
     .sort({ createdAt: -1 })
-    .select('-passwordHash');
+    .select('-passwordHash')
+    .lean();
 
   res.json(users);
 });
@@ -102,14 +103,23 @@ const deleteUser = asyncHandler(async (req, res) => {
 // @route   GET /api/superadmin/mandals
 // @access  Private/Superadmin
 const getAllMandals = asyncHandler(async (req, res) => {
-  const mandals = await Mandal.find({})
-    .populate('createdBy', 'name email')
-    .sort({ createdAt: -1 });
+  const [mandals, memberCounts] = await Promise.all([
+    Mandal.find({})
+      .select('-logoBase64 -verificationDocs')
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 })
+      .lean(),
+    User.aggregate([
+      { $match: { mandalId: { $ne: null } } },
+      { $group: { _id: '$mandalId', count: { $sum: 1 } } }
+    ])
+  ]);
 
-  // Add member counts
-  const mandalsWithCounts = await Promise.all(mandals.map(async (mandal) => {
-    const memberCount = await User.countDocuments({ mandalId: mandal._id });
-    return { ...mandal.toObject(), memberCount };
+  const countMap = new Map(memberCounts.map(item => [String(item._id), item.count]));
+
+  const mandalsWithCounts = mandals.map(mandal => ({
+    ...mandal,
+    memberCount: countMap.get(String(mandal._id)) || 0
   }));
 
   res.json(mandalsWithCounts);
@@ -186,7 +196,7 @@ const { seedDefaultPlansIfEmpty } = require('./planController');
 // @access  Private/Superadmin
 const getAllPlans = asyncHandler(async (req, res) => {
   await seedDefaultPlansIfEmpty();
-  const plans = await Plan.find({}).sort({ sortOrder: 1, tier: 1, price: 1 });
+  const plans = await Plan.find({}).sort({ sortOrder: 1, tier: 1, price: 1 }).lean();
   res.json(plans);
 });
 
