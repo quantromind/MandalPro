@@ -91,6 +91,7 @@ export default function Subscription() {
   const { user, mandal, refreshMandal } = useAuth();
   const { language } = useLanguage();
   const isMr = language === 'mr';
+  const isPresident = user?.role?.toLowerCase() === 'president' || user?.role?.toLowerCase() === 'superadmin';
 
   useEffect(() => {
     client.get('/plans')
@@ -133,6 +134,11 @@ export default function Subscription() {
   const handleActivate = async (planCode) => {
     const targetPlan = plans.find((p) => (p.code || p.id) === planCode);
     if (!targetPlan) return;
+
+    if (!isPresident) {
+      alert(isMr ? 'केवळ मंडळ अध्यक्ष वर्गणी अपग्रेड करू शकतात.' : 'Only the Mandal President can manage subscriptions.');
+      return;
+    }
 
     const currentTier = getCurrentTier();
     if (mandal?.planStatus === 'Active' && targetPlan.tier <= currentTier) {
@@ -214,6 +220,31 @@ export default function Subscription() {
               : 'No hidden fees • Cancel anytime • Instant activation for your mandal'}
           </p>
         </div>
+
+        {!isPresident && (
+          <div
+            style={{
+              maxWidth: 880,
+              margin: '0 auto 24px',
+              padding: '12px 18px',
+              background: '#F8FAFC',
+              border: '1px solid #CBD5E1',
+              borderRadius: 12,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              fontSize: 14,
+              color: '#475569'
+            }}
+          >
+            <span style={{ fontSize: 18 }}>🔒</span>
+            <span>
+              {isMr
+                ? 'केवळ मंडळ अध्यक्ष (President) वर्गणी अपग्रेड किंवा पेमेंट करू शकतात. आपण वर्तमान योजना आणि वैशिष्ट्ये पाहू शकता.'
+                : 'Only the Mandal President can change subscriptions or process payments. You can view the available plans and features here.'}
+            </span>
+          </div>
+        )}
 
         {/* ── 2 Plan Cards Grid ── */}
         <div
@@ -406,15 +437,15 @@ export default function Subscription() {
                 {/* Card CTA Action */}
                 <div style={{ paddingTop: 16, borderTop: '1px solid #F1F5F9' }}>
                   <button
-                    onClick={() => !isCurrent && !isDowngrade && handleActivate(p.code || p.id)}
-                    disabled={activating === (p.code || p.id) || isCurrent || isDowngrade}
+                    onClick={() => !isCurrent && !isDowngrade && isPresident && handleActivate(p.code || p.id)}
+                    disabled={activating === (p.code || p.id) || isCurrent || isDowngrade || !isPresident}
                     style={{
                       width: '100%',
                       padding: '14px 20px',
                       borderRadius: 12,
                       fontSize: 15,
                       fontWeight: 800,
-                      cursor: (isCurrent || isDowngrade) ? 'not-allowed' : 'pointer',
+                      cursor: (isCurrent || isDowngrade || !isPresident) ? 'not-allowed' : 'pointer',
                       border: 'none',
                       transition: 'all 0.2s ease',
                       display: 'flex',
@@ -426,6 +457,12 @@ export default function Subscription() {
                             background: '#F1F5F9',
                             color: '#059669',
                             border: '1px solid #A7F3D0'
+                          }
+                        : !isPresident
+                        ? {
+                            background: '#F1F5F9',
+                            color: '#64748B',
+                            border: '1px solid #E2E8F0'
                           }
                         : isDowngrade
                         ? {
@@ -450,6 +487,8 @@ export default function Subscription() {
                       <span>⏳ {isMr ? 'गेटवे उघडत आहे...' : 'Opening Gateway...'}</span>
                     ) : isCurrent ? (
                       <span>✓ {isMr ? 'सध्याची सक्रिय योजना' : 'Current Active Plan'}</span>
+                    ) : !isPresident ? (
+                      <span>🔒 {isMr ? 'केवळ अध्यक्ष अपग्रेड करू शकतात' : 'President Access Only'}</span>
                     ) : isDowngrade ? (
                       <span>🚫 {isMr ? 'कमी योजना निवडता येत नाही (Downgrade Not Permitted)' : 'Downgrade Not Permitted'}</span>
                     ) : (

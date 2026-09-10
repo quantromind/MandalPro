@@ -22,6 +22,7 @@ const Members = () => {
     name: '',
     email: '',
     mobile: '',
+    password: '',
     role: 'volunteer',
     permissions: ROLE_DEFAULTS.volunteer
   });
@@ -36,7 +37,7 @@ const Members = () => {
     try {
       await api.post('/members', form);
       setShowForm(false);
-      setForm({ name: '', email: '', mobile: '', role: 'volunteer', permissions: ROLE_DEFAULTS.volunteer });
+      setForm({ name: '', email: '', mobile: '', password: '', role: 'volunteer', permissions: ROLE_DEFAULTS.volunteer });
       load();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to add member');
@@ -135,6 +136,18 @@ const Members = () => {
               <div className="field">
                 <label>Mobile Number (Optional)</label>
                 <input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} placeholder="10-digit mobile number" />
+              </div>
+              <div className="field">
+                <label>Set Member Password (Optional / For Password Login)</label>
+                <input
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  placeholder="e.g. Member@123 (or they can log in via OTP)"
+                />
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                  Member can log in directly with this password or via Email OTP.
+                </div>
               </div>
               <div className="field">
                 <label>Role</label>

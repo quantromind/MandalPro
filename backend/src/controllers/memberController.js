@@ -2,45 +2,8 @@ const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 const Mandal = require('../models/Mandal');
 const ChatMessage = require('../models/ChatMessage');
+const { getDefaultPermissions } = require('../middleware/rbac');
 
-// Default permissions preset by role
-const getDefaultPermissions = (role) => {
-  switch (role) {
-    case 'president':
-      return {
-        canCollect: true,
-        canManageExpenses: true,
-        canAddMembers: true,
-        canChat: true,
-        canViewReports: true
-      };
-    case 'secretary':
-      return {
-        canCollect: true,
-        canManageExpenses: true,
-        canAddMembers: true,
-        canChat: true,
-        canViewReports: true
-      };
-    case 'treasurer':
-      return {
-        canCollect: true,
-        canManageExpenses: true,
-        canAddMembers: false,
-        canChat: true,
-        canViewReports: true
-      };
-    case 'volunteer':
-    default:
-      return {
-        canCollect: true,
-        canManageExpenses: false,
-        canAddMembers: false,
-        canChat: true,
-        canViewReports: false
-      };
-  }
-};
 
 // Plan member limits
 const PLAN_MEMBER_LIMITS = {
@@ -70,7 +33,7 @@ const listMembers = asyncHandler(async (req, res) => {
 // @desc Add a new member to the mandal (with plan-based member limit verification)
 // @route POST /api/members
 const addMember = asyncHandler(async (req, res) => {
-  const { name, email, mobile, role = 'volunteer', permissions } = req.body;
+  const { name, email, mobile, role = 'volunteer', permissions, password } = req.body;
 
   if (!name || !email) {
     res.status(400);
@@ -106,6 +69,9 @@ const addMember = asyncHandler(async (req, res) => {
       if (mobile) user.mobile = mobile.trim();
       if (role) user.role = role;
       user.permissions = mergedPermissions;
+      if (password && password.trim().length >= 4) {
+        user.passwordHash = await User.hashPassword(password.trim());
+      }
       await user.save();
 
       // System chat announcement
@@ -146,6 +112,9 @@ const addMember = asyncHandler(async (req, res) => {
     user.permissions = mergedPermissions;
     if (name) user.name = name.trim();
     if (mobile) user.mobile = mobile.trim();
+    if (password && password.trim().length >= 4) {
+      user.passwordHash = await User.hashPassword(password.trim());
+    }
     await user.save();
 
     // System chat announcement
@@ -164,8 +133,12 @@ const addMember = asyncHandler(async (req, res) => {
     return res.status(200).json(user);
   }
 
-  // Create new member with temporary hashed password (they will log in via OTP)
-  const passwordHash = await User.hashPassword(`Mandal@${Date.now()}`);
+  // Create new member with provided password or temporary fallback (so they can log in via OTP or Password)
+  const plainPassword = (password && password.trim().length >= 4)
+    ? password.trim()
+    : `Mandal@${Date.now()}`;
+  const passwordHash = await User.hashPassword(plainPassword);
+
   user = await User.create({
     name: name.trim(),
     email: normalizedEmail,
@@ -175,8 +148,10 @@ const addMember = asyncHandler(async (req, res) => {
     permissions: mergedPermissions,
     mandalId: req.mandalId,
     mandalIds: [req.mandalId],
-    status: 'active'
+    status: 'active',
+    emailVerified: true
   });
+
 
   // Update mandal member count
   const memberCount = await User.countDocuments({ mandalId: req.mandalId });
@@ -243,10 +218,10 @@ const removeMember = asyncHandler(async (req, res) => {
   res.json({ message: 'Member removed successfully' });
 });
 
-// @desc Update member role, permissions or status
+// @desc Update member role, permissions, status or password
 // @route PATCH /api/members/:id
 const updateMemberRole = asyncHandler(async (req, res) => {
-  const { name, mobile, role, permissions, status } = req.body;
+  const { name, mobile, role, permissions, status, password } = req.body;
   const member = await User.findOne({ _id: req.params.id, mandalId: req.mandalId });
   if (!member) {
     res.status(404);
@@ -269,6 +244,9 @@ const updateMemberRole = asyncHandler(async (req, res) => {
     };
   }
   if (status) member.status = status;
+  if (password && password.trim().length >= 4) {
+    member.passwordHash = await User.hashPassword(password.trim());
+  }
 
   await member.save();
   res.json(member);

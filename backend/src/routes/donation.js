@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const { requireMandal } = require('../middleware/tenant');
-const { allowRoles } = require('../middleware/rbac');
+const { allowRoles, checkPermission } = require('../middleware/rbac');
 const {
   createDonation,
   listDonations,
@@ -14,12 +14,13 @@ const {
 
 router.use(protect, requireMandal);
 
-router.post('/', allowRoles('president', 'treasurer', 'secretary', 'volunteer'), createDonation);
+router.post('/', checkPermission('canCollect'), createDonation);
 router.get('/', listDonations);
 router.get('/:id', getDonation);
-router.put('/:id', allowRoles('president', 'treasurer'), updateDonation);
-router.patch('/:id', allowRoles('president', 'treasurer'), updateDonation);
+router.put('/:id', checkPermission('canCollect'), updateDonation);
+router.patch('/:id', checkPermission('canCollect'), updateDonation);
 router.delete('/:id', allowRoles('president', 'treasurer'), deleteDonation);
 router.patch('/:id/cancel', allowRoles('president', 'treasurer'), cancelDonation);
 
 module.exports = router;
+
